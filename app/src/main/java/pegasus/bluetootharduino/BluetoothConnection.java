@@ -20,7 +20,7 @@ public class BluetoothConnection {
     InputStream in;
     static OutputStream out;
     String returnResult;
-    String carduino = "98:D3:31:70:22:71";
+    String carduino = "98:D3:35:70:EA:85";
 
     Thread BlueToothThread;
     boolean stop = false;
