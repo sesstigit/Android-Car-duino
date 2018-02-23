@@ -9,11 +9,11 @@ def openCvDir = properties.getProperty('opencv.dir')
 def sources = "AutodriveJavaFacade.cpp"
 android {
 
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion 27
+    buildToolsVersion "27.0.2"
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 19
+        minSdkVersion 21
+        targetSdkVersion 27
         versionCode 101
         versionName "1.0.1"
         applicationId "pegasus.bluetootharduino"
@@ -57,7 +57,7 @@ android {
                     "OPENCV_INSTALL_MODULES:=on\n" +
                     "OPENCV_LIB_TYPE:=SHARED\n" +
                     "OPENCV_CAMERA_MODULES:=on\n" +
-                    "include $openCvDir/sdk/native/jni/OpenCV.mk\n" +
+                    "include $openCvDir\\sdk\\native\\jni\\OpenCV.mk\n" +
                     "LOCAL_MODULE := autodrive\n" +
                     "LOCAL_SRC_FILES := $sources\n" +
                     "LOCAL_LDLIBS += -llog -ldl -lstdc++\n" +
@@ -91,5 +91,5 @@ android {
     }
 }
 dependencies {
-    compile project(':openCVLibrary2411')
+    compile project(':openCVLibrary340')
 }
