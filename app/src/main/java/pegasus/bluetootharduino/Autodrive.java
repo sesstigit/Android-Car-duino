@@ -10,7 +10,7 @@ public class Autodrive
     static
     {
         System.loadLibrary("gnustl_shared");
-        System.loadLibrary("opencv_java");
+        System.loadLibrary("opencv_java3");
         System.loadLibrary("autodrive");
     }
 
