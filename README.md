@@ -9,6 +9,7 @@ Instructions for building and running the app are on the [wiki](https://github.c
 ## Dependencies
 The App relies on the car running Arduino code from the [AndroidCar](https://github.com/sesstigit/AndroidCar) repository.
 
+## Diagram
 ![Alt text](car_architecture_androidapp.png?raw=true "You are now looking at the android app")
 
 ## History
