@@ -30,6 +30,10 @@ public class ManualActivity extends Activity implements OnClickListener, OnGestu
         ((Button)findViewById(R.id.back)).setOnClickListener(this);
         ((Button)findViewById(R.id.right)).setOnClickListener(this);
         ((Button)findViewById(R.id.left)).setOnClickListener(this);
+		((Button)findViewById(R.id.frontmore)).setOnClickListener(this);
+        ((Button)findViewById(R.id.backmore)).setOnClickListener(this);
+        ((Button)findViewById(R.id.rightmore)).setOnClickListener(this);
+        ((Button)findViewById(R.id.leftmore)).setOnClickListener(this);
         ((Button)findViewById(R.id.stop)).setOnClickListener(this);
 
         if(bluepair.btEnabled) {
@@ -55,6 +59,18 @@ public class ManualActivity extends Activity implements OnClickListener, OnGestu
                 break;
             case R.id.left:
                 btc.sendToManualMode("left");
+                break;
+			case R.id.frontmore:
+                btc.sendToManualMode("frontmore");
+                break;
+            case R.id.backmore:
+                btc.sendToManualMode("backmore");
+                break;
+            case R.id.rightmore:
+                btc.sendToManualMode("rightmore");
+                break;
+            case R.id.leftmore:
+                btc.sendToManualMode("leftmore");
                 break;
             case R.id.stop:
                 btc.sendToManualMode("stop");

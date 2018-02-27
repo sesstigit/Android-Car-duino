@@ -124,15 +124,23 @@ public class BluetoothConnection {
                 text = nt.encodedNetstring("m80");
                 text += nt.encodedNetstring("t0");
             } else if(command.equals("back")) {
-                text = nt.encodedNetstring("m-250");
+                text = nt.encodedNetstring("m-120");
                 text += nt.encodedNetstring("t0");
             } else if(command.equals("right")) {
-                text = nt.encodedNetstring("t20");
-            } else if(command.equals("left")) {
                 text = nt.encodedNetstring("t-20");
+            } else if(command.equals("left")) {
+                text = nt.encodedNetstring("t20");
             } else if(command.equals("stop")) {
                 text = nt.encodedNetstring("m0");
                 text += nt.encodedNetstring("t0");
+			} else if(command.equals("frontmore")) {
+                text = nt.encodedNetstring("mm10");
+            } else if(command.equals("backmore")) {
+                text = nt.encodedNetstring("mm-10");
+			} else if(command.equals("rightmore")) {
+                text = nt.encodedNetstring("tm-10");
+            } else if(command.equals("leftmore")) {
+                text = nt.encodedNetstring("tm10");
             }
 
             if(!text.isEmpty()) {
