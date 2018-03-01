@@ -62,4 +62,47 @@
         android:layout_below="@+id/front"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
+
+    <Button
+        android:id="@+id/frontmore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/front"
+        android:layout_marginTop="21dp"
+        android:background="@drawable/rounded_buttons"
+        android:text="++"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/backmore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/back"
+        android:layout_below="@+id/back"
+        android:background="@drawable/rounded_buttons"
+        android:text="++"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/leftmore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/left"
+        android:layout_alignBottom="@+id/left"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="28dp"
+        android:background="@drawable/rounded_buttons"
+        android:text="++"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/rightmore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/right"
+        android:layout_toEndOf="@+id/right"
+        android:background="@drawable/rounded_buttons"
+        android:text="++"
+        android:textColor="@color/white" />
 </RelativeLayout>
