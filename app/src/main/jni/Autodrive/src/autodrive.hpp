@@ -1,100 +1,60 @@
 #pragma once
-#include "sensordata.hpp"
-#include "parking.hpp"
-#include "imageprocessor/imageprocessor.hpp"
-#include "overtaking.hpp"
+#ifndef ANDROIDCARDUINO_AUTODRIVE_AUTODRIVE_H_
+#define ANDROIDCARDUINO_AUTODRIVE_AUTODRIVE_H_
 
-namespace Autodrive
+#include "CarSensor.h"
+#include <opencv2/core/mat.hpp>
+
+//#include "sensordata.hpp"
+//#include "parking.hpp"
+//#include "imageprocessor/imageprocessor.hpp"
+//#include "overtaking.hpp"
+
+using namespace std;
+
+enum class AutoDriveMode : unsigned int
 {
-    command lastCommand;
+  kDetectingGap = 0;
+  kParking = 1;
+  kSearchingForLanes = 2;
+  kFollowingLanes = 3;
+  kOvertaking = 4;
+  kUnknown = 5;
+};
 
-    bool speedChanged() 
-    {
-        return lastCommand.changedSpeed;
-    }
+// Base Class
+Class AutoDrive {
+ public:
+  void reset_mode();
+  void drive();
 
-    bool angleChanged()
-    {
-        return lastCommand.changedAngle;
-    }
+ private:
+  //Get speed, angle, changedSpeed and changedAngle from lastcommand
+  command last_command_;
+  int car_length_ = 1;  //TODO: units??? Is that cm?
+  AutoDriveMode initial_mode_;
+  AutoDriveMode mode_;
 
-    double getSpeed()
-    {
-        return lastCommand.speed;
-    }
+  CarESC motor_;
+  CarServo steering_;
+  CarSensorDistanceEncoder distance_;
+  CarSensorAngle gyro_;
+  CarSensorOnOff line_LHS_sensor;
+  CarSensorOnOff line_RHS_sensor;
+  struct ultrasound_t {
+    CarSensorDistanceUltrasound front;
+    CarSensorDistanceUltrasound frontright;
+    CarSensorDistanceUltrasound rear;
+  } ultrasound_;
 
-    double getAngle()
-    {
-        return lastCommand.angle;
-    }
+  struct infrared_t {
+    CarSensorDistanceInfrared frontright;
+    CarSensorDistanceInfrared rearright;
+    CarSensorDistanceInfrared rear;
+  } infrared_;
 
-    enum carstatus
-    {
-        DETECTING_GAP, PARKING, SEARCHING_FOR_LANES, FOLLOWING_LANES, OVERTAKING, UNKNOWN
-    };  
-    
-    carstatus initialStatus = SEARCHING_FOR_LANES;
-    carstatus status = initialStatus;
-
-    void setInitialStatus(carstatus newStatus)
-    {
-        initialStatus = newStatus;
-        status = newStatus;
-    }
-
-    void resetStatus()
-    {
-       status = initialStatus;
-    }
-
-    void drive()
-    {
-        /* Reset command */
-        lastCommand = command();
-
-        switch (status)
-        {
-            case Autodrive::SEARCHING_FOR_LANES:
-                if (Autodrive::imageProcessor::init_processing(Autodrive::SensorData::image))
-                {
-                    lastCommand.setSpeed(normalSpeed);
-                    status = FOLLOWING_LANES;
-                }
-                break;
-                
-            case Autodrive::FOLLOWING_LANES:
-                lastCommand = Autodrive::imageProcessor::continue_processing(*Autodrive::SensorData::image);
-                lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
-                break;
-                
-            // debug only! will be merged with lane following   
-            case Autodrive::DETECTING_GAP:
-                Parking::SetParkingManeuver(); // check what parking maneuver to initialize, if any
-                
-                if(Parking::currentManeuver.type != NO_MANEUVER){
-                    status = PARKING;
-                }else{
-                    lastCommand.setSpeed(normalSpeed); 
-                }
-                break;
-            // -----------
-            
-            case Autodrive::PARKING:
-                lastCommand = Parking::Park();
-                if(Parking::currentManeuver.currentState == Autodrive::maneuver::mState::DONE){
-                    Parking::currentManeuver.type = NO_MANEUVER;
-                }
-                break; 
-
-            case OVERTAKING:
-                lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
-                break;
-
-            case Autodrive::UNKNOWN:
-                break;
-                
-            default:
-                break;
-        }
-    }
+  cv::Mat* image_ = 0;
+  //TODO: sensordata.hpp also had current_speed and current_angle variables.  Are these different to sensor readings now (or are they used to compare one time step to the next???)
 }
+
+#endif //ANDROIDCARDUINO_AUTODRIVE_AUTODRIVE_H_
