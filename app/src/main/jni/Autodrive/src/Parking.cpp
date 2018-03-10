@@ -59,26 +59,26 @@ void set_parking_maneuver() {
   // if there is not enought space for the car to park front on
   } else if (gap_length > (1 * car_length) &&
              infrared.rearright > 0) {
-    // workarround to avoid the initial gap
-    if(initialGap){
-      gapLength = 0;
-      initialGap = false;
+    // workaround to avoid the initial gap
+    if(initial_gap){
+      gap_length = 0;
+      initial_gap = false;
     } else {
       //if(GapDepthOk()){
-      currentManeuver = maneuver(PARALLEL_STANDARD);
+      current_maneuver = maneuver(PARALLEL_STANDARD);
       //}
     }
 				
   // no matching maneuver
   } else {
-    if (infrared.rearright > 0 && initialGap) {
-      initialGap = false;
+    if (infrared.rearright > 0 && initial_gap) {
+      initial_gap = false;
     }
-    currentManeuver = maneuver(NO_MANEUVER);
+    current_maneuver_ = maneuver(NO_MANEUVER);
   }
 }
 		
 // returns the command related to the current maneuver
 command Parking::park(){
-  return currentManeuver.GetCommand();
+  return current_maneuver.get_command();
 }													
