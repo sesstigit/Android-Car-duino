@@ -30,39 +30,38 @@ AutoDrive::drive() {
         }
         break;
                 
-            case Autodrive::FOLLOWING_LANES:
-                lastCommand = Autodrive::imageProcessor::continue_processing(*Autodrive::SensorData::image);
-                lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
-                break;
-                
-            // debug only! will be merged with lane following   
-            case Autodrive::DETECTING_GAP:
-                Parking::SetParkingManeuver(); // check what parking maneuver to initialize, if any
-                
-                if(Parking::currentManeuver.type != NO_MANEUVER){
-                    mode_ = PARKING;
-                }else{
-                    lastCommand.setSpeed(normalSpeed); 
-                }
-                break;
-            // -----------
-            
-            case Autodrive::PARKING:
-                lastCommand = Parking::Park();
-                if(Parking::currentManeuver.currentState == Autodrive::maneuver::mState::DONE){
-                    Parking::currentManeuver.type = NO_MANEUVER;
-                }
-                break; 
+	case Autodrive::FOLLOWING_LANES:
+		lastCommand = Autodrive::imageProcessor::continue_processing(*Autodrive::SensorData::image);
+		lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
+		break;
+		
+	// debug only! will be merged with lane following   
+	case Autodrive::DETECTING_GAP:
+		Parking::SetParkingManeuver(); // check what parking maneuver to initialize, if any
+		
+		if(Parking::currentManeuver.type != NO_MANEUVER){
+			mode_ = PARKING;
+		}else{
+			lastCommand.setSpeed(normalSpeed); 
+		}
+		break;
+	// -----------
+	
+	case Autodrive::PARKING:
+		lastCommand = Parking::Park();
+		if(Parking::currentManeuver.currentState == Autodrive::maneuver::mState::DONE){
+			Parking::currentManeuver.type = NO_MANEUVER;
+		}
+		break; 
 
-            case OVERTAKING:
-                lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
-                break;
+	case OVERTAKING:
+		lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
+		break;
 
-            case Autodrive::UNKNOWN:
-                break;
-                
-            default:
-                break;
-        }
+	case Autodrive::UNKNOWN:
+		break;
+		
+	default:
+		break;
     }
 }
