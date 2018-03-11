@@ -39,8 +39,8 @@ Class AutoDrive {
   CarServo steering_;
   CarSensorDistanceEncoder distance_;
   CarSensorAngle gyro_;
-  CarSensorOnOff line_LHS_sensor;
-  CarSensorOnOff line_RHS_sensor;
+  CarSensorOnOff line_LHS_sensor_;
+  CarSensorOnOff line_RHS_sensor_;
   struct ultrasound_t {
     CarSensorDistanceUltrasound front;
     CarSensorDistanceUltrasound frontright;
