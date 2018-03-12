@@ -29,9 +29,12 @@ Class AutoDrive {
   void drive();
 
  private:
-  //Get speed, angle, changedSpeed and changedAngle from lastcommand
-  command last_command_;
-  int car_length_ = 1;  //TODO: units??? Is that cm?
+  ImageProcessor img_proc_;
+  
+  changed_speed_;  // flag whether Autodrive has changed speed this frame
+  changed_angle_;  // same, but for angle.
+
+  int car_length_;  //TODO: how can we set this?
   AutoDriveMode initial_mode_;
   AutoDriveMode mode_;
 
@@ -54,7 +57,6 @@ Class AutoDrive {
   } infrared_;
 
   cv::Mat* image_ = 0;
-  //TODO: sensordata.hpp also had current_speed and current_angle variables.  Are these different to sensor readings now (or are they used to compare one time step to the next???)
 }
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_AUTODRIVE_H_

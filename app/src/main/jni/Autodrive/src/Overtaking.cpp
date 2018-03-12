@@ -14,8 +14,8 @@ Overtaking::Overtaking() {
 	obstacle_distance_ = 70;  // TODO: is this a reasonable obstacle distance???
 	obstacle_met_ = false;
 	obstacle_passed_ = false;
-	line_LHS_sensor_.value() = false;
-	line_RHS_sensor_.value() = false;
+	//line_LHS_sensor_.value() = false;
+	//line_RHS_sensor_.value() = false;
 	stop_ = false;
 }
 

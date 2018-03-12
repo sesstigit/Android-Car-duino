@@ -47,7 +47,7 @@ int ImageProcessor::continue_processing(cv::Mat& mat)
 {
 	birds_eye_transform(&mat, perspective_);
 	if (normalize_lighting_)
-		normalize_lighting_(&mat, blur_i_, intensity_ / 100.f);
+		normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 
 	cv::Mat cannied_mat;
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);

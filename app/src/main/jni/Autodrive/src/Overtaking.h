@@ -32,8 +32,8 @@ Class Overtaking : public Autodrive {
 	int obstacle_distance_;
 	bool obstacle_met_;
 	bool obstacle_passed_;
-	bool line_LHS_sensor_.value();
-	bool line_RHS_sensor_.value();
+	//bool line_LHS_sensor_.value();
+	//bool line_RHS_sensor_.value();
 	bool stop_;
 }
 
