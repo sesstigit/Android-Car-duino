@@ -18,30 +18,30 @@ AutoDrive::set_car_length(int car_len) {
 
 AutoDrive::drive() {
   // Reset command
-  last_command_ = command();
+  int ret_status = 0;  //return status
 
   switch (mode_)
   {
     case kSearchingForLanes:
-      if (Autodrive::imageProcessor::init_processing(Autodrive::SensorData::image))
+      if (img_proc_.init_processing(image_))
         {
-          lastCommand.setSpeed(normalSpeed);
-          mode_ = FOLLOWING_LANES;
+          motor_.set_value(normal_speed);
+          mode_ = kFollowingLanes;
         }
         break;
                 
-	case Autodrive::FOLLOWING_LANES:
-		lastCommand = Autodrive::imageProcessor::continue_processing(*Autodrive::SensorData::image);
-		lastCommand = Overtaking::run(lastCommand, Autodrive::SensorData::image);
+	case kFollowingLanes:
+		ret_status = Autodrive::imageProcessor::continue_processing(*image);
+		ret_status = Overtaking::run(lastCommand, image_);
 		break;
 		
 	// debug only! will be merged with lane following   
-	case Autodrive::DETECTING_GAP:
+	case kDetectingGap:
 		Parking::SetParkingManeuver(); // check what parking maneuver to initialize, if any
 		
-		if(Parking::currentManeuver.type != NO_MANEUVER){
+		if (Parking::currentManeuver.type != NO_MANEUVER) {
 			mode_ = PARKING;
-		}else{
+		} else {
 			lastCommand.setSpeed(normalSpeed); 
 		}
 		break;
