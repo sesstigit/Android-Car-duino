@@ -69,7 +69,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         debugConsole.append("infraredSideRear: " + String.valueOf(Autodrive.irRearRight()) + "\n");
         debugConsole.append("infraredRear: " + String.valueOf(Autodrive.irRear()) + "\n");
         debugConsole.append("gyroscope: " + String.valueOf(Autodrive.gyroHeading()) + "\n");
-        debugConsole.append("razorboard: " + String.valueOf(Autodrive.razorHeading()) + "\n");
+        //debugConsole.append("razorboard: " + String.valueOf(Autodrive.razorHeading()) + "\n");
         debugConsole.append("\n");
         debugConsole.append("PARKING:\n");
         debugConsole.append("gap length: " + String.valueOf(Autodrive.gapLength()) + "\n");
