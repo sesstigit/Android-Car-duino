@@ -20,12 +20,12 @@ extern "C"
 {
     TYPE(void) NAME (drive)()
     {
-        Autodrive::drive();
+        Autodrive::car.drive();
     }
 	
     TYPE(void) NAME(reset)()
     {
-        return Autodrive::resetStatus();
+        return Autodrive::car.reset_mode();
     }
 
     TYPE(void) NAME(setParkingMode)()
@@ -45,7 +45,7 @@ extern "C"
     
     TYPE(void) NAME(setCarLength) PARAMS(int _carLength)
     {
-        Autodrive::SensorData::carLength = _carLength;
+        Autodrive::car.car_length_ = _carLength;
     }
 
     TYPE(void) NAME(lineLeftFound)()
@@ -60,7 +60,7 @@ extern "C"
     
     TYPE(jint) NAME(getCarLength)()
     {
-        return Autodrive::SensorData::carLength;
+        return Autodrive::car.car_length_;
     }
 
    /*----- DEBUGDATA -----*/
@@ -136,62 +136,62 @@ extern "C"
     
     TYPE(jint)NAME(usFront)()
     {
-        return Autodrive::SensorData::ultrasound.front;
+        return Autodrive::car.ultrasound_.front.get_value();
     }
     
     TYPE(jint)NAME(usFrontRight)()
     {
-        return Autodrive::SensorData::ultrasound.frontright;
+        return Autodrive::car.ultrasound_.frontright.get_value();
     }
     
     TYPE(jint)NAME(usRear)()
     {
-        return Autodrive::SensorData::ultrasound.rear;
+        return Autodrive::car.ultrasound_.rear.get_value();
     }
     
     TYPE(jint)NAME(irFrontRight)()
     {
-        return Autodrive::SensorData::infrared.frontright;
+        return Autodrive::car.infrared_.frontright.get_value();
     }
     
     TYPE(jint)NAME(irRearRight)()
     {
-        return Autodrive::SensorData::infrared.rearright;
+        return Autodrive::car.infrared_.rearright.get_value();
     }
     
     TYPE(jint)NAME(irRear)()
     {
-        return Autodrive::SensorData::infrared.rear;
+        return Autodrive::car.infrared_.rear.get_value();
     }
     
     TYPE(jint)NAME(gyroHeading)()
     {
-        return Autodrive::SensorData::gyroHeading;
+        return Autodrive::car.gyro_.get_value();
     }
     
-    TYPE(jint)NAME(razorHeading)()
-    {
-        return Autodrive::SensorData::razorHeading;
-    }
+    //TYPE(jint)NAME(razorHeading)()
+    //{
+    //    return Autodrive::SensorData::razorHeading;
+    //}
     
    // setters
 
     TYPE(void) NAME(setImage) PARAMS(long newMat){
-        Autodrive::SensorData::image = (cv::Mat*)newMat;
+        Autodrive::car.image_ = (cv::Mat*)newMat;
     }
 
     TYPE(void) NAME(setUltrasound) PARAMS(int sensor,int value){
         switch (sensor)
         {
             case 0:
-                Autodrive::SensorData::ultrasound.front = value;
+                Autodrive::car.ultrasound_.front.set_value(value);
                 break;
             case 1:
-                Autodrive::SensorData::ultrasound.frontright = value;
+                Autodrive::car.ultrasound_.frontright.set_value(value);
                 break;
             default:
             case 2:
-                Autodrive::SensorData::ultrasound.rear = value;
+                Autodrive::car.ultrasound_.rear.set_value(value);
                 break;
         }
     }
@@ -200,30 +200,30 @@ extern "C"
         switch (sensor)
         {
             case 0:
-                Autodrive::SensorData::infrared.frontright = value;
+                Autodrive::car.infrared_.frontright.set_value(value);
                 break;
             case 1:
-                Autodrive::SensorData::infrared.rearright = value;
+                Autodrive::car.infrared_.rearright.set_value(value);
                 break;
             default:
             case 2:
-                Autodrive::SensorData::infrared.rear = value;
+                Autodrive::SensorData::infrared_.rear.set_value(value);
                 break;
         }
 
     }
 
     TYPE(void) NAME(setEncoderPulses) PARAMS(long value){
-        Autodrive::SensorData::encoderPulses = value;
+        Autodrive::car.distance_.set_value(value);
     }
     
     TYPE(void) NAME(setGyroHeading) PARAMS(int value){
-        Autodrive::SensorData::gyroHeading = value;
+        Autodrive::car.gyro_.set_value(value);
     }
     
-    TYPE(void) NAME(setRazorHeading) PARAMS(int value){
-        Autodrive::SensorData::razorHeading = value;
-    }
+    //TYPE(void) NAME(setRazorHeading) PARAMS(int value){
+    //    Autodrive::SensorData::razorHeading = value;
+    //}
     
 	
 	/*----- RESULTING AUTODRIVE DATA -----*/
