@@ -1,22 +1,22 @@
-#include "AutoDrive.h"
+#include "Car.h"
 
 //Constructor
-AutoDrive::AutoDrive() {
+Car::Car() {
   initial_mode_ = kSearchingForLanes;
   mode_ = initial_mode_;
   car_length_ = 1;  //TODO: initialise this from a saved setting?
   // All sensors are objects, so constructor should take care of them.
 }
 
-AutoDrive::reset_mode() {
+Car::reset_mode() {
   mode_ = initial_mode_;
 }
 
-AutoDrive::set_car_length(int car_len) {
+Car::set_car_length(int car_len) {
   car_length_ = car_len;
 }
 
-AutoDrive::drive() {
+Car::drive() {
   // Reset command
   int ret_status = 0;  //return status
 
