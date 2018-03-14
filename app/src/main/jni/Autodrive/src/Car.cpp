@@ -2,21 +2,22 @@
 
 //Constructor
 Car::Car() {
-  initial_mode_ = kSearchingForLanes;
+	initial_mode_ = kSearchingForLanes;
+	mode_ = initial_mode_;
+	car_length_ = 1;  //TODO: initialise this from a saved setting?
+					  // All sensors are objects, so constructor should take care of them.
+}
+
+
+void Car::reset_mode() {
   mode_ = initial_mode_;
-  car_length_ = 1;  //TODO: initialise this from a saved setting?
-  // All sensors are objects, so constructor should take care of them.
 }
 
-Car::reset_mode() {
-  mode_ = initial_mode_;
-}
+//Car::set_car_length(int car_len) {
+//  car_length_ = car_len;
+//}
 
-Car::set_car_length(int car_len) {
-  car_length_ = car_len;
-}
-
-Car::drive() {
+int Car::drive() {
   // Reset command
   int ret_status = 0;  //return status
 
