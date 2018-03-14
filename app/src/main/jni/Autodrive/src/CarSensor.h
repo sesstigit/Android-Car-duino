@@ -1,8 +1,10 @@
+//! @file CarSensor.h
+//! Definition of the base CarSensor class.  It mimics basic functionality of all sensors on car.
+
 #pragma once
 
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CARSENSOR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CARSENSOR_H_
-
 #include <iostream>
 #include <string>
 #ifdef __linux__ 
@@ -12,23 +14,40 @@
 using namespace std;
 
 
-// Base class
+//! @Class CarSensor
+//! The base CarSensor class has only basic functionality.  Subclasses can then add specialised functions.
+//! The set_value() method can be called by other software after taking a hardware reading.
+//! An assumption is that each sensor has a single reading value.
+
 class CarSensor {
  public:
-  // Getter
+  //! Getter.  Get the sensor value.
+  //@ return The returned value is the sensor reading.  No units are specified.
   double value() { return value_; }
-  // Setter
+
+  //! Setter.  Set the sensor value.
+  //! @param new_value The new value to set the sensor to.
   void set_value(const double new_value);
-  CarSensor(const string sensorname, const double min, const double max);  // Constructor
-  //TODO: check this is how to do it.  Protected?
+
+  //! Constructor
+  //! @param sensorname A string to document the sensor name and model.
+  //! @param min The minimum reading value the sensor can produce.
+  //! @param max The maximum reading value the sensor can produce.
+  CarSensor(const string sensorname, const double min, const double max);
+
+  //! Destructor
+  ~CarSensor();
+
+  //! Check whether the sensor reading is valid or not, based on its max and min values.
+  //! TODO: check this is how to do virtual private functions which can be overriden.  Protected?
   virtual bool check_valid(const double new_value);
+
  protected:
-  // assume each sensor has a single main reading value.
-  double value_; // assume each sensor has a single main reading value.
-  const string name_;  // sensorname does not change once initialised.
-  const double max_valid_; // range for which value is valid.
-  const double min_valid_;
-  // Other member params could be: units (cm), name, ...
+  double value_; //!< the single value of the sensor.
+  const string name_;  //!< the sensor name, which does not change once initialised.
+  const double max_valid_; //!< maximum allowed value of sensor.
+  const double min_valid_; //!< minimum allowed value of sensor.
+  //! Other member params could be: units (cm), name, ...
 };
 
 class CarSensorDistanceUltrasound : public CarSensor {
