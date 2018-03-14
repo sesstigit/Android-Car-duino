@@ -12,21 +12,21 @@
 
 using namespace std;
 
-enum class AutoDriveMode : unsigned int
-{
-  kDetectingGap = 0;
-  kParking = 1;
-  kSearchingForLanes = 2;
-  kFollowingLanes = 3;
-  kOvertaking = 4;
-  kUnknown = 5;
+enum class AutoDriveMode : unsigned int {
+  kDetectingGap = 0,
+  kParking = 1,
+  kSearchingForLanes = 2,
+  kFollowingLanes = 3,
+  kOvertaking = 4,
+  kUnknown = 5
 };
 
 // Base Class
-Class Car {
+class Car {
  public:
+	Car();
     void reset_mode();
-    void drive();
+    int drive();
     // These need to be public for JNI
     CarESC motor_;
     CarServo steering_;
@@ -49,10 +49,11 @@ Class Car {
     int car_length_;  //TODO: how can we set this?
 
  private:
-  ImageProcessor img_proc_;
+  //TODO: Add this back!
+  //ImageProcessor img_proc_;
   
-  changed_speed_;  // flag whether Autodrive has changed speed this frame
-  changed_angle_;  // same, but for angle.
+  bool changed_speed_;  // flag whether Autodrive has changed speed this frame
+  bool changed_angle_;  // same, but for angle.
 
   AutoDriveMode initial_mode_;
   AutoDriveMode mode_;
