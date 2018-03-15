@@ -9,14 +9,11 @@ LDFLAGS=-g
 #LDLIBS=$(shell root-config --libs)
 LDLIBS=-lm
 
-SRCS=src/test_main.cpp src/CarSensor.cpp
+SRCDIR=./src
+SRCS=$(SRCDIR)/test_main.cpp $(SRCDIR)/CarSensor.cpp $(SRCDIR)/Car.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 all: test_main docs
-
-docs:
-	@doxygen
-	@open doxygen/html/index.html
 
 test_main: $(OBJS)
 	$(CXX) $(LDFLAGS) -o test_main $(OBJS) $(LDLIBS) 
@@ -24,6 +21,16 @@ test_main: $(OBJS)
 test_main.o: test_main.cpp CarSensor.h
 
 CarSensor.o: CarSensor.h CarSensor.cpp
+
+Car.o: Car.h Car.cpp
+
+doxyfile.inc: Makefile
+	echo INPUT = $(SRCDIR) > doxyfile.inc
+	echo FILE_PATTERNS = *.h $(SRCS) >> doxyfile.inc
+
+docs: doxyfile.inc $(SRCS)
+	@doxygen
+	@open doxygen/html/index.html
 
 clean:
 	$(RM) $(OBJS)
