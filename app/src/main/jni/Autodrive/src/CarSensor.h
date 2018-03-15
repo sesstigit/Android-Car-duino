@@ -53,17 +53,20 @@ class CarSensor {
 class CarSensorDistanceUltrasound : public CarSensor {
  public:
   CarSensorDistanceUltrasound();
+  ~CarSensorDistanceUltrasound() {};
 };
 
 class CarSensorDistanceInfrared : public CarSensor {
  public:
   CarSensorDistanceInfrared();
+  ~CarSensorDistanceInfrared() {};
 };
 
 class CarSensorDistanceEncoder : public CarSensor {
  public:
   // Constructor
-  CarSensorDistanceEncoder(const double pulses_per_cm);
+  CarSensorDistanceEncoder();
+  ~CarSensorDistanceEncoder() {};
   // Getter
   long pulses() { return pulses_; }
   double pulses_per_cm() { return pulses_per_cm_; }
@@ -82,6 +85,7 @@ class CarSensorDistanceEncoder : public CarSensor {
 class CarSensorAngle : public CarSensor {
  public:
   CarSensorAngle();
+  ~CarSensorAngle() {};
 };
 
 // Can be used for a line sensor, or any on/off sensor.
@@ -89,6 +93,7 @@ class CarSensorOnOff : public CarSensor {
  public:
   //Constructor
   CarSensorOnOff();
+  ~CarSensorOnOff() {};
   // Getter
   bool on() { return (value_ > 0.5); }
 };
@@ -98,6 +103,7 @@ class CarESC : public CarSensor {
 // The ESC (electronic speed controller) controls the motor speed.
  public:
   CarESC();
+  ~CarESC() {};
 };
 
 class CarServo : public CarSensor {
@@ -105,6 +111,7 @@ class CarServo : public CarSensor {
 // The servo controls steering by adjusting the wheel angle.
  public:
   CarServo();
+  ~CarServo() {};
 };
 
 

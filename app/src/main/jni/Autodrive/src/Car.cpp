@@ -5,7 +5,8 @@ Car::Car() {
 	initial_mode_ = kSearchingForLanes;
 	mode_ = initial_mode_;
 	car_length_ = 1;  //TODO: initialise this from a saved setting?
-					  // All sensors are objects, so constructor should take care of them.
+			  // All sensors are objects, so constructor should take care of them.
+	//image_ = nullptr;  //TODO: add this back!
 }
 
 
@@ -13,15 +14,21 @@ void Car::reset_mode() {
   mode_ = initial_mode_;
 }
 
-//Car::set_car_length(int car_len) {
-//  car_length_ = car_len;
-//}
+void Car::set_car_length(int car_len) {
+  car_length_ = car_len;
+}
+
+AutoDriveMode Car::mode() { return mode_ };
+
+void Car::set_mode(AutoDriveMode new_mode) {
+  mode_ = new_mode;
+}
 
 int Car::drive() {
   // Reset command
   int ret_status = 0;  //return status
 
-  switch (mode_)
+/*  switch (mode_)
   {
     case kSearchingForLanes:
       if (img_proc_.init_processing(image_))
@@ -65,4 +72,5 @@ int Car::drive() {
 	default:
 		break;
     }
+*/
 }

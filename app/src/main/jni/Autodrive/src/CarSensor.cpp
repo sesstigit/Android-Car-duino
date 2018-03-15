@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "carsensor.h"
+#include "CarSensor.h"
 
 using namespace std;
 
@@ -12,6 +12,8 @@ CarSensor::CarSensor(const string sensorname, const double min, const double max
 	name_(sensorname),
 	min_valid_(min),
 	max_valid_(max) {}
+
+CarSensor::~CarSensor() {};
 
 // Setter
 void CarSensor::set_value(const double new_value) {
@@ -46,8 +48,7 @@ CarSensorDistanceInfrared::CarSensorDistanceInfrared() :
 //*****************************************************************************
 // Class: CarSensorDistanceEncoder
 //*****************************************************************************
-CarSensorDistanceEncoder::CarSensorDistanceEncoder(const double pulses_per_cm) :
-	pulses_per_cm_(pulses_per_cm),
+CarSensorDistanceEncoder::CarSensorDistanceEncoder() :
 	CarSensor("speed_encoder", 0, DBL_MAX) {};
 
 void CarSensorDistanceEncoder::set_pulses(const long new_pulses) {
