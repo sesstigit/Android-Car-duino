@@ -2,6 +2,7 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
+//#include "Autodrive.h"
 #include "CarSensor.h"
 //#include <opencv2/core/mat.hpp>
 
@@ -11,6 +12,30 @@
 //#include "overtaking.hpp"
 
 using namespace std;
+
+enum class AutoDriveMode : int {
+  kDetectingGap = 0,
+  kParking = 1,
+  kSearchingForLanes = 2,
+  kFollowingLanes = 3,
+  kOvertaking = 4,
+  kUnknown = 5
+};
+//enumeration types (both scoped and unscoped) can have overloaded operators
+std::ostream& operator<<(std::ostream& os, AutoDriveMode a)
+{
+    switch(a)
+    {
+        case AutoDriveMode::kDetectingGap   : os << "detectinggap";    break;
+        case AutoDriveMode::kParking : os << "parking"; break;
+        case AutoDriveMode::kSearchingForLanes : os << "searchingforlanes";  break;
+        case AutoDriveMode::kFollowingLanes  : os << "followinglanes";   break;
+        case AutoDriveMode::kOvertaking : os << "overtaking"; break;
+        case AutoDriveMode::kUnknown : os << "unknown"; break;
+        default    : os.setstate(std::ios_base::failbit);
+    }
+    return os;
+}
 
 // Base Class
 class Car {
@@ -44,14 +69,6 @@ class Car {
     //cv::Mat* image_;  TODO: add this back in
     int car_length_;  //TODO: how can we set this?
 
-    enum AutoDriveMode {
-      kDetectingGap = 0,
-      kParking = 1,
-      kSearchingForLanes = 2,
-      kFollowingLanes = 3,
-      kOvertaking = 4,
-      kUnknown = 5
-    };
 
  private:
   //TODO: Add this back!

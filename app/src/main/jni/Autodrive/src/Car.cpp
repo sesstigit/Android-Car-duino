@@ -2,7 +2,7 @@
 
 //Constructor
 Car::Car() {
-	initial_mode_ = kSearchingForLanes;
+	initial_mode_ = AutoDriveMode::kSearchingForLanes;
 	mode_ = initial_mode_;
 	car_length_ = 1;  //TODO: initialise this from a saved setting?
 			  // All sensors are objects, so constructor should take care of them.
@@ -18,7 +18,7 @@ void Car::set_car_length(int car_len) {
   car_length_ = car_len;
 }
 
-AutoDriveMode Car::mode() { return mode_ };
+AutoDriveMode Car::mode() { return mode_; };
 
 void Car::set_mode(AutoDriveMode new_mode) {
   mode_ = new_mode;
@@ -73,4 +73,5 @@ int Car::drive() {
 		break;
     }
 */
+  return(ret_status);
 }

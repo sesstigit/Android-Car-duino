@@ -114,7 +114,7 @@ int main() {
         //Autodrive::car.drive();
 
 cout << "Current car mode is: " << car.mode() << endl;
-car.set_mode(kParking);
+car.set_mode(AutoDriveMode::kParking);
 cout << "Current car mode is: " << car.mode() << endl;
 cout << "reset_mode()" << endl;
 car.reset_mode();

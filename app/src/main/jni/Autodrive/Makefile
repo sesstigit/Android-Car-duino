@@ -3,9 +3,9 @@ CC=gcc
 CXX=g++
 RM=rm -f
 #CPPFLAGS=-g $(shell root-config --cflags)
-CPPFLAGS=-g -pthread
+CPPFLAGS=-g -std=c++11
 #LDFLAGS=-g $(shell root-config --ldflags)
-LDFLAGS=-g
+LDFLAGS=-g -std=c++11 -v
 #LDLIBS=$(shell root-config --libs)
 LDLIBS=-lm
 
@@ -18,11 +18,11 @@ all: test_main docs
 test_main: $(OBJS)
 	$(CXX) $(LDFLAGS) -o test_main $(OBJS) $(LDLIBS) 
 
-test_main.o: test_main.cpp CarSensor.h
+test_main.o: test_main.cpp Autodrive.h
 
 CarSensor.o: CarSensor.h CarSensor.cpp
-
-Car.o: Car.h Car.cpp
+	
+Car.o: Car.h Car.cpp 
 
 doxyfile.inc: Makefile
 	echo INPUT = $(SRCDIR) > doxyfile.inc

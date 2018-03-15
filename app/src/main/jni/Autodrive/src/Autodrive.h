@@ -4,7 +4,8 @@
 
 #include "Car.h"
 
-using namespace std;
+//using namespace std;
+
 
 namespace Autodrive {
     Car car;  //car methods can now be called from JNI
