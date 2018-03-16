@@ -114,56 +114,43 @@ int main() {
         //Autodrive::car.drive();
 
 cout << "Current car mode is: " << car.mode() << endl;
+cout << "car.set_mode(kParking)" << endl;
 car.set_mode(AutoDriveMode::kParking);
+cout << "Current car mode is: " << car.mode() << endl;
+/*
+cout << "reset_mode()" << endl;
+car.reset_mode();
+cout << "Current car mode is: " << car.mode() << endl;
+cout << "set_initial_mode(kDetectingGap)" << endl;
+car.set_initial_mode(AutoDriveMode::kDetectingGap);
 cout << "Current car mode is: " << car.mode() << endl;
 cout << "reset_mode()" << endl;
 car.reset_mode();
 cout << "Current car mode is: " << car.mode() << endl;
-/*        Autodrive::setInitialStatus(Autodrive::DETECTING_GAP);
-        Autodrive::Parking::Reset();
-        Autodrive::Status::setLeftLane(boolean);
-        Autodrive::car.car_length_ = _carLength;
-        Autodrive::SensorData::lineLeftFound = true;
-        Autodrive::SensorData::lineRightFound = true;
-        return Autodrive::car.car_length_;
-        return Autodrive::Parking::gapDepthOk;
-        return Autodrive::Parking::initialGap;
-	    return Autodrive::Parking::gapLength;
-        return Autodrive::Status::currentAngle;
-        switch(Autodrive::Parking::currentManeuver.type)
-        {
-            case Autodrive::NO_MANEUVER:
-                return 0;
-            case Autodrive::PARALLEL_STANDARD:
-                return 1;
-            case Autodrive::PARALLEL_WIDE:
-                return 2;
-            case Autodrive::PERPENDICULAR_STANDARD:
-                return 3;
-            default:
-                return -1;
-        }
-        switch(Autodrive::Parking::currentManeuver.currentState)
-        {
-            case Autodrive::maneuver::mState::NOT_MOVING:
-                return 0;
-            case Autodrive::maneuver::mState::FORWARD:
-                return 1;
-            case Autodrive::maneuver::mState::BACKWARD:
-                return 2;
-            case Autodrive::maneuver::mState::FORWARD_RIGHT:
-                return 3;
-            case Autodrive::maneuver::mState::BACKWARD_RIGHT:
-                return 4;
-            case Autodrive::maneuver::mState::FORWARD_LEFT:
-                return 5;
-            case Autodrive::maneuver::mState::BACKWARD_LEFT:
-                return 6;
-            case Autodrive::maneuver::mState::DONE:
-                return 7;
-            default:
-                return -1;
-        }
+cout << "Current ParkingManueverMode is: " << park.mode() << endl;
+park.reset();
+cout << "After reset, current ParkingManueverMode is: " << park.mode() << endl;
+cout << "Current ParkingManueverState is: " << park.current_state() << endl;
+cout << "Current value of _is_left_lane: " << park.is_left_lane() << endl;
+setLeftLane(true);
+cout << "Current value of _is_left_lane: " << park.is_left_lane() << endl;
+cout << "car length is " << car.car_length_ << endl;
+car.car_length_ = 54;
+cout << "car length is " << car.car_length_ << endl;
+cout << "line_LHS_sensor =  " << car.line_LHS_sensor.value() << endl;
+car.line_LHS_sensor.set_value(true)
+cout << "line_LHS_sensor =  " << car.line_LHS_sensor.value() << endl;
+cout << "line_RHS_sensor =  " << car.line_RHS_sensor.value() << endl;
+car.line_RHS_sensor.set_value(true)
+cout << "line_RHS_sensor =  " << car.line_RHS_sensor.value() << endl;
+cout << "Parking gap_depth_ok =  " << park.gap_depth_ok() << endl;
+cout << "Parking inital_gap =  " << park.initial_gap() << endl;
+cout << "Parking gap_length =  " << park.gap_length() << endl;
+cout << "Parking turned angle =  " << park.turned_angle() << endl;
+cout << "Current ParkingManueverMode is: " << static_cast<int>(park.mode()) << endl;
+cout << "Current ParkingManueverState is: " << static_cast<int>(park.current_state()) << endl;
+*/
+/*
         return Autodrive::car.ultrasound_.front.get_value();
         return Autodrive::car.ultrasound_.frontright.get_value();
         return Autodrive::car.ultrasound_.rear.get_value();

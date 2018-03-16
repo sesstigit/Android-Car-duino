@@ -13,7 +13,7 @@
 
 using namespace std;
 
-enum class AutoDriveMode : int {
+enum class AutoDriveMode : unsigned int {
   kDetectingGap = 0,
   kParking = 1,
   kSearchingForLanes = 2,
@@ -21,17 +21,20 @@ enum class AutoDriveMode : int {
   kOvertaking = 4,
   kUnknown = 5
 };
-//enumeration types (both scoped and unscoped) can have overloaded operators
-std::ostream& operator<<(std::ostream& os, AutoDriveMode a)
+
+//enumeration types can have overloaded operators
+//inline is required to avoid linking errors when multiple object files include this header
+//Alternative would be to put this in the .cpp file, and only declare the overload function here.
+inline std::ostream& operator<<(std::ostream& os, AutoDriveMode a)
 {
     switch(a)
     {
-        case AutoDriveMode::kDetectingGap   : os << "detectinggap";    break;
-        case AutoDriveMode::kParking : os << "parking"; break;
-        case AutoDriveMode::kSearchingForLanes : os << "searchingforlanes";  break;
-        case AutoDriveMode::kFollowingLanes  : os << "followinglanes";   break;
-        case AutoDriveMode::kOvertaking : os << "overtaking"; break;
-        case AutoDriveMode::kUnknown : os << "unknown"; break;
+        case AutoDriveMode::kDetectingGap   : os << "kDetectingGap";    break;
+        case AutoDriveMode::kParking : os << "kParking"; break;
+        case AutoDriveMode::kSearchingForLanes : os << "kSearchingForLanes";  break;
+        case AutoDriveMode::kFollowingLanes  : os << "kFollowingLanes";   break;
+        case AutoDriveMode::kOvertaking : os << "kOvertaking"; break;
+        case AutoDriveMode::kUnknown : os << "kUnknown"; break;
         default    : os.setstate(std::ios_base::failbit);
     }
     return os;
@@ -43,12 +46,13 @@ class Car {
     Car();
     ~Car() {};
     int drive();
-    AutoDriveMode mode(); //getter
+    AutoDriveMode mode() { return mode_; }; //getter
+    void set_initial_mode(AutoDriveMode new_mode); //setter
     void set_mode(AutoDriveMode new_mode); //setter
     void reset_mode();  //setter
     void set_car_length(int car_len);  //setter
 
-    // These need to be public for JNI
+    // These need to be public as they are updated externally (e.g. via JNI)
     CarESC motor_;
     CarServo steering_;
     CarSensorDistanceEncoder distance_;
