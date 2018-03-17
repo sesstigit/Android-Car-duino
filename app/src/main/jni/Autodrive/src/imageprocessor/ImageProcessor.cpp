@@ -1,26 +1,12 @@
-ImageProcessor::ImageProcessor() {
-	thresh1_ = 181;
-	thresh2_ = 71;
-	intensity_ = 110;
-	blur_i_ = 11;
-	
-	road_follower_ = nullptr;
-	perspective_ = nullptr;
-	
-	normalize_lighting_ = true;
-	first_fragment_max_dist_ = 30; 
-	left_iteration_length_ = 5; 
-	right_iteration_length_ = 6;
-	transform_line_removal_threshold_ = 18; 
-	use_left_line_ = true; 
-	iterate_reduce_on_start_ = -2.f; 
-	max_angle_diff_ = 0.7f; 
-	smoothening_ = 0;
-
-	// PID SETTINGS
-	kp_ = 0.5;
-	ki_ = 0.0;
-	kd_ = 0.0;
+ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
+	img_conf_(img_conf),
+	thresh1_(181),
+	thresh2_(71),
+	intensity_(110),
+	blur_i_(11),
+	road_follower_(nullptr),
+	perspective_(nullptr),
+	start_center_(nullptr)
 }
 
 //TODO: why is mat a pointer here, but a reference in next function?
@@ -30,7 +16,7 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 	{
 		perspective_ = *found_pespective;
 		birds_eye_transform(mat, perspective_);
-		if (normalize_lighting_)
+		if (img_conf_->normalize_lighting_)
 			normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 		cv::Mat cannied_mat;
 		cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
@@ -46,7 +32,7 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 int ImageProcessor::continue_processing(cv::Mat& mat)
 {
 	birds_eye_transform(&mat, perspective_);
-	if (normalize_lighting_)
+	if (img_conf_->normalize_lighting_)
 		normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 
 	cv::Mat cannied_mat;

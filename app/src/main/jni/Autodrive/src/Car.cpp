@@ -1,23 +1,29 @@
 #include "Car.h"
 #include "ParkingManeuver.h"
 #include "Overtaking.h"
+#include "imageprocessor/ImageProcessor.h"
 
 //Constructor
 Car::Car() :
+  img_conf_(new ImageConfig()),
+  img_proc_(new ImageProcessor(img_conf)),
   parking_(new ParkingManeuver(this, ParkingManeuverMode::kNoManeuver)),
   overtaking_(new Overtaking(this)),
   changed_speed_(false),
   changed_angle_(false),
   initial_mode_(AutoDriveMode::kSearchingForLanes),
   mode_(initial_mode_),
-  car_length_(1)  //TODO: initialise this from a saved setting?
-    // All sensors are objects, so constructor should take care of them.
-	//image_ = nullptr;  //TODO: add this back!
+  car_length_(1),  //TODO: initialise this from a saved setting?
+  // All sensors are objects, so constructor should take care of them.
+  image_(nullptr)  //TODO: add this back!
 {};
 
 Car::~Car() {
     delete parking_;
     delete overtaking_;
+	if (image_ != nullptr) {
+		delete image_;
+	}
 }
 
 void Car::reset_mode() {
@@ -40,7 +46,7 @@ int Car::drive() {
   // Reset command
   int ret_status = 0;  //return status
 
-/*  switch (mode_)
+  switch (mode_)
   {
     case kSearchingForLanes:
       if (img_proc_.init_processing(image_))
@@ -84,6 +90,5 @@ int Car::drive() {
 	default:
 		break;
     }
-*/
   return(ret_status);
 }

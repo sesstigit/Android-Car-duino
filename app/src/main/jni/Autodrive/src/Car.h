@@ -2,13 +2,9 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
+#include <opencv2/core/mat.hpp>
 #include "CarSensor.h"
-//#include <opencv2/core/mat.hpp>
 
-//#include "sensordata.hpp"
-//#include "parking.hpp"
-//#include "imageprocessor/imageprocessor.hpp"
-//#include "overtaking.hpp"
 
 using namespace std;
 
@@ -41,6 +37,8 @@ inline std::ostream& operator<<(std::ostream& os, AutoDriveMode a)
 
 class ParkingManeuver;  //forward declaration
 class Overtaking;  //forward declaration
+class ImageConfig;  //forward declaration
+class ImageProcessor;  //forward declaration
 
 // Base Class
 class Car {
@@ -74,11 +72,11 @@ class Car {
       CarSensorDistanceInfrared rearright;
       CarSensorDistanceInfrared rear;
     } infrared_;
-    int car_length_;  //TODO: public so it can be set externally (e.g. via JNI)?
+    int car_length_;  //public so it can be set externally (e.g. via JNI).  Not ideal.
 
  private:
-  //TODO: Add this back!
-  //ImageProcessor img_proc_;
+  ImageConfig* img_conf;
+  ImageProcessor* img_proc_;
   ParkingManeuver* parking_; //object with methods for car parking
   Overtaking* overtaking_;  //object with methods for car overtaking
   bool changed_speed_;  // flag whether Autodrive has changed speed this frame
@@ -87,7 +85,7 @@ class Car {
   AutoDriveMode initial_mode_;
   AutoDriveMode mode_;
 
-  //cv::Mat* image_;  TODO: add this back in
+  cv::Mat* image_;
 };
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_CAR_H_

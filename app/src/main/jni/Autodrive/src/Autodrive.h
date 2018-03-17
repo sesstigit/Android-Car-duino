@@ -9,7 +9,7 @@
 
 
 namespace Autodrive {
-    ImageConfig conf;  //image processing configuration settings
+    //ImageConfig conf;  //image processing configuration settings
     Car car;  //car methods can now be called from JNI
     //ParkingManeuver park(car, ParkingManeuverMode::kNoManeuver);
 }

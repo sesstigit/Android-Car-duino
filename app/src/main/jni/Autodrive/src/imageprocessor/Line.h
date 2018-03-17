@@ -1,6 +1,7 @@
 #pragma once
 #include <opencv2/core/core.hpp>
 #include <limits>
+#include "Util.h"
 
 using pointT = cv::Point_ < numeric_t >;
 using vecT = cv::Vec < numeric_t, 4 >;
