@@ -11,7 +11,7 @@ LDFLAGS=-g -std=c++11
 LDLIBS=-lm
 
 SRCDIR=./src
-SRCS=$(SRCDIR)/test_main.cpp $(SRCDIR)/CarSensor.cpp $(SRCDIR)/Car.cpp $(SRCDIR)/ParkingManeuver.cpp
+SRCS=$(SRCDIR)/test_main.cpp $(SRCDIR)/CarSensor.cpp $(SRCDIR)/Car.cpp $(SRCDIR)/ParkingManeuver.cpp $(SRCDIR)/Overtaking.cpp $(SRCDIR)/imageprocessor/ImageConfig.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 all: test_main docs
@@ -26,6 +26,10 @@ CarSensor.o: CarSensor.h CarSensor.cpp
 Car.o: Car.h Car.cpp 
 
 ParkingManeuver.o: ParkingManeuver.h ParkingManeuver.cpp 
+
+Overtaking.o: Overtaking.h Overtaking.cpp
+
+ImageConfig.o: ImageConfig.h ImageConfig.cpp
 
 doxyfile.inc: Makefile
 	echo INPUT = $(SRCDIR) > doxyfile.inc

@@ -5,9 +5,8 @@
 
 #include <string.h>
 #include <math.h>
+#include <iostream>
 
-#include "Car.h"
-//#include "command.hpp"
 //#include "sensordata.hpp"
 
 enum class ParkingManeuverMode : unsigned int {
@@ -16,6 +15,7 @@ enum class ParkingManeuverMode : unsigned int {
   kParallelWide = 2,
   kPerpendicularStandard = 3
 };
+
 inline std::ostream& operator<<(std::ostream& os, ParkingManeuverMode m)
 {
     switch(m)
@@ -27,7 +27,7 @@ inline std::ostream& operator<<(std::ostream& os, ParkingManeuverMode m)
         default    : os.setstate(std::ios_base::failbit);
     }
     return os;
-}
+};
 
 enum class ParkingManeuverState : unsigned int {
 	kNotMoving = 0,
@@ -40,6 +40,7 @@ enum class ParkingManeuverState : unsigned int {
 	kDone = 7,
 	kEmergency = 8
 };
+
 inline std::ostream& operator<<(std::ostream& os, ParkingManeuverState m)
 {
     switch(m)
@@ -56,17 +57,18 @@ inline std::ostream& operator<<(std::ostream& os, ParkingManeuverState m)
         default    : os.setstate(std::ios_base::failbit);
     }
     return os;
-}
+};
 
  //enum side { right, left};
  //enum direction { front, back };
 
+class Car; //forward declaration
 
 // ParkingManeuver.
 class ParkingManeuver {
  public:
-  ParkingManeuver(Car& c, ParkingManeuverMode m);  // constructor
-  ParkingManeuver(Car& c);  // constructor
+  ParkingManeuver(Car* c, ParkingManeuverMode m);  // constructor
+  ParkingManeuver(Car* c);  // constructor
   // Commands
   int park();
   void reset();
@@ -75,7 +77,7 @@ class ParkingManeuver {
   bool is_stopped();
   bool has_travelled_distance(float target_distance);
   bool has_turned_angle(int desired_angle);
-  int turned_angle() { return turned_angle_;
+  int turned_angle() { return turned_angle_; };
   bool gap_depth_ok();
   ParkingManeuverMode mode() { return mode_; };
   ParkingManeuverState current_state() { return current_state_; };
@@ -86,7 +88,7 @@ class ParkingManeuver {
   void set_left_lane(bool boolean);
   
  private:
-  Car car_;
+  Car* car_;
   // Private methods
   int perpendicular_standard();
   int parallel_standard();

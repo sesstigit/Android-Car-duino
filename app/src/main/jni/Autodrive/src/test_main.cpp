@@ -79,8 +79,8 @@ int main() {
   }
 }
 
-//return Autodrive::car.ultrasound_.front.get_value();
-//              return Autodrive::car.ultrasound_.frontright.get_value();
+//return Autodrive::car.ultrasound_.front.value();
+//              return Autodrive::car.ultrasound_.frontright.value();
 
 */
 
@@ -117,7 +117,6 @@ cout << "Current car mode is: " << car.mode() << endl;
 cout << "car.set_mode(kParking)" << endl;
 car.set_mode(AutoDriveMode::kParking);
 cout << "Current car mode is: " << car.mode() << endl;
-/*
 cout << "reset_mode()" << endl;
 car.reset_mode();
 cout << "Current car mode is: " << car.mode() << endl;
@@ -127,62 +126,68 @@ cout << "Current car mode is: " << car.mode() << endl;
 cout << "reset_mode()" << endl;
 car.reset_mode();
 cout << "Current car mode is: " << car.mode() << endl;
-cout << "Current ParkingManueverMode is: " << park.mode() << endl;
-park.reset();
-cout << "After reset, current ParkingManueverMode is: " << park.mode() << endl;
-cout << "Current ParkingManueverState is: " << park.current_state() << endl;
-cout << "Current value of _is_left_lane: " << park.is_left_lane() << endl;
-setLeftLane(true);
-cout << "Current value of _is_left_lane: " << park.is_left_lane() << endl;
+cout << "Current ParkingManueverMode is: " << car.parking()->mode() << endl;
+car.parking()->reset();
+cout << "After reset, current ParkingManueverMode is: " << car.parking()->mode() << endl;
+cout << "Current ParkingManueverState is: " << car.parking()->current_state() << endl;
+cout << "Current value of _is_left_lane: " << car.parking()->is_left_lane() << endl;
+car.parking()->set_left_lane(true);
+cout << "Current value of _is_left_lane: " << car.parking()->is_left_lane() << endl;
 cout << "car length is " << car.car_length_ << endl;
 car.car_length_ = 54;
 cout << "car length is " << car.car_length_ << endl;
-cout << "line_LHS_sensor =  " << car.line_LHS_sensor.value() << endl;
-car.line_LHS_sensor.set_value(true)
-cout << "line_LHS_sensor =  " << car.line_LHS_sensor.value() << endl;
-cout << "line_RHS_sensor =  " << car.line_RHS_sensor.value() << endl;
-car.line_RHS_sensor.set_value(true)
-cout << "line_RHS_sensor =  " << car.line_RHS_sensor.value() << endl;
-cout << "Parking gap_depth_ok =  " << park.gap_depth_ok() << endl;
-cout << "Parking inital_gap =  " << park.initial_gap() << endl;
-cout << "Parking gap_length =  " << park.gap_length() << endl;
-cout << "Parking turned angle =  " << park.turned_angle() << endl;
-cout << "Current ParkingManueverMode is: " << static_cast<int>(park.mode()) << endl;
-cout << "Current ParkingManueverState is: " << static_cast<int>(park.current_state()) << endl;
-*/
-/*
-        return Autodrive::car.ultrasound_.front.get_value();
-        return Autodrive::car.ultrasound_.frontright.get_value();
-        return Autodrive::car.ultrasound_.rear.get_value();
-        return Autodrive::car.infrared_.frontright.get_value();
-        return Autodrive::car.infrared_.rearright.get_value();
-        return Autodrive::car.infrared_.rear.get_value();
-        return Autodrive::car.gyro_.get_value();
-    //    return Autodrive::SensorData::razorHeading;
-        Autodrive::car.image_ = (cv::Mat*)newMat;
-                Autodrive::car.ultrasound_.front.set_value(value);
-                Autodrive::car.ultrasound_.frontright.set_value(value);
-                Autodrive::car.ultrasound_.rear.set_value(value);
-                Autodrive::car.infrared_.frontright.set_value(value);
-                Autodrive::car.infrared_.rearright.set_value(value);
-                Autodrive::SensorData::infrared_.rear.set_value(value);
-        Autodrive::car.distance_.set_value(value);
-        Autodrive::car.gyro_.set_value(value);
-    //    Autodrive::SensorData::razorHeading = value;
-        return Autodrive::speedChanged();
-        return Autodrive::angleChanged();
-        return Autodrive::getSpeed();
-        return Autodrive::getAngle();
+cout << "line_LHS_sensor =  " << car.line_LHS_sensor_.value() << endl;
+car.line_LHS_sensor_.set_value(true);
+cout << "line_LHS_sensor =  " << car.line_LHS_sensor_.value() << endl;
+cout << "line_RHS_sensor =  " << car.line_RHS_sensor_.value() << endl;
+car.line_RHS_sensor_.set_value(true);
+cout << "line_RHS_sensor =  " << car.line_RHS_sensor_.value() << endl;
+cout << "Parking gap_depth_ok =  " << car.parking()->gap_depth_ok() << endl;
+cout << "Parking inital_gap =  " << car.parking()->initial_gap() << endl;
+cout << "Parking gap_length =  " << car.parking()->gap_length() << endl;
+cout << "Parking turned angle =  " << car.parking()->turned_angle() << endl;
+cout << "Current ParkingManueverMode is: " << static_cast<int>(car.parking()->mode()) << endl;
+cout << "Current ParkingManueverState is: " << static_cast<int>(car.parking()->current_state()) << endl;
+
+cout << "Ultrasound front, frontright, rear:  " << car.ultrasound_.front.value();
+cout << ", " << car.ultrasound_.frontright.value() << ", " << car.ultrasound_.rear.value() <<endl;
+cout << "Infrared frontright, rearright, rear:  " << car.infrared_.frontright.value();
+cout << ", " << car.infrared_.rearright.value() << ", " << car.infrared_.rear.value() << endl;
+cout << "Speed encoder: " << car.distance_.value() << endl;
+cout << "Gyro reading: " << car.gyro_.value() <<endl;
+//    return Autodrive::SensorData::razorHeading;
+//        Autodrive::car.image_ = (cv::Mat*)newMat;
+car.ultrasound_.front.set_value(100);
+car.ultrasound_.frontright.set_value(90);
+car.ultrasound_.rear.set_value(80);
+car.infrared_.frontright.set_value(70);
+car.infrared_.rearright.set_value(60);
+car.infrared_.rear.set_value(50);
+car.distance_.set_value(40);
+car.gyro_.set_value(30);
+cout << "Ultrasound front, frontright, rear:  " << car.ultrasound_.front.value();
+cout << ", " << car.ultrasound_.frontright.value() << ", " << car.ultrasound_.rear.value() <<endl;
+cout << "Infrared frontright, rearright, rear:  " << car.infrared_.frontright.value();
+cout << ", " << car.infrared_.rearright.value() << ", " << car.infrared_.rear.value() << endl;
+cout << "Speed encoder: " << car.distance_.value() << endl;
+cout << "Gyro reading: " << car.gyro_.value() <<endl;
+
+//    Autodrive::SensorData::razorHeading = value;
+//speedChanged();
+//angleChanged();
+cout << "Motor speed reading: " << car.motor_.value() <<endl;
+cout << "Angle reading: " << car.gyro_.value() <<endl;
+
 	// SETTINGS
-        Autodrive::Settings::normalizeLightning = on;
-        Autodrive::Settings::useLeftLine = on;
-        Autodrive::Settings::smoothening = value;
-        Autodrive::Settings::firstFragmentMaxDist = value;
-        Autodrive::Settings::leftIterationLength = value;
-        Autodrive::Settings::rightIterationLength = value;
-        Autodrive::Settings::maxAngleDiff = value;
-        Autodrive::Settings::kp = value;
-        Autodrive::Settings::ki = value;
-        Autodrive::Settings::kd = value;
-*/
+        conf.normalize_lighting_ = true;
+        conf.use_left_line_ = true;
+        conf.smoothening_ = 0;
+        conf.first_fragment_max_dist_ = 30;
+        conf.left_iteration_length_ = 5;
+        conf.right_iteration_length_ = 6;
+        conf.max_angle_diff_ = 0.7f;
+        conf.kp_ = 0.5;
+        conf.ki_ = 0.0;
+        conf.kd_ = 0.0;
+
 }

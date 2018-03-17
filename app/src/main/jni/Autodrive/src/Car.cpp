@@ -1,14 +1,24 @@
 #include "Car.h"
+#include "ParkingManeuver.h"
+#include "Overtaking.h"
 
 //Constructor
-Car::Car() {
-	initial_mode_ = AutoDriveMode::kSearchingForLanes;
-	mode_ = initial_mode_;
-	car_length_ = 1;  //TODO: initialise this from a saved setting?
-			  // All sensors are objects, so constructor should take care of them.
+Car::Car() :
+  parking_(new ParkingManeuver(this, ParkingManeuverMode::kNoManeuver)),
+  overtaking_(new Overtaking(this)),
+  changed_speed_(false),
+  changed_angle_(false),
+  initial_mode_(AutoDriveMode::kSearchingForLanes),
+  mode_(initial_mode_),
+  car_length_(1)  //TODO: initialise this from a saved setting?
+    // All sensors are objects, so constructor should take care of them.
 	//image_ = nullptr;  //TODO: add this back!
-}
+{};
 
+Car::~Car() {
+    delete parking_;
+    delete overtaking_;
+}
 
 void Car::reset_mode() {
   mode_ = initial_mode_;

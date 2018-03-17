@@ -6,19 +6,21 @@
 #include <string.h>
 #include <math.h>
 
-#include "Autodrive.h"
-
-#include <opencv3/opencv.hpp>
-#include <opencv3/core/core.hpp>
+//#include <opencv3/opencv.hpp>
+//#include <opencv3/core/core.hpp>
 //#include "imageprocessor/imageprocessor.hpp"
 
-using namespace cv;
+//using namespace cv;
+class Car;  //forward declaration
 
 // Overtaking is a subclass of Autodrive because it is one mode of Autodrive.  
-Class Overtaking : public Autodrive {
+class Overtaking {
  public:
-	int run(Mat* mat);
+    Overtaking(Car* ocar);
+	//int run(Mat* mat);
+	int run();
  private:
+    Car* ocar_;
 	bool debug_mode_;
 	int distance_travelled_;
 	bool overtaking_;
@@ -35,6 +37,6 @@ Class Overtaking : public Autodrive {
 	//bool line_LHS_sensor_.value();
 	//bool line_RHS_sensor_.value();
 	bool stop_;
-}
+};
 
 #endif // ANDROIDCARDUINO_AUTODRIVE_OVERTAKING_H_

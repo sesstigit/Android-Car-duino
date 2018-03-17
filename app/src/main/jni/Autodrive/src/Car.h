@@ -2,7 +2,6 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
-//#include "Autodrive.h"
 #include "CarSensor.h"
 //#include <opencv2/core/mat.hpp>
 
@@ -40,19 +39,24 @@ inline std::ostream& operator<<(std::ostream& os, AutoDriveMode a)
     return os;
 }
 
+class ParkingManeuver;  //forward declaration
+class Overtaking;  //forward declaration
+
 // Base Class
 class Car {
  public:
     Car();
-    ~Car() {};
+    ~Car();
     int drive();
     AutoDriveMode mode() { return mode_; }; //getter
+    ParkingManeuver* parking() { return parking_; }; //getter
+    Overtaking* overtaking() { return overtaking_; }; //getter
     void set_initial_mode(AutoDriveMode new_mode); //setter
     void set_mode(AutoDriveMode new_mode); //setter
     void reset_mode();  //setter
     void set_car_length(int car_len);  //setter
 
-    // These need to be public as they are updated externally (e.g. via JNI)
+    // All sensors are public as they are updated externally (e.g. via JNI)
     CarESC motor_;
     CarServo steering_;
     CarSensorDistanceEncoder distance_;
@@ -70,20 +74,20 @@ class Car {
       CarSensorDistanceInfrared rearright;
       CarSensorDistanceInfrared rear;
     } infrared_;
-    //cv::Mat* image_;  TODO: add this back in
-    int car_length_;  //TODO: how can we set this?
-
+    int car_length_;  //TODO: public so it can be set externally (e.g. via JNI)?
 
  private:
   //TODO: Add this back!
   //ImageProcessor img_proc_;
-  
+  ParkingManeuver* parking_; //object with methods for car parking
+  Overtaking* overtaking_;  //object with methods for car overtaking
   bool changed_speed_;  // flag whether Autodrive has changed speed this frame
   bool changed_angle_;  // same, but for angle.
 
   AutoDriveMode initial_mode_;
   AutoDriveMode mode_;
 
+  //cv::Mat* image_;  TODO: add this back in
 };
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_CAR_H_
