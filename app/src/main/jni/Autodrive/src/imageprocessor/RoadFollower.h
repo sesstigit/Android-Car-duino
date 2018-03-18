@@ -13,7 +13,7 @@
 
 using namespace cv;
 
-//class LineFollower;  //forward declaration
+class LineFollower;  //forward declaration
 
 class RoadFollower {
  public:

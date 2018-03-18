@@ -5,7 +5,7 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 	road_size_(40),
 	is_found_(false)
 	{
-	road_builder_ = std::make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY);
+	road_builder_ = std::make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY, img_conf);
 	road_line_ = road_builder_->build(cannied, road_size_);
 	target_road_distance_ = road_line_.get_mean_start_distance(5);
 }

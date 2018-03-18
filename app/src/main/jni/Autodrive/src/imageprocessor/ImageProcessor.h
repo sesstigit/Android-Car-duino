@@ -14,6 +14,8 @@
 
 using namespace std;
 
+class RoadFollower; //forward declaraion.
+
 int intersection_protect = 0;
 
 #define _AUTODRIVE_DILATE

@@ -1,35 +1,30 @@
 #include "RoadLineBuilder.h"
+#include "ImageConfig.h"
 
-
-RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y) :
-    car_y_(car_y),first_start_(start_point), last_start_(start_point), center_x_(center_x)
-{
-    point_dist_ = 4;
-    max_dist_from_start_ = 22;
-    max_upwards_iterations_ = 100;
-    total_gap_ = 0;
+RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf) :
+    car_y_(car_y),first_start_(start_point), last_start_(start_point), center_x_(center_x),
+	img_conf_(img_conf), point_dist_(4), max_dist_from_start_(22), max_upwards_iterations_(100),
+    total_gap_(0) {
 }
 
-RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize)
-{
-    RoadLine road(center_x_, get_first_point(cannied));
+RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {
+    RoadLine road(center_x_, get_first_point(cannied), img_conf_);
     optional<POINT> new_point;
     total_gap_ = 0;
-    while ((new_point = get_next_point(cannied, road.getEstimatedAngle(), road.points.back(),point_dist_)).valid && road.points.size() < maxsize)
+    while ((new_point = get_next_point(cannied, road.get_estimated_angle(), road.back_points(), point_dist_)).valid && road.num_points() < maxsize)
     {
-        if (!road.addPoint(*new_point))
+        if (!road.add_point(*new_point))
             break;
     }
-    road.total_gap_ = total_gap_;
+    road.set_total_gap(total_gap_);
 
     return road;
 }
 
-    
-static SearchResult RoadLineBuilder::find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle,float iteration_reduction = 0)
-{
-    SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, Settings::iteration_reduction_ - iteration_reduction);
-    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, Settings::left_iteration_length_ -iteration_reduction);
+//TODO: was "static" on next line    
+SearchResult RoadLineBuilder::find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle, float iteration_reduction) {
+	SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, (img_conf_->right_iteration_length_ - iteration_reduction));
+    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, (img_conf_->left_iteration_length_ -iteration_reduction));
     if (left_search.found && right_search.found)
     {
         if (left_search.distance <= right_search.distance + 15)
@@ -58,9 +53,9 @@ POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
     POINT start_point = last_start_;
 
     //SEARCH UPWARDS UNTIL HIT
-    while (!searchRes.found && unfound++ < Settings::first_fragment_max_dist_)
+    while (!searchRes.found && unfound++ < img_conf_->first_fragment_max_dist_)
     {
-        searchRes = find_point(cannied, start_point, Direction::LEFT, Direction::RIGHT,Settings::start_point_);
+        searchRes = find_point(cannied, start_point, Direction::LEFT, Direction::RIGHT,img_conf_->iterate_reduce_on_start_);
         if (!searchRes.found)
             start_point.y--;
     }

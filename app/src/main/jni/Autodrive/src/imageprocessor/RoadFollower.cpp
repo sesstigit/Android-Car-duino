@@ -9,8 +9,8 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* im
 	POINT right_line_start = find_line_start(cannied, Direction::RIGHT);
 	POINT left_line_start = find_line_start(cannied, Direction::LEFT);
 
-	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_, img_conf_);
-	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf_);
+	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_, img_conf);
+	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
 }
 
 // TODO: main function here.  Also fix case of variables.
@@ -38,25 +38,25 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 		targetAngle = *rightTargetAngle;
 	}else if(unfound_counter_++ > 5)
 	{
-		 cmd.setAngle(0);
+		 cmd.set_angle(0);
 	}
 	
 	if(targetAngle)
 	{
 		unfound_counter_ = 0;
-		if(Settings::smoothening == 0)
+		if(img_conf_->smoothening_ == 0)
 		{
-			cmd.setAngle(*targetAngle / 25.0);
+			cmd.set_angle(*targetAngle / 25.0);
 		}
 		else
 		{
 			int sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
 			int newAngle = sum / float(prev_dirs_.size() + 1);
 			prev_dirs_.push_back(newAngle);
-			if(prev_dirs_.size() > img_conf_->smoothening)
+			if(prev_dirs_.size() > img_conf_->smoothening_)
 				prev_dirs_.erase(prev_dirs_.begin());
 			
-			cmd.setAngle(newAngle  / 25.0);
+			cmd.set_angle(newAngle  / 25.0);
 		}
 	}
 	
@@ -115,8 +115,8 @@ bool RoadFollower::right_line_found() {
 }
 
 bool RoadFollower::is_left_lane()	{
-	int left_gaps = left_line_follower_->totalGap();
-	int right_gaps = right_line_follower_->totalGap();
+	int left_gaps = left_line_follower_->total_gap();
+	int right_gaps = right_line_follower_->total_gap();
 	return (left_gaps < right_gaps);
 }
 

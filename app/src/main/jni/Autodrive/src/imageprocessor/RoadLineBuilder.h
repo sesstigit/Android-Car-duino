@@ -8,23 +8,26 @@
 //#include "../settings.hpp"
 #include "RoadLine.h"
 
+class ImageConfig;  //forward declaration
+
 class RoadLineBuilder
 {
  public:
-    RoadLineBuilder(POINT start_point, float center_x,int car_y);
+    RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf);
     RoadLine build(const cv::Mat& cannied, size_t maxsize);
 	POINT first_start() { return first_start_; };
 	POINT last_start() { return last_start_; };
 
  private:
-    static const int point_dist_;
-    static const int max_dist_from_start_;
-    static const int max_upwards_iterations_;
+    const int point_dist_;
+    const int max_dist_from_start_;
+    const int max_upwards_iterations_;
     int total_gap_;
     int car_y_;
     POINT first_start_;
     POINT last_start_;
     float center_x_;
+	ImageConfig* img_conf_;
 
     static SearchResult find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle,float iteration_reduction = 0);
     POINT get_first_point(const cv::Mat& cannied);
