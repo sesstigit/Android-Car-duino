@@ -7,7 +7,7 @@
 #include <math.h>
 #include <iostream>
 
-//#include "sensordata.hpp"
+#include "CarCmd.h"
 
 enum class ParkingManeuverMode : unsigned int {
   kNoManeuver = 0,
@@ -63,15 +63,17 @@ inline std::ostream& operator<<(std::ostream& os, ParkingManeuverState m)
  //enum direction { front, back };
 
 class Car; //forward declaration
+class CarCmd;
 
 // ParkingManeuver.
 class ParkingManeuver {
  public:
   ParkingManeuver(Car* c, ParkingManeuverMode m);  // constructor
   ParkingManeuver(Car* c);  // constructor
-  // Commands
-  int park();
+  // Calculations
+  CarCmd park();
   void reset();
+  void calc_parking_maneuver_mode();
 
   // getters
   bool is_stopped();
@@ -86,6 +88,7 @@ class ParkingManeuver {
   bool is_left_lane() { return is_left_lane_; };
   //setters
   void set_left_lane(bool boolean);
+  void set_mode(ParkingManeuverMode new_mode);
   
  private:
   Car* car_;
@@ -93,7 +96,6 @@ class ParkingManeuver {
   int perpendicular_standard();
   int parallel_standard();
   int parallel_wide();
-  void calc_parking_maneuver_mode();
   void calc_gap_length();
   // Private members
   // the selected maneuver
@@ -104,10 +106,6 @@ class ParkingManeuver {
   int gap_length_;
   int gap_start_;
   bool initial_gap_;
-
-  const double slow_speed_;
-  const double normal_speed_;
-  const double backwards_speed_;
 
   // measuring distance travelled
   bool measuring_distance_;

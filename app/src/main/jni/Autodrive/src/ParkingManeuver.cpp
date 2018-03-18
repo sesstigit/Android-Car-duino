@@ -13,9 +13,6 @@ ParkingManeuver::ParkingManeuver(Car* c, ParkingManeuverMode m) :
   start_angle_(0),
   turned_angle_(0),
   remaining_angle_(0),
-  slow_speed_(0.26),
-  normal_speed_(0.28),
-  backwards_speed_(-0.65),
   gap_length_(0),
   gap_start_(0),
   initial_gap_(true) {};
@@ -26,6 +23,10 @@ ParkingManeuver::ParkingManeuver(Car* c) :
 
 void ParkingManeuver::set_left_lane(bool boolean) {
   is_left_lane_ = boolean;
+}
+
+void set_mode(ParkingManeuverMode new_mode) {
+	mode_ = new_mode;
 }
 
 // is the car stopped 
@@ -74,9 +75,11 @@ bool ParkingManeuver::has_turned_angle(int desired_angle){
   }
 }
 
-// returns the appropriate command depending on the current maneuver and its state
+// returns the appropriate CarCmd depending on the current maneuver and its state
 //TODO: what should this return?
-int ParkingManeuver::park(){
+CarCmd ParkingManeuver::park(){
+	CarCmd cmd;
+
   if (current_state_ == ParkingManeuverState::kDone) {
 	mode_ = ParkingManeuverMode::kNoManeuver;
   }
@@ -88,71 +91,73 @@ int ParkingManeuver::park(){
     case ParkingManeuverMode::kPerpendicularStandard:
       return perpendicular_standard();
 	case ParkingManeuverMode::kNoManeuver:
-	  return 0;
+	  return cmd;  //return zero speed, zero angle
     default:
-      return 1;
+      return cmd;  //return zero speed, zero angle
   }
 }
 
 // the procedure for perpendicular parking
-int ParkingManeuver::perpendicular_standard() {
-  int ret = 0;  //return an int value
+CarCmd ParkingManeuver::perpendicular_standard() {
+  CarCmd cmd;
+
   switch (current_state_) {
 	case ParkingManeuverState::kNotMoving:
 		if (has_travelled_distance(0.25*car_->car_length_)) {
 			current_state_ = ParkingManeuverState::kBackwardRight;
 		} else {
-			car_->motor_.set_value(slow_speed_);
+			cmd.set_speed(car_->slow_speed_);
 		}
 		break;
 	case ParkingManeuverState::kBackwardRight:
-		car_->motor_.set_value(backwards_speed_);
+		cmd.set_speed(car_->backwards_speed_);
 		if (has_turned_angle(80)){
 			current_state_ = ParkingManeuverState::kDone;
-			car_->motor_.set_value(0);
+			cmd.set_speed(0);
 		} else {
-			car_->steering_.set_value(1.0);
+			cmd.set_angle(1.0);
 		}
 		break;
 	default:
-		ret = 1;
+		cmd.set_speed(0);
 	}
-	return ret;
+	return cmd;
 }
 		
 // the procedure for parallel parking
 int ParkingManeuver::parallel_standard(){
-	int ret = 0;
+	CarCmd cmd;
+
 	switch(current_state_){
 		case ParkingManeuverState::kNotMoving:
 			if (has_travelled_distance(0.5*car_->car_length_)) {
 				current_state_ = ParkingManeuverState::kBackwardRight;
 			} else {
-				car_->motor_.set_value(slow_speed_);
+				cmd.set_speed(car_->slow_speed_);
 			}
 			break;
 		case ParkingManeuverState::kBackwardRight:
 			if (has_turned_angle(50)) { // to compensate for right left turn diffs
 				current_state_ = ParkingManeuverState::kBackwardLeft;
-				car_->motor_.set_value(0);
+				cmd.set_speed(0);
 			} else {
-				car_->steering_.set_value(1.0);
-				car_->motor_.set_value(backwards_speed_);
+				cmd.set_angle(1.0);
+				cmd.set_speed(car_->backwards_speed_);
 			}
 			break;
 		case ParkingManeuverState::kBackwardLeft:
 			if (has_turned_angle(50)) {
 				current_state_ = ParkingManeuverState::kDone;
-				car_->motor_.set_value(0);
+				cmd.set_speed(0);
 			} else {
-				car_->steering_.set_value(-1.0);
-				car_->motor_.set_value(backwards_speed_);
+				cmd.set_angle(-1.0);
+				cmd.set_speed(car_->backwards_speed_);
 			}
 			
 			if ((car_->infrared_.rear.value() > 0 && car_->infrared_.rear.value() < 25) ||
 				(car_->ultrasound_.rear.value() > 0 && car_->ultrasound_.rear.value() < 25)) {
 				// emergency stop maneuver
-				car_->motor_.set_value(0);
+				cmd.set_speed(0);
 				// calculate remaining angle
 				remaining_angle_ = 45 - turned_angle_; // err if the car turns in several directions
 				measuring_angle_ = false;
@@ -164,53 +169,54 @@ int ParkingManeuver::parallel_standard(){
 			if (has_turned_angle(remaining_angle_) ||
 			   (car_->ultrasound_.front.value() > 0 && car_->ultrasound_.front.value() < 25)) {
 				current_state_ = ParkingManeuverState::kDone;
-				car_->motor_.set_value(0);
-				car_->steering_.set_value(0);
+				cmd.set_speed(0);
+				cmd.set_angle(0);
 			} else {
-				car_->motor_.set_value(slow_speed_);
-				car_->steering_.set_value(1);
+				cmd.set_speed(car_->slow_speed_);
+				cmd.set_angle(1);
 			}
 			break;
 		default:
-			ret = 1;
+			cmd.set_speed(0);
 	}
-	return ret;
+	return cmd;
 }
 
 // extra procedure for parallel parking
 int ParkingManeuver::parallel_wide(){
-	int ret = 0;  //return int value
+	CarCmd cmd;
+
 	switch (current_state_) {
 		case ParkingManeuverState::kNotMoving:
 			if (is_stopped()) {
 				current_state_ = ParkingManeuverState::kForwardRight;
 			} else {
-				car_->motor_.set_value(0);
+				cmd.set_speed(0);
 			}
 			break;
 		case ParkingManeuverState::kForwardRight:
 			if (has_turned_angle(60)) {
 				current_state_ = ParkingManeuverState::kForwardLeft;
-				car_->motor_.set_value(0);
+				cmd.set_speed(0);
 			} else {
-				car_->motor_.set_value(slow_speed_);
-				car_->steering_.set_value(1.0);
+				cmd.set_speed(car_->slow_speed_);
+				cmd.set_angle(1.0);
 			}
 			break;
 		case ParkingManeuverState::kForwardLeft:
 			if (has_turned_angle(60)) {
 				current_state_ = ParkingManeuverState::kDone;
-				car_->motor_.set_value(0);
-				car_->steering_.set_value(0);
+				cmd.set_speed(0);
+				cmd.set_angle(0);
 			} else {
-				car_->motor_.set_value(slow_speed_);
-				car_->steering_.set_value(-1.0);
+				cmd.set_speed(car_->slow_speed_);
+				cmd.set_angle(-1.0);
 			}
 			break;
 		default:
-			ret = 1;
+			cmd.set_speed(0);
 	}
-	return ret;
+	return cmd;
 }
 
 // measure the length of a gap???

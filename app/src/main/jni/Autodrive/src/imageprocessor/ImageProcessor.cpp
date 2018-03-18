@@ -1,26 +1,32 @@
+#include "ImageProcessor.h"
+#include "BirdseyeTransformer.h"
+
 ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	img_conf_(img_conf),
 	thresh1_(181),
 	thresh2_(71),
 	intensity_(110),
 	blur_i_(11),
-	road_follower_(nullptr),
-	perspective_(nullptr),
-	start_center_(nullptr)
+	road_follower_(nullptr) {
 }
+//Note: did not initialise the following class members
+//perspective_(nullptr),  
+//start_center_(POINT(0.f, 0.f))
 
 //TODO: why is mat a pointer here, but a reference in next function?
 bool ImageProcessor::init_processing(cv::Mat* mat) {
-	auto found_pespective = find_perspective(mat);
+	BirdseyeTransformer xformer;
+	auto found_pespective = xformer.find_perspective(mat);
 	if (found_pespective)
 	{
 		perspective_ = *found_pespective;
-		birds_eye_transform(mat, perspective_);
+		xformer.birds_eye_transform(mat, perspective_);
 		if (img_conf_->normalize_lighting_)
 			normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 		cv::Mat cannied_mat;
 		cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
-		roadFollower = make_unique<roadfollower>(cannied_mat, mat->size().width / 2.f + centerDiff);
+		int the_center = static_cast<int>(mat->size().width / 2.f + xformer.center_diff());
+		road_follower_ = std::make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
 		return true;
 	} else{
 		cv::putText(*mat, "SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat->size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
@@ -29,42 +35,44 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 }
 
 
-int ImageProcessor::continue_processing(cv::Mat& mat)
+CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 {
-	birds_eye_transform(&mat, perspective_);
+	BirdseyeTransformer xformer;
+	xformer.birds_eye_transform(&mat, perspective_);
 	if (img_conf_->normalize_lighting_)
 		normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 
 	cv::Mat cannied_mat;
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
 
-	/* PAINT OVER BORDER ARTEFACTS FROM TRANSFORM*/
-	leftImageBorder.draw(cannied_mat, cv::Scalar(0, 0, 0), Settings::transformLineRemovalThreshold);
-	rightImageBorder.draw(cannied_mat, cv::Scalar(0, 0, 0), Settings::transformLineRemovalThreshold);
+	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM
+	xformer.left_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
+	xformer.right_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	
-	//TODO: get rid of command object.  But then how can we tell whethter the angle has changed?
-	command cmnd = roadFollower->update(cannied_mat, mat);
+	//TODO: get rid of CarCmd object.  But then how can we tell whethter the angle has changed?
+	CarCmd cmnd = road_follower_->update(cannied_mat, mat);
 	float angle =  Direction::FORWARD;
 
-	if (cmnd.changedAngle)
+	if (cmnd.changed_angle())
 	{
-		//TODO: *15 really needed
-		angle = ((90 - cmnd.angle*15)* Autodrive::Mathf::PI) / 180.f ;
+		//TODO: *15 really needed.  Mathf was prepended by Autodrive::
+		angle = static_cast<float>(((90.0 - cmnd.angle()*15.0)* Mathf::PI) / 180.f);
 	}
 
 	POINT center(mat.size().width / 2.f, (float) mat.size().height);
-	Autodrive::linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 250, 0));
+	//was Autodrive::
+	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 250, 0));
 	return cmnd;
 }
 
 bool ImageProcessor::left_line_found()
 {
-	return roadFollower->left_line_found();
+	return road_follower_->left_line_found();
 }
 
 bool ImageProcessor::right_line_found()
 {
-	return roadFollower->right_line_found();
+	return road_follower_->right_line_found();
 }
 
 /*
@@ -76,7 +84,7 @@ bool ImageProcessor::is_left_lane()
 	if (! left_line_found() || ! right_line_found())
 		return false;
 	else
-		return roadFollower->is_left_lane();
+		return road_follower_->is_left_lane();
 }
 
 /*
@@ -87,11 +95,11 @@ bool ImageProcessor::is_right_lane()
 	if (! left_line_found() || ! right_line_found())
 		return false;
 	else
-		return roadFollower->is_right_lane();
+		return road_follower_->is_right_lane();
 }
 
 int ImageProcessor::dashed_line_gaps() {
-	return roadFollower->dashed_line_gaps();
+	return road_follower_->dashed_line_gaps();
 }
 
 void normalize_lighting(cv::Mat* bgr_image,int blur = 20,float intensity = 0.5f)

@@ -45,7 +45,7 @@ class Car {
  public:
     Car();
     ~Car();
-    int drive();
+    void drive();
     AutoDriveMode mode() { return mode_; }; //getter
     ParkingManeuver* parking() { return parking_; }; //getter
     Overtaking* overtaking() { return overtaking_; }; //getter
@@ -73,9 +73,12 @@ class Car {
       CarSensorDistanceInfrared rear;
     } infrared_;
     int car_length_;  //public so it can be set externally (e.g. via JNI).  Not ideal.
+	const double slow_speed_;
+	const double normal_speed_;
+	const double backwards_speed_;
 
  private:
-  ImageConfig* img_conf;
+  ImageConfig* img_conf_;
   ImageProcessor* img_proc_;
   ParkingManeuver* parking_; //object with methods for car parking
   Overtaking* overtaking_;  //object with methods for car overtaking

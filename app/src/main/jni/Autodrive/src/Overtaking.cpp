@@ -21,12 +21,11 @@ Overtaking::Overtaking(Car* ocar) :
 	stop_(false) {
 }
 
-//First parameter was "command lastCommand".  Is that still necessary?
-//int Overtaking::run(Mat* mat) {
-int Overtaking::run() {
-  ocar_->motor_.set_value(0.35);
+
+int Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
+  lastCarCmd.set_speed(0.35);
   if (stop_) {
-	ocar_->motor_.set_value(0);
+	lastCarCmd.set_speed(0);
   }
 
   // Check whether there is an obstacle in front.
@@ -43,7 +42,7 @@ int Overtaking::run() {
 
   if (overtaking_) { // obstacle spotted, start turning left
 	if (turn_left_ > 0) {
-		ocar_->steering_.set_value(-1);
+		lastCarCmd.set_angle(-1);
 
 		if (ocar_->line_RHS_sensor_.value()) {
 			turn_left_ = 0;
@@ -70,7 +69,7 @@ int Overtaking::run() {
 		}
 	}
 	if (turn_left_calibration_) {
-		ocar_->steering_.set_value(1);
+		lastCarCmd.set_angle(1);
 		if (distance_travelled_ - turn_left_calibration_ > 15) { // turn a bit to the right for 15cm to calibrate for easier lane following
 			turn_left_calibration_ = 0;
 			turn_left_calibration_finished_ = true;
@@ -97,7 +96,7 @@ int Overtaking::run() {
 		}
 
 		if (turn_right_) {
-			ocar_->steering_.set_value(1);
+			lastCarCmd.set_angle(1);
 			if (ocar_->line_LHS_sensor_.value()) {
 				turn_right_ = 0;
 				if (turn_right_calibration_ == 0) {
@@ -120,7 +119,7 @@ int Overtaking::run() {
 			}
 		}
 		if (turn_right_calibration_) {
-			ocar_->steering_.set_value(-1);;
+			lastCarCmd.set_angle(-1);
 			if (distance_travelled_ - turn_right_calibration_ > 20) { // turn a bit to the left for 20cm to calibrate for easier lane following
 				turn_right_calibration_ = 0;
 				obstacle_met_ = false;
@@ -129,9 +128,9 @@ int Overtaking::run() {
 			}
 		}
 	}
-}
-/*
-if (debug_mode_) {
+  }
+
+  if (debug_mode_) {
 	if (overtaking_) {
 		cv::putText(*mat, "overtaking_", POINT(50.f, mat->size().height / 6.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 
@@ -163,7 +162,7 @@ if (debug_mode_) {
 	if (stop_) {
 		cv::putText(*mat, "stop_ped", POINT(50.f, mat->size().height / 6.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 	}
-}
-*/
-return 0;
+  }
+
+return lastCarCmd;
 }

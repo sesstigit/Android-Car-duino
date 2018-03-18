@@ -1,4 +1,4 @@
-pragma once
+#pragma once
 
 #ifndef ANDROIDCARDUINO_AUTODRIVE_ROADLINEBUILDER_H_
 #define ANDROIDCARDUINO_AUTODRIVE_ROADLINEBUILDER_H_
@@ -8,12 +8,14 @@ pragma once
 //#include "../settings.hpp"
 #include "RoadLine.h"
 
-Class RoadLineBuilder
+class RoadLineBuilder
 {
  public:
     RoadLineBuilder(POINT start_point, float center_x,int car_y);
     RoadLine build(const cv::Mat& cannied, size_t maxsize);
-    
+	POINT first_start() { return first_start_; };
+	POINT last_start() { return last_start_; };
+
  private:
     static const int point_dist_;
     static const int max_dist_from_start_;

@@ -1,9 +1,13 @@
 #pragma once
+
+#ifndef ANDROIDCARDUINO_AUTODRIVE_UTIL_H_
+#define ANDROIDCARDUINO_AUTODRIVE_UTIL_H_
+
 #include <opencv2/core/core.hpp>
 #include <memory>
 
-namespace Autodrive
-{
+//namespace Autodrive
+//{
     using POINT = cv::Point2f;
     using UINT = unsigned int;
 
@@ -84,4 +88,6 @@ namespace Autodrive
 
     template<class numeric_t>
     numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier);
-}
+//}
+
+#endif //ANDROIDCARDUINO_AUTODRIVE_UTIL_H_

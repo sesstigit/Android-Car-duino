@@ -1,33 +1,36 @@
 #include "RoadFollower.h"
 
-RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x) : center_x_(center_x) {
+RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* img_conf) :
+	center_x_(center_x),
+	img_conf_(img_conf),
+	unfound_counter_(0) {
+
 	car_y_ = find_car_end(cannied);
 	POINT right_line_start = find_line_start(cannied, Direction::RIGHT);
 	POINT left_line_start = find_line_start(cannied, Direction::LEFT);
 
-	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_);
-	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_);
+	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_, img_conf_);
+	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf_);
 }
 
-// TODO: main function here.  Fix how the function returns a command object.  Also fix Settings.  Also fix case of variables.
-command update(cv::Mat& cannied, cv::Mat& drawMat)
-{
-	command cmd;
-
+// TODO: main function here.  Also fix case of variables.
+CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
+	CarCmd cmd;
+	
 	left_line_follower_->update(cannied);
 	right_line_follower_->update(cannied);
 
 	drawMat = draw(cannied);
 
-	optional<int> leftTargetAngle = left_line_follower_->getPreferedAngle();
-	optional<int> rightTargetAngle = right_line_follower_->getPreferedAngle();
+	optional<int> leftTargetAngle = left_line_follower_->get_prefered_angle();
+	optional<int> rightTargetAngle = right_line_follower_->get_prefered_angle();
 	optional<int> targetAngle = nullptr;
-
-	if (leftTargetAngle && rightTargetAngle && Settings::useLeftLine)
+	
+	if (leftTargetAngle && rightTargetAngle && img_conf_->use_left_line_)
 	{
 		// Give the right line just a bit more priority since it seems more reliable
 		targetAngle = weighted_average(*rightTargetAngle, *leftTargetAngle, 3);
-	} else if (leftTargetAngle && Settings::useLeftLine)
+	} else if (leftTargetAngle && img_conf_->use_left_line_)
 	{
 		targetAngle = *leftTargetAngle;
 	} else if (rightTargetAngle)
@@ -50,7 +53,7 @@ command update(cv::Mat& cannied, cv::Mat& drawMat)
 			int sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
 			int newAngle = sum / float(prev_dirs_.size() + 1);
 			prev_dirs_.push_back(newAngle);
-			if(prev_dirs_.size() > Settings::smoothening)
+			if(prev_dirs_.size() > img_conf_->smoothening)
 				prev_dirs_.erase(prev_dirs_.begin());
 			
 			cmd.setAngle(newAngle  / 25.0);

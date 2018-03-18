@@ -5,20 +5,22 @@
 
 #include <string.h>
 #include <math.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 
-//#include <opencv3/opencv.hpp>
-//#include <opencv3/core/core.hpp>
-//#include "imageprocessor/imageprocessor.hpp"
+#include "CarCmd.h"
+#include "imageprocessor/ImageProcessor.h"
 
-//using namespace cv;
+using namespace cv;
+
 class Car;  //forward declaration
 
 // Overtaking is a subclass of Autodrive because it is one mode of Autodrive.  
 class Overtaking {
  public:
     Overtaking(Car* ocar);
-	//int run(Mat* mat);
-	int run();
+	CarCmd run(CarCmd lastCarCmd, Mat* mat);
+	//int run();
  private:
     Car* ocar_;
 	bool debug_mode_;
