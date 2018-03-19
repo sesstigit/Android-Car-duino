@@ -17,6 +17,7 @@
  
 #include <string.h>
 #include "CarCmd.h"
+using namespace Autodrive;
 
 CarCmd::CarCmd() :
 	//changed_angle_(false),

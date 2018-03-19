@@ -18,6 +18,8 @@
 #include "ParkingManeuver.h"
 #include "Car.h"
 
+using namespace Autodrive;
+
   // constructor 
 ParkingManeuver::ParkingManeuver(Car* c, ParkingManeuverMode m) :
   car_(c),
@@ -307,4 +309,3 @@ void ParkingManeuver::calc_parking_maneuver_mode() {
     mode_ = ParkingManeuverMode::kNoManeuver;
   }
 }									
-sound_.frontright.value() 

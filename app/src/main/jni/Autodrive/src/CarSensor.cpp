@@ -20,7 +20,8 @@
 
 #include "CarSensor.h"
 
-using namespace std;
+//using namespace std;
+using namespace Autodrive;
 
 //*****************************************************************************
 // Class: CarSensor

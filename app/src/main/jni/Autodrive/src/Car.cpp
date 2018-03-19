@@ -21,6 +21,8 @@
 #include "imageprocessor/ImageProcessor.h"
 #include "CarCmd.h"
 
+using namespace Autodrive;
+
 //Constructor
 Car::Car() :
   img_conf_(new ImageConfig()),

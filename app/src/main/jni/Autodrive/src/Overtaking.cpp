@@ -18,6 +18,8 @@
 #include "Overtaking.h"
 #include "Car.h"
 
+using namespace Autodrive;
+
 Overtaking::Overtaking(Car* ocar) :
     ocar_(ocar),
 	debug_mode_(true),
@@ -161,13 +163,13 @@ CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 	}
 
 	char turningLeftText[50];
-	sprintf(turningLeftText, "turning left: %d", turn_left_);
+	sprintf_s(turningLeftText, "turning left: %d", turn_left_);
 	if (turn_left_) {
 		cv::putText(*mat, turningLeftText, POINT(50.f, mat->size().height / 4.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 	}
 
 	char turningRightText[50];
-	sprintf(turningRightText, "turning right: %d", turn_right_);
+	sprintf_s(turningRightText, "turning right: %d", turn_right_);
 	if (turn_right_) {
 		cv::putText(*mat, turningRightText, POINT(50.f, mat->size().height / 4.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 	}
