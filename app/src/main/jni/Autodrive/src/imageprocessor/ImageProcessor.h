@@ -10,7 +10,7 @@
 #include "Util.h"
 #include "RoadFollower.h"
 #include "BirdseyeTransformer.h"
-#include "../CarCmd.h"
+#include "CarCmd.h"
 
 using namespace std;
 

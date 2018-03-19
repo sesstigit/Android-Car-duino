@@ -53,6 +53,7 @@ class Car {
     ParkingManeuver* parking() { return parking_; }; //getter
     Overtaking* overtaking() { return overtaking_; }; //getter
     ImageConfig* img_conf() { return img_conf_; }; //getter
+    ImageProcessor* img_proc() { return img_proc_; }; //getter
     void set_initial_mode(AutoDriveMode new_mode); //setter
     void set_mode(AutoDriveMode new_mode); //setter
     void reset_mode();  //setter

@@ -5,7 +5,6 @@
 
 #include "Line.h"
 #include "Util.h"
-//#include "../settings.hpp"
 #include "RoadLine.h"
 
 class ImageConfig;  //forward declaration
