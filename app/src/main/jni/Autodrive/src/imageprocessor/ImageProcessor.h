@@ -16,7 +16,8 @@ using namespace std;
 
 class RoadFollower; //forward declaraion.
 
-int intersection_protect = 0;
+//TODO: what was this used for?  It is also a variable used in opencv.
+//int intersection_protect = 0;
 
 #define _AUTODRIVE_DILATE
 #define _DEBUG

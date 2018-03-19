@@ -28,8 +28,8 @@ class RoadLineBuilder
     POINT last_start_;
     float center_x_;
 	ImageConfig* img_conf_;
-
-    static SearchResult find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle,float iteration_reduction = 0);
+    //was static on next line
+    SearchResult find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle,float iteration_reduction = 0);
     POINT get_first_point(const cv::Mat& cannied);
     optional<POINT> get_next_point(const cv::Mat& cannied, float est_angle, const POINT& prev_point,int delta);
     

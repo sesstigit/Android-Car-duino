@@ -179,15 +179,15 @@ cout << "Motor speed reading: " << car.motor_.value() <<endl;
 cout << "Angle reading: " << car.gyro_.value() <<endl;
 
 	// SETTINGS
-        conf.normalize_lighting_ = true;
-        conf.use_left_line_ = true;
-        conf.smoothening_ = 0;
-        conf.first_fragment_max_dist_ = 30;
-        conf.left_iteration_length_ = 5;
-        conf.right_iteration_length_ = 6;
-        conf.max_angle_diff_ = 0.7f;
-        conf.kp_ = 0.5;
-        conf.ki_ = 0.0;
-        conf.kd_ = 0.0;
+car.img_conf()->normalize_lighting_ = true;
+car.img_conf()->use_left_line_ = true;
+car.img_conf()->smoothening_ = 0;
+car.img_conf()->first_fragment_max_dist_ = 30;
+car.img_conf()->left_iteration_length_ = 5;
+car.img_conf()->right_iteration_length_ = 6;
+car.img_conf()->max_angle_diff_ = 0.7f;
+car.img_conf()->kp_ = 0.5;
+car.img_conf()->ki_ = 0.0;
+car.img_conf()->kd_ = 0.0;
 
 }

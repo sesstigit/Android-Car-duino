@@ -1,3 +1,4 @@
+#include "Util.h"
 
 const float Mathf::PI = acosf(-1);
 const float Mathf::PI_2 = PI / 2.f;
@@ -46,7 +47,7 @@ optional<cv::Point> firstnonzero_horizontal(const cv::Mat& mat, cv::Point iterat
 	return nullptr;
 }
 
-    
+template <class numeric_t>
 numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier)
 {
 	return (val1*val1_multiplier + val2) / (val1_multiplier + 1);

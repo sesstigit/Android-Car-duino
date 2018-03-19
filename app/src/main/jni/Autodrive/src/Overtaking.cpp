@@ -22,7 +22,7 @@ Overtaking::Overtaking(Car* ocar) :
 }
 
 
-int Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
+CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
   lastCarCmd.set_speed(0.35);
   if (stop_) {
 	lastCarCmd.set_speed(0);
@@ -134,11 +134,11 @@ int Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 	if (overtaking_) {
 		cv::putText(*mat, "overtaking_", POINT(50.f, mat->size().height / 6.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 
-		if (line_LHS_sensor_.value()) {
+		if (ocar_->line_LHS_sensor_.value()) {
 			cv::putText(*mat, "line LEFT found", POINT(50.f, mat->size().height / 2.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		}
 
-		if (line_RHS_sensor_.value()) {
+		if (ocar_->line_RHS_sensor_.value()) {
 			cv::putText(*mat, "line RIGHT found", POINT(50.f, mat->size().height / 2.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		}
 	}

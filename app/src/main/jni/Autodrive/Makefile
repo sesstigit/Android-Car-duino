@@ -8,28 +8,21 @@ CPPFLAGS=-g -std=c++11
 LDFLAGS=-g -std=c++11 
 #-v #add this to LDFLAGS for verbosity
 #LDLIBS=$(shell root-config --libs)
-LDLIBS=-lm
+LDLIBS=$(shell pkg-config opencv --libs)
 
-SRCDIR=./src
-SRCS=$(SRCDIR)/test_main.cpp $(SRCDIR)/CarSensor.cpp $(SRCDIR)/Car.cpp $(SRCDIR)/ParkingManeuver.cpp $(SRCDIR)/Overtaking.cpp $(SRCDIR)/imageprocessor/ImageConfig.cpp
+SRCDIR1=./src
+SRCDIR2=./src/imageprocessor
+SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 all: test_main docs
 
+# Perhaps add LDLIBS to this?
 test_main: $(OBJS)
-	$(CXX) $(LDFLAGS) -o test_main $(OBJS) $(LDLIBS) 
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-test_main.o: test_main.cpp Autodrive.h
-
-CarSensor.o: CarSensor.h CarSensor.cpp
-	
-Car.o: Car.h Car.cpp 
-
-ParkingManeuver.o: ParkingManeuver.h ParkingManeuver.cpp 
-
-Overtaking.o: Overtaking.h Overtaking.cpp
-
-ImageConfig.o: ImageConfig.h ImageConfig.cpp
+%.o: %.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 doxyfile.inc: Makefile
 	echo INPUT = $(SRCDIR) > doxyfile.inc
@@ -44,3 +37,6 @@ clean:
 
 distclean: clean
 	$(RM) test_main
+
+CXXFLAGS += -MMD
+-include $(OBJ_FILES:.o=.d)

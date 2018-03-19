@@ -7,7 +7,7 @@
 #include <opencv2/core/core.hpp>
 
 #include "LineFollower.h"
-#include "..\CarCmd.h"
+#include "../CarCmd.h"
 #include "ImageConfig.h"
 #include "Util.h"
 

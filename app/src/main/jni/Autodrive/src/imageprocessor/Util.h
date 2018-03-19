@@ -3,7 +3,10 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_UTIL_H_
 #define ANDROIDCARDUINO_AUTODRIVE_UTIL_H_
 
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/mat.hpp>
+
 #include <memory>
 
 //namespace Autodrive
@@ -73,19 +76,8 @@
 
     SearchResult firstnonzero_direction(const cv::Mat& mat, cv::Point_ < float > start, float direction, int maxDist);
 	
-    optional<cv::Point> firstnonzero_horizontal(const cv::Mat& mat, cv::Point iterator)
-    {
-        while (iterator.x < mat.size().width - 1)
-        {
-            if (mat.at<uchar>(iterator) != 0)
-            {
-                return iterator;
-            }
-            iterator.x++;
-        }
-        return nullptr;
-    }
-
+    optional<cv::Point> firstnonzero_horizontal(const cv::Mat& mat, cv::Point iterator);
+    
     template<class numeric_t>
     numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier);
 //}

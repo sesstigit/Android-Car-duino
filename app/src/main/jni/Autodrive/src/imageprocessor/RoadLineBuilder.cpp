@@ -2,9 +2,9 @@
 #include "ImageConfig.h"
 
 RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf) :
-    car_y_(car_y),first_start_(start_point), last_start_(start_point), center_x_(center_x),
-	img_conf_(img_conf), point_dist_(4), max_dist_from_start_(22), max_upwards_iterations_(100),
-    total_gap_(0) {
+    first_start_(start_point), last_start_(start_point), center_x_(center_x),
+	car_y_(car_y), img_conf_(img_conf), point_dist_(4), 
+	max_dist_from_start_(22), max_upwards_iterations_(100), total_gap_(0) {
 }
 
 RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {

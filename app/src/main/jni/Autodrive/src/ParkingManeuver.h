@@ -63,7 +63,7 @@ inline std::ostream& operator<<(std::ostream& os, ParkingManeuverState m)
  //enum direction { front, back };
 
 class Car; //forward declaration
-class CarCmd;
+class CarCmd; //forward declaration
 
 // ParkingManeuver.
 class ParkingManeuver {
@@ -93,9 +93,9 @@ class ParkingManeuver {
  private:
   Car* car_;
   // Private methods
-  int perpendicular_standard();
-  int parallel_standard();
-  int parallel_wide();
+  CarCmd perpendicular_standard();
+  CarCmd parallel_standard();
+  CarCmd parallel_wide();
   void calc_gap_length();
   // Private members
   // the selected maneuver

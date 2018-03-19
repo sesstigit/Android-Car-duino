@@ -10,9 +10,9 @@
 template <class numeric_t>
 class Line {
  public:
-	 using pointT = cv::Point_ < numeric_t >;
-	 using vecT = cv::Vec < numeric_t, 4 >;
-	 using limitsT = std::numeric_limits < numeric_t >;
+	using pointT = cv::Point_ < numeric_t >;
+	using vecT = cv::Vec < numeric_t, 4 >;
+	using limitsT = std::numeric_limits < numeric_t >;
 
 	Line(vecT pointVector);
 	Line(pointT pointBegin, pointT pointEnd);
@@ -25,12 +25,12 @@ class Line {
 	float direction_fixed_half();
 	void draw(cv::Mat& mat, cv::Scalar color = cv::Scalar(0, 255, 0), int thickness = 1);
 	float length();
+	float length2();
 	pointT begin;
 	pointT end;
 	float k;
 
  private:
-	float length2();
 	float direction();
 	bool differs_less_than_from(Line<numeric_t> line2, numeric_t m_diff, numeric_t k_diff);
 	float m;

@@ -45,7 +45,7 @@ float Line<numeric_t>::length2() {
 }
 
 template <class numeric_t>
-void Line<numeric_t>::draw(cv::Mat& mat, cv::Scalar color = cv::Scalar(0, 255, 0), int thickness = 1) {
+void Line<numeric_t>::draw(cv::Mat& mat, cv::Scalar color, int thickness) {
 	cv::line(mat, begin, end, color, thickness);
 }
 

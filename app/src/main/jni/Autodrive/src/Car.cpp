@@ -2,6 +2,7 @@
 #include "ParkingManeuver.h"
 #include "Overtaking.h"
 #include "imageprocessor/ImageProcessor.h"
+#include "CarCmd.h"
 
 //Constructor
 Car::Car() :
@@ -110,8 +111,7 @@ void Car::drive() {
   }
   if (lastCarCmd.angle() == steering_.value()) {
 	  changed_angle_ = false;
-  }
-  else {
+  } else {
 	  changed_angle_ = true;
 	  steering_.set_value(lastCarCmd.angle());
   }

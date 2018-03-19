@@ -2,7 +2,10 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 #include <opencv2/core/mat.hpp>
+
 #include "CarSensor.h"
 
 
@@ -49,6 +52,7 @@ class Car {
     AutoDriveMode mode() { return mode_; }; //getter
     ParkingManeuver* parking() { return parking_; }; //getter
     Overtaking* overtaking() { return overtaking_; }; //getter
+    ImageConfig* img_conf() { return img_conf_; }; //getter
     void set_initial_mode(AutoDriveMode new_mode); //setter
     void set_mode(AutoDriveMode new_mode); //setter
     void reset_mode();  //setter

@@ -19,13 +19,15 @@ ParkingManeuver::ParkingManeuver(Car* c, ParkingManeuverMode m) :
 
 ParkingManeuver::ParkingManeuver(Car* c) : 
   ParkingManeuver(c, ParkingManeuverMode::kNoManeuver)
-  {};
+  {
+
+}
 
 void ParkingManeuver::set_left_lane(bool boolean) {
   is_left_lane_ = boolean;
 }
 
-void set_mode(ParkingManeuverMode new_mode) {
+void ParkingManeuver::set_mode(ParkingManeuverMode new_mode) {
 	mode_ = new_mode;
 }
 
@@ -125,7 +127,7 @@ CarCmd ParkingManeuver::perpendicular_standard() {
 }
 		
 // the procedure for parallel parking
-int ParkingManeuver::parallel_standard(){
+CarCmd ParkingManeuver::parallel_standard(){
 	CarCmd cmd;
 
 	switch(current_state_){
@@ -183,7 +185,7 @@ int ParkingManeuver::parallel_standard(){
 }
 
 // extra procedure for parallel parking
-int ParkingManeuver::parallel_wide(){
+CarCmd ParkingManeuver::parallel_wide(){
 	CarCmd cmd;
 
 	switch (current_state_) {
