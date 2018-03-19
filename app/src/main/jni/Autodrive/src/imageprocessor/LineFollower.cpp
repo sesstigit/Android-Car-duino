@@ -17,6 +17,8 @@
  
 #include "LineFollower.h"
 
+using namespace Autodrive;
+
 LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, ImageConfig* img_conf) :
 	img_conf_(img_conf),
 	road_size_(40),

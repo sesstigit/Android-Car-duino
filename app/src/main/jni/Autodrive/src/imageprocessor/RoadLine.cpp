@@ -17,6 +17,8 @@
  
 #include "RoadLine.h"
 
+using namespace Autodrive;
+
 RoadLine::RoadLine(int center_x, POINT start_point, ImageConfig* img_conf) :
 	center_x_(center_x), img_conf_(img_conf) {
 	angles_.push_back(Direction::FORWARD);

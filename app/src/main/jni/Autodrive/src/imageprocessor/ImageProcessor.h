@@ -29,38 +29,39 @@
 #include "BirdseyeTransformer.h"
 #include "CarCmd.h"
 
-using namespace std;
+//using namespace std;
+namespace Autodrive {
 
-class RoadFollower; //forward declaraion.
+	class RoadFollower; //forward declaraion.
 
-//TODO: what was this used for?  It is also a variable used in opencv.
-//int intersection_protect = 0;
+	//TODO: what was this used for?  It is also a variable used in opencv.
+	//int intersection_protect = 0;
 
 #define _AUTODRIVE_DILATE
 #define _DEBUG
 
-class ImageProcessor {
- public:
-	ImageProcessor(ImageConfig* img_conf);
-	bool init_processing(cv::Mat* mat);
-	CarCmd continue_processing(cv::Mat& mat);
- private:
-	bool left_line_found();
-	bool right_line_found();
-	bool is_left_lane();
-	bool is_right_lane();
-	int dashed_line_gaps();
-	void normalize_lighting(cv::Mat* bgr_image, int blur, float intensity);
+	class ImageProcessor {
+	public:
+		ImageProcessor(ImageConfig* img_conf);
+		bool init_processing(cv::Mat* mat);
+		CarCmd continue_processing(cv::Mat& mat);
+	private:
+		bool left_line_found();
+		bool right_line_found();
+		bool is_left_lane();
+		bool is_right_lane();
+		int dashed_line_gaps();
+		void normalize_lighting(cv::Mat* bgr_image, int blur = 20, float intensity = 0.5f);
 
-	ImageConfig* img_conf_;
-	int thresh1_;   // used in normalize lighting
-	int thresh2_;   // used in normalize lighting
-	int intensity_; // used in normalize lighting
-	int blur_i_;    // used in normalize lighting
-	std::unique_ptr<RoadFollower> road_follower_;
-	cv::Mat perspective_;
+		ImageConfig* img_conf_;
+		int thresh1_;   // used in cv::Canny function
+		int thresh2_;   // used in cv::Canny function
+		int intensity_; // used in normalize lighting.  High value (200) means very few lines detected.  Low value (10) means lots of noisy lines detected.
+		int blur_i_;    // used in normalize lighting
+		std::unique_ptr<RoadFollower> road_follower_;
+		cv::Mat perspective_;
 
-	POINT start_center_;
-};
-
+		POINT start_center_;
+	};
+}
 #endif //ANDROIDCARDUINO_AUTODRIVE_IMAGEPROCESSOR_H_

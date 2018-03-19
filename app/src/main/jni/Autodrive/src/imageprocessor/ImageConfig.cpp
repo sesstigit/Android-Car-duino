@@ -17,6 +17,8 @@
  
 #include "ImageConfig.h"
 
+using namespace Autodrive;
+
 //Constructor
 ImageConfig::ImageConfig() :
   normalize_lighting_(true),

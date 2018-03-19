@@ -16,6 +16,7 @@
 **/
  
 #include "BirdseyeTransformer.h"
+using namespace Autodrive;
 
 void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_matrix)
 {

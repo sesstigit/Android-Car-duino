@@ -17,6 +17,8 @@
  
 #include "RoadFollower.h"
 
+using namespace Autodrive;
+
 RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* img_conf) :
 	center_x_(center_x),
 	img_conf_(img_conf),
@@ -88,8 +90,8 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 	bool hit = true;
 	while (hit)
 	{
-		hit = firstnonzero_direction(cannied, center_bottom, Direction::RIGHT, 10).found
-			|| firstnonzero_direction(cannied, center_bottom, Direction::LEFT, 10).found;
+		hit = firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::RIGHT), 10).found
+			|| firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::LEFT), 10).found;
 		if (hit)
 			center_bottom.y--;
 	}

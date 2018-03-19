@@ -18,11 +18,13 @@
 #include "ImageProcessor.h"
 #include "BirdseyeTransformer.h"
 
+using namespace Autodrive;
+
 ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	img_conf_(img_conf),
 	thresh1_(181),
 	thresh2_(71),
-	intensity_(110),
+	intensity_(110), //was 110
 	blur_i_(11),
 	road_follower_(nullptr) {
 }
@@ -119,7 +121,7 @@ int ImageProcessor::dashed_line_gaps() {
 	return road_follower_->dashed_line_gaps();
 }
 
-void ImageProcessor::normalize_lighting(cv::Mat* bgr_image,int blur = 20,float intensity = 0.5f)
+void ImageProcessor::normalize_lighting(cv::Mat* bgr_image,int blur,float intensity)
 {
 	cv::Mat light_mat;
 	cv::blur(*bgr_image, light_mat, cv::Size(blur, blur));

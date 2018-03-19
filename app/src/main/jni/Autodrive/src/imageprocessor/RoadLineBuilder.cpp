@@ -18,6 +18,8 @@
 #include "RoadLineBuilder.h"
 #include "ImageConfig.h"
 
+using namespace Autodrive;
+
 RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf) :
     first_start_(start_point), last_start_(start_point), center_x_(center_x),
 	car_y_(car_y), img_conf_(img_conf), point_dist_(4), 
@@ -40,8 +42,8 @@ RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {
 
 //TODO: was "static" on next line    
 SearchResult RoadLineBuilder::find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle, float iteration_reduction) {
-	SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, (img_conf_->right_iteration_length_ - iteration_reduction));
-    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, (img_conf_->left_iteration_length_ -iteration_reduction));
+	SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, static_cast<int>(img_conf_->right_iteration_length_ - iteration_reduction));
+    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, static_cast<int>(img_conf_->left_iteration_length_ - iteration_reduction));
     if (left_search.found && right_search.found)
     {
         if (left_search.distance <= right_search.distance + 15)
