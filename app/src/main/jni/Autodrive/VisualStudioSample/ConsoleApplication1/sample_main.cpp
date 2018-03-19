@@ -70,9 +70,9 @@ int main()
 */
 
 //#include <jni.h>
-#include <openc3/core/core.hpp>
-#include <opencv3/imgproc/imgproc.hpp>
-#include <opencv3/features2d/features2d.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/features2d/features2d.hpp>
 
 //TODO: Only enable when debugging emulator
 #define _DEBUG
@@ -81,7 +81,7 @@ int main()
 //#include "Autodrive/Include/autodrive.hpp"
 //#include "Autodrive/Include/sensordata.hpp"
 //#include "Autodrive/Include/maneuver.hpp"
-#include "../../src/Autodrive.h"
+#include "Autodrive.h"
 #include <iostream>
 
 using namespace std;
@@ -166,15 +166,15 @@ int main() {
 	cout << "Angle reading: " << car.gyro_.value() << endl;
 
 	// SETTINGS
-	car.conf->normalize_lighting_ = true;
-	car.conf->use_left_line_ = true;
-	car.conf->smoothening_ = 0;
-	car.conf->first_fragment_max_dist_ = 30;
-	car.conf->left_iteration_length_ = 5;
-	car.conf->right_iteration_length_ = 6;
-	car.conf->max_angle_diff_ = 0.7f;
-	car.conf->kp_ = 0.5;
-	car.conf->ki_ = 0.0;
-	car.conf->kd_ = 0.0;
+	car.img_conf()->normalize_lighting_ = true;
+	car.img_conf()->use_left_line_ = true;
+	car.img_conf()->smoothening_ = 0;
+	car.img_conf()->first_fragment_max_dist_ = 30;
+	car.img_conf()->left_iteration_length_ = 5;
+	car.img_conf()->right_iteration_length_ = 6;
+	car.img_conf()->max_angle_diff_ = 0.7f;
+	car.img_conf()->kp_ = 0.5;
+	car.img_conf()->ki_ = 0.0;
+	car.img_conf()->kd_ = 0.0;
 	cin >> car_length;
 }
