@@ -1,4 +1,5 @@
-# Makefile to make autodrive Sample C++ application only.
+# Makefile to make autodrive Sample C++ applications only.
+# Requires environment variable AUTODRIVE_HOME be set to path of Autodrive root directory.
 CC=gcc
 CXX=g++
 RM=rm -f
@@ -10,19 +11,23 @@ LDFLAGS=-g -std=c++11
 #LDLIBS=$(shell root-config --libs)
 LDLIBS=$(shell pkg-config opencv --libs)
 
-SRCDIR1=./src
-SRCDIR2=./src/imageprocessor
+INC=-I$(AUTODRIVE_HOME)/src/
+SRCDIR1=$(AUTODRIVE_HOME)/src/
+SRCDIR2=$(AUTODRIVE_HOME)/src/imageprocessor/
 SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 
-all: test_main docs
+all: Sample/test_main Sample/test_drive docs
 
 # Perhaps add LDLIBS to this?
-test_main: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+Sample/test_drive: Sample/test_drive.o $(OBJS)
+	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
+
+Sample/test_main: Sample/test_main.o $(OBJS)
+	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
 
 %.o: %.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) -c -o $@ $<
 
 doxyfile.inc: Makefile
 	echo INPUT = $(SRCDIR) > doxyfile.inc
