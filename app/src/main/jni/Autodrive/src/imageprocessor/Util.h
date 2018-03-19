@@ -78,8 +78,13 @@
 	
     optional<cv::Point> firstnonzero_horizontal(const cv::Mat& mat, cv::Point iterator);
     
-    template<class numeric_t>
-    numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier);
+    
+    template <class numeric_t>
+    numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier)
+    {
+        return (val1*val1_multiplier + val2) / (val1_multiplier + 1);
+    }
+    
 //}
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_UTIL_H_
