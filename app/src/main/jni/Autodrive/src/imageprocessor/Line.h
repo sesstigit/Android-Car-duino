@@ -27,7 +27,7 @@ class Line {
         compute();
     }
 
-    Line<numeric_t>::Line() {
+    Line() {
         k = 1;
         m = 0;
     }
