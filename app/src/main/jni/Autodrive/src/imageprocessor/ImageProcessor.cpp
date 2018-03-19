@@ -46,8 +46,8 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
 
 	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM
-	xformer.left_image_border().draw<linef>(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
-	xformer.right_image_border().draw<linef>(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
+	xformer.left_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
+	xformer.right_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	
 	//TODO: get rid of CarCmd object.  But then how can we tell whethter the angle has changed?
 	CarCmd cmnd = road_follower_->update(cannied_mat, mat);
