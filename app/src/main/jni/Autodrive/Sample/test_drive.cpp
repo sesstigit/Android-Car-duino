@@ -59,7 +59,7 @@ std::cout<<"main";
 
         Autodrive::car.img_proc()->continue_processing(frame);
 
-        show_image(frame, 3, "w");
+        Autodrive::show_image(frame, 3, "w");
         waitKey(10); // waits to display frame
     }
     return 0;
