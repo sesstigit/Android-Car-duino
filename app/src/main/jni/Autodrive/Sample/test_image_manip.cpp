@@ -18,18 +18,22 @@
 // system includes
 #include <iostream>
 #define _USE_MATH_DEFINES
-#include <math.h> 
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <getopt.h>
+
 
 // library includes
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#define CVVISUAL_DEBUGMODE
-#include <opencv2/cvv/debug_mode.hpp>
-#include <opencv2/cvv/show_image.hpp>
-#include <opencv2/cvv/filter.hpp>
-#include <opencv2/cvv/dmatch.hpp>
-#include <opencv2/cvv/final_show.hpp>
+//#define CVVISUAL_DEBUGMODE
+//#include <opencv2/cvv/debug_mode.hpp>
+//#include <opencv2/cvv/show_image.hpp>
+//#include <opencv2/cvv/filter.hpp>
+//#include <opencv2/cvv/dmatch.hpp>
+//#include <opencv2/cvv/final_show.hpp>
 
 
 #define _AUTODRIVE_SHOWCANNY
@@ -50,7 +54,7 @@ using namespace std;
 //! Steps are:
 //! 1) Fast forward video to frame number X, where X is provided on command line
 //! 2) display output image from:
-//!   a) cv::canny
+//!   a) (DONE) cv::canny
 //!   b) cv::houghp
 //!   c) cv: .... color???
 //!   d) Overlay of lines
@@ -71,13 +75,22 @@ template<class T> std::string toString(const T& p_arg)
   return ss.str();
 }
 
+//Globals
+cv::Mat frame, frameGray;  //input frame image, and its greyscale
+cv::Mat manip, manipEdges; //output image after manipulation, e.g. cv::canny
+int lowThresh;
+int max_lowThresh = 300;
+int highThresh;
+int max_highThresh = 300;
+int hi_lo_ratio = 3;  //recommended ratio used to convert Canny lowThresh to highThresh
+int kernel_size = 3;
+string window_name = "AutodriveTest";
 
-void
-usage()
-{
-  printf("usage: cvv_demo [-r WxH]\n");
-  printf("-h       print this help\n");
-  printf("-r WxH   change resolution to width W and height H\n");
+void usage() {
+  printf("usage: test_image_manip [-f frame_number] [-r WxH]\n");
+  printf("-h                print this help\n");
+  printf("-f frame_number   fast forward video to given frame number\n");
+  printf("-r WxH            change resolution to width W and height H\n");
 }
 
 
@@ -95,10 +108,11 @@ void displayWindows(vector<Mat>& frames) {
 static void CannyThreshold(int, void*)
 {
     cv::blur(frameGray, manipEdges, Size(3,3));
-    cv::Canny(manipEdges, manipEdges, thresh1, thresh2, kernel_size);
-
+    cv::Canny(manipEdges, manipEdges, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
+    //cv::Canny(manipEdges, manipEdges, lowThresh, highThresh, kernel_size);
     manip = Scalar::all(0);
-    src.copyTo( manip, manipEdges);
+    frame.copyTo( manip, manipEdges);
+    //TODO: print frame number onto screen
     imshow( window_name, manip ); //Autodrive::show_image makes the image 3 times bigger
 }
 
@@ -119,7 +133,7 @@ int main(int argc, char** argv) {
         return 0;
         break;
       case 'f':
-        frame_number = optarg;
+        frame_number = atoi(optarg);
         break;
       case 'r':
         {
@@ -145,33 +159,34 @@ int main(int argc, char** argv) {
         throw "Error when opening test4.avi";
     }
     
-    cv::Mat frame, frameGray;  //input frame image, and its greyscale
-    cv::Mat manip, manipEdges; //output image after manipulation, e.g. cv::canny
-    int lowThresh;
-    int max_lowThresh = 300;
-    int ratio = 2;  //ratio used to convert thresh1 to thresh2
-    int kernel_size = 3;
     
-    string window = "AutodriveTest";
-    namedWindow(window, WINDOW_AUTOSIZE);
+    
+    namedWindow(window_name, WINDOW_AUTOSIZE);
 
     for (int i = 0; i < frame_number; i++){
         capture >> frame;  //fast forward to frame of interest
     }
 
+    //**************** UP TO HERE *******************
+    //TODO: does Autodrive do any image manipulation prior to Canny?
+    // e.g. is the image size set, or greyscale etc??
+    //  This code does greyscale and blur.  Is that done in Autodrive???
+    createTrackbar( "Min Threshold:", window_name, &lowThresh, max_lowThresh, CannyThreshold );
+    //Next line no longer required, since the highThresh is set automatically using hi_lo_ratio
+    //createTrackbar( "Max Threshold:", window_name, &highThresh, max_highThresh, CannyThreshold );
     while (!frame.empty())
     {
         vector<Mat> images;  //empty vector
         string frameString{"frame"};
         frameString += toString(frame_number);
-            cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
+            //cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
     
         // convert to grayscale
         cv::Mat imgGray;
         cv::cvtColor(frame, frameGray, CV_BGR2GRAY);
-            cvv::debugFilter(frame, frameGray, CVVISUAL_LOCATION, "to gray");
+            //cvv::debugFilter(frame, frameGray, CVVISUAL_LOCATION, "to gray");
         
-        createTrackbar( "Min Threshold:", window, &lowThresh, max_lowThresh, CannyThreshold );
+        
         CannyThreshold(0,0);
         //show_image(frame, 3, "w");  // display the raw video frame
         
