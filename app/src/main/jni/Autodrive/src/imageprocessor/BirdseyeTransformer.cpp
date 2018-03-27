@@ -59,7 +59,7 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 	float bottom = height;
 	float xleft = leftLine.end.x;
 	float xright = rightLine.end.x;
-//#define _VISUAL_WARP
+//#define _VISUAL_WARP  //not used in final Autodrive
 #ifdef _VISUAL_WARP
 	while (warping){
 		if (xleft < leftLine.begin.x || xright > rightLine.begin.x)
