@@ -63,7 +63,19 @@ using namespace std;
 //!   g) print on screen param values while cycling through the same image transformed with different param values.
 //!   h) display lines, lanes, roadline etc. to understand those different objects.
 //! 3) Create another program which is a GUI for Autodrive where I can change the params using GUI sliders and see the effect on the image and on Autodrive functionality.
-
+//! Assumptions:
+//!  - input to Autodrive C++ code is provided by the Android App.
+//!    - interaction with the phone camera is via CameraActivity.java.  On each camera frame, that calls driver.process_image(inputFrame.rgba()) in AutomaticCarDriver.java.  Here is what process_image() does:
+//!        Mat resized = new Mat();
+//!        Size prevSize = image.size();
+//!        Size size = new Size(240,135);
+//!        Imgproc.resize(image, resized, size,0,0,Imgproc.INTER_NEAREST);
+//!        Autodrive.setImage(resized.getNativeObjAddr());
+//!        Autodrive.drive();
+//!  - then AutodriveJavaFacade.cpp implements setImage() as "Autodrive::car.image_ = (cv::Mat*)newMat;"
+//!  - i.e. the input to the C++ code is a 240x135 colour image
+//!
+		
 using std::vector;
 using std::to_string;
 template<class T> std::string toString(const T& p_arg)
@@ -107,10 +119,10 @@ void displayWindows(vector<Mat>& frames) {
 
 static void CannyThreshold(int, void*)
 {
-    cv::blur(frameGray, manipEdges, Size(3,3));
+    cv::blur(frameGray, manipEdges, Size(3,3));  //Autodrive does not use blur.  Test with/without.
     cv::Canny(manipEdges, manipEdges, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
     //cv::Canny(manipEdges, manipEdges, lowThresh, highThresh, kernel_size);
-    manip = Scalar::all(0);
+    manip = Scalar::all(0); //TODO: has this got anything to do with rgba?
     frame.copyTo( manip, manipEdges);
     //TODO: print frame number onto screen
     imshow( window_name, manip ); //Autodrive::show_image makes the image 3 times bigger
@@ -174,13 +186,42 @@ int main(int argc, char** argv) {
     createTrackbar( "Min Threshold:", window_name, &lowThresh, max_lowThresh, CannyThreshold );
     //Next line no longer required, since the highThresh is set automatically using hi_lo_ratio
     //createTrackbar( "Max Threshold:", window_name, &highThresh, max_highThresh, CannyThreshold );
-    manip.create( frame.size(), frame.type() );
+    manip.create( frame.size(), frame.type() );  //create a new Mat image of same size as the input frame
 
     while (!frame.empty())
     {
-        vector<Mat> images;  //empty vector
-        string frameString{"frame"};
-        frameString += toString(frame_number);
+		// START DESCRIPTION
+		// Emulate what is done in imageprocessor/ImageProcessor, i.e.
+		// BirdseyeTransformer xformer;
+		// auto found_pespective = xformer.find_perspective(mat);
+		// if (found_pespective) {
+		//    perspective_ = *found_pespective;
+		//    xformer.birds_eye_transform(mat, perspective_);
+		//    if (img_conf_->normalize_lighting_)
+		//    	normalize_lighting(mat, blur_i_, intensity_ / 100.f);
+		//    cv::Mat cannied_mat;
+		//    cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
+		//
+		// And here is relevant code from find_perspective(mat):
+		// cv::Canny(matCopy, cannied, thresh1, thresh2, 3);
+		// matCopy = cannied;
+		// auto lines = get_lane_markings(matCopy,matIn);
+		// linef leftLine = lines.left;
+		// linef rightLine = lines.right;
+		// float icrop = 0.f;
+		// Keep stretching the lines until they converge to width/3
+		// stretching code removed ...
+		// Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
+		//  POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+		//  Warp compresses the bottom two cordinates together
+		// POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
+		// birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
+		// Note: find_perspective() does not normalize_lighting.  Hence need to make the lanes obvious! Also, it does not convert image to grayscale. That is also done in normalize_lighting.
+		// END DESCRIPTION
+		
+        //vector<Mat> images;  //empty vector
+        //string frameString{"frame"};
+        //frameString += toString(frame_number);
             //cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
     
         // convert to grayscale
