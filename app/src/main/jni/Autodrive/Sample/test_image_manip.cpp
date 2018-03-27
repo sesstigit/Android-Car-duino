@@ -174,6 +174,8 @@ int main(int argc, char** argv) {
     createTrackbar( "Min Threshold:", window_name, &lowThresh, max_lowThresh, CannyThreshold );
     //Next line no longer required, since the highThresh is set automatically using hi_lo_ratio
     //createTrackbar( "Max Threshold:", window_name, &highThresh, max_highThresh, CannyThreshold );
+    manip.create( frame.size(), frame.type() );
+
     while (!frame.empty())
     {
         vector<Mat> images;  //empty vector
@@ -182,11 +184,10 @@ int main(int argc, char** argv) {
             //cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
     
         // convert to grayscale
-        cv::Mat imgGray;
         cv::cvtColor(frame, frameGray, CV_BGR2GRAY);
             //cvv::debugFilter(frame, frameGray, CVVISUAL_LOCATION, "to gray");
         
-        
+        // Show the output of the cv::canny function using the input frame 
         CannyThreshold(0,0);
         //show_image(frame, 3, "w");  // display the raw video frame
         
