@@ -57,9 +57,9 @@ namespace Autodrive {
 			}
 			else
 			{
-				k = (begin.y - end.y) / (begin.x - end.x);
+				k = (begin.y - end.y) / (begin.x - end.x); //!<line slope calculation
 			}
-			m = begin.y - begin.x * k;
+			m = begin.y - begin.x * k; //!<the y intercept point when x=0
 		}
 
 		numeric_t leftMost_x() {
@@ -104,7 +104,7 @@ namespace Autodrive {
 
 		pointT begin;
 		pointT end;
-		float k;
+		float k;  //!< the line slope
 
 	private:
 		float direction() {
@@ -116,7 +116,7 @@ namespace Autodrive {
 			return abs(line2.k - k) < k_diff && abs(line2.m - m < m_diff);
 		}
 
-		float m;
+		float m; //!< the y intercept point when x=0
 	};
 
 	using linei = Line<int>;

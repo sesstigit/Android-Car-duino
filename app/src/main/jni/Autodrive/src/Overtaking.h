@@ -35,7 +35,10 @@ namespace Autodrive {
 
 	class Car;  //forward declaration
 
-	// Overtaking is a subclass of Autodrive because it is one mode of Autodrive.  
+	//! Overtaking mode is used to detect obstacles and steer around them.Overtaking.
+	//! Note the current implementation assumes driving in the right lane only.
+    //! If driving in left lane, then will have to overtake to other side, and check
+    //! sensors on other side.
 	class Overtaking {
 	public:
 		Overtaking(Car* ocar);

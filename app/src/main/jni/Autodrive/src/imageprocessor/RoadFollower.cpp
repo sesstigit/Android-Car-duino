@@ -45,6 +45,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 	optional<int> rightTargetAngle = right_line_follower_->get_prefered_angle();
 	optional<int> targetAngle = nullptr;
 	
+	//! Choose preferred angle to move
 	if (leftTargetAngle && rightTargetAngle && img_conf_->use_left_line_)
 	{
 		// Give the right line just a bit more priority since it seems more reliable
@@ -86,7 +87,12 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 int RoadFollower::find_car_end(const cv::Mat& cannied)
 {
 	POINT center_bottom(center_x_, cannied.size().height - 8);
-	//SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 10
+	//!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 10
+	//! Starting at the bottom center of the image we expect to see the car bonnet.
+	//! Lines and white pixels are normally detected on the bonnet.
+	//! Hence search upwards until all black +-10 pixels to left and right.
+	//! That should be the black road.
+	//! FIX: this will not work for a white road. Do we need this function?
 	bool hit = true;
 	while (hit)
 	{

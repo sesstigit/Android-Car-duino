@@ -38,6 +38,7 @@ namespace Autodrive {
 		RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* img_conf);
 		bool left_line_found();
 		bool right_line_found();
+		//! Determine lane by finding which line has more gaps, i.e. dotted line
 		bool is_left_lane();
 		bool is_right_lane();
 		int dashed_line_gaps();
@@ -48,7 +49,7 @@ namespace Autodrive {
 		POINT find_line_start(const cv::Mat& cannied, float direction);
 		cv::Mat draw(const cv::Mat& cannied);
 
-		int car_y_;
+		int car_y_; //! TODO: why is car_y_ declared here and in RoadLineBuilder???
 		int center_x_;
 		std::unique_ptr<LineFollower> left_line_follower_;
 		std::unique_ptr<LineFollower> right_line_follower_;

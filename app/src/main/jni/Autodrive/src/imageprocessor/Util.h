@@ -90,7 +90,9 @@ namespace Autodrive {
 		int distance;
 		bool found = false;
 	};
-
+    //! Make a line from a given point in a given direction.
+    //! Iterate along the line until a non-zero point is found, i.e. white point
+    //! This works becaue the image is thresholded to be black 0 or white 1 only,
 	SearchResult firstnonzero_direction(const cv::Mat& mat, cv::Point_ < float > start, float direction, int maxDist);
 
 	

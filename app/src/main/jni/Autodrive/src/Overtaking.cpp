@@ -42,15 +42,15 @@ Overtaking::Overtaking(Car* ocar) :
 
 
 CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
-  lastCarCmd.set_speed(0.35);
+  lastCarCmd.set_speed(0.35);  //!< TODO: use a predefined spped such as slow/medium/fast
   if (stop_) {
 	lastCarCmd.set_speed(0);
   }
 
-  // Check whether there is an obstacle in front.
+  // Check whether there is an obstacle in front, and if so, set to overtaking.
   if (ocar_->ultrasound_.front.value() > 0 && ocar_->ultrasound_.front.value() < obstacle_distance_) {
 	if (! overtaking_) {
-		overtaking_ = true;
+		overtaking_ = true;  //!< TODO: should kOVertaking mode be set.  This is just a local param.
 		if (turn_left_ == 0) {
 			turn_left_ = distance_travelled_;  //initialise turn_left_ to the current encoder value.
 		}
@@ -61,8 +61,9 @@ CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 
   if (overtaking_) { // obstacle spotted, start turning left
 	if (turn_left_ > 0) {
-		lastCarCmd.set_angle(-1);
+		lastCarCmd.set_angle(-1);  //!< Angle will be multiplied by max_angle to get true angle.
 
+        //! If either right or left line found, stop turning.
 		if (ocar_->line_RHS_sensor_.value()) {
 			turn_left_ = 0;
 
@@ -94,6 +95,7 @@ CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 			turn_left_calibration_finished_ = true;
 		}
 	}
+	//! Check have steered around object by finding it in the read sensor.
 	if (turn_left_calibration_finished_) {
 		if (ocar_->infrared_.rearright.value() > 1 && ocar_->infrared_.rearright.value() < 21) { // if infrared_.rearright.value() sees something it met the obstacle
 			if (! obstacle_met_) {
@@ -103,6 +105,7 @@ CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 		}
 	}
 
+    // Now the obstactle is passed, turn right back into lane.
 	if (obstacle_met_) {
 		if (! ocar_->ultrasound_.frontright.value() || ocar_->ultrasound_.frontright.value() > 20) { // if ultrasound_.frontright.value() doesn't see anything, it passed the obstacle
 			if (! obstacle_passed_) {
@@ -149,6 +152,7 @@ CarCmd Overtaking::run(CarCmd lastCarCmd, Mat* mat) {
 	}
   }
 
+  //! Debug mode prints to the screen the current status of overtaking.
   if (debug_mode_) {
 	if (overtaking_) {
 		cv::putText(*mat, "overtaking_", POINT(50.f, mat->size().height / 6.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);

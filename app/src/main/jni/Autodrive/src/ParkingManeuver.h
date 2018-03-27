@@ -83,7 +83,10 @@ namespace Autodrive {
 	class Car; //forward declaration
 	class CarCmd; //forward declaration
 
-	// ParkingManeuver.
+	//! ParkingManeuver.
+	//! Requires a speed sensor, e.g. to determine if_stopped() and to measure
+	//! distance travelled during the maneuver.
+	//! Also requires gyro, e.g. to measure hasTurnedAngle()
 	class ParkingManeuver {
 	public:
 		ParkingManeuver(Car* c, ParkingManeuverMode m);  // constructor

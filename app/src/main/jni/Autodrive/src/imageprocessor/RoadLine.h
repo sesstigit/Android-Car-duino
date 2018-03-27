@@ -36,6 +36,9 @@ namespace Autodrive {
 		RoadLine();
 		RoadLine(int center_x, POINT start_point, ImageConfig* img_conf);
 		void draw(cv::Mat* draw_mat);
+		//! Adds point to RoadLine, unless angle to point does not match line.
+		//! @param p The point to add
+		//! @return A boolean to flag whether the point was added successfully.
 		bool add_point(POINT p);
 		int total_gap() { return total_gap_; };  //getter
 		int num_points() { return static_cast<int>(points_.size()); };

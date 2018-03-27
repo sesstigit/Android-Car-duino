@@ -33,6 +33,8 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 //start_center_(POINT(0.f, 0.f))
 
 //TODO: why is mat a pointer here, but a reference in next function?
+//! init_processing is the first function called by Autodrive.
+//! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	BirdseyeTransformer xformer;
 	auto found_pespective = xformer.find_perspective(mat);
@@ -64,11 +66,11 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	cv::Mat cannied_mat;
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
 
-	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM
+	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black
 	xformer.left_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	xformer.right_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	
-	//TODO: get rid of CarCmd object.  But then how can we tell whethter the angle has changed?
+	//! Key step is to call update on the road_follower
 	CarCmd cmnd = road_follower_->update(cannied_mat, mat);
 	float angle =  Direction::FORWARD;
 
@@ -79,7 +81,7 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	}
 
 	POINT center(mat.size().width / 2.f, (float) mat.size().height);
-	//was Autodrive::
+	//! Draw a green line from center bottom in direction of the changed angle
 	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 250, 0));
 	return cmnd;
 }

@@ -46,7 +46,7 @@ namespace Autodrive {
 		{
 		case AutoDriveMode::kDetectingGap: os << "kDetectingGap";    break;
 		case AutoDriveMode::kParking: os << "kParking"; break;
-		case AutoDriveMode::kSearchingForLanes: os << "kSearchingForLanes";  break;
+		case AutoDriveMode::kSearchingForLanes: os << "kSearchingForLanes";  break;  //!< default initial state for Autodrive
 		case AutoDriveMode::kFollowingLanes: os << "kFollowingLanes";   break;
 		case AutoDriveMode::kOvertaking: os << "kOvertaking"; break;
 		case AutoDriveMode::kUnknown: os << "kUnknown"; break;
@@ -60,12 +60,16 @@ namespace Autodrive {
 	class ImageConfig;  //forward declaration
 	class ImageProcessor;  //forward declaration
 
-	// Base Class
+	//! Base Class
+	//! The two main actuators in a car are the accelerator for motor speed,
+	//! and steering for car direction.
+	//! The car also has a number of sensors for detecting distance to obstacles,
+	//! angle turned, and lines.
 	class Car {
 	public:
 		Car();
 		~Car();
-		void drive();
+		void drive();  // main method for Car Autodrive.  Search for lanes, then follow them.
 		AutoDriveMode mode() { return mode_; }; //getter
 		ParkingManeuver* parking() { return parking_; }; //getter
 		Overtaking* overtaking() { return overtaking_; }; //getter
@@ -94,6 +98,7 @@ namespace Autodrive {
 			CarSensorDistanceInfrared rearright;
 			CarSensorDistanceInfrared rear;
 		} infrared_;
+		//! car_length_ is used by ParkingManeuver to work out how big a gap is required for parking.
 		int car_length_;  //public so it can be set externally (e.g. via JNI).  Not ideal.
 		const double slow_speed_;
 		const double normal_speed_;

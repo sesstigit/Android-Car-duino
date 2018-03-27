@@ -68,26 +68,28 @@ void Car::set_mode(AutoDriveMode new_mode) {
 }
 
 void Car::drive() {
-  // For each video frame, this function is called.   The function calls various other Class methods,
-  // each of which returns a CarCmd object containing the required motor speed and steering angle.
+  // For each video frame, this function is called to automatically drive a car
+  // to follow road lanes, to overtake, or to park.   The function calls various other methods,
+  // each of which returns a CarCmd object containing the required motor speed and steering angle
+  // to achieve the driving mode.
   // By comparing the CarCmd object to the current Car motor and steering parameters, parameters
-  // angle_changed or speed_changed can be set.  These are used from the Java bluetooth code to decide
-  // whether to send CarCmds to the physical car.
+  // angle_changed or speed_changed can be set.  These are used from the Java bluetooth code 
+  // to send CarCmds to the physical car.
   CarCmd lastCarCmd;  // Reset the CarCmd by initialising a new one.
 
   switch (mode_)
   {
   case AutoDriveMode::kSearchingForLanes:
-      if (img_proc_->init_processing(image_))
+      if (img_proc_->init_processing(image_))  //!< must successfully find lanes first.
         {
 		  lastCarCmd.set_speed(normal_speed_);
-          mode_ = AutoDriveMode::kFollowingLanes;
+          mode_ = AutoDriveMode::kFollowingLanes; //!< Now can follow the lanes
         }
         break;
                 
   case AutoDriveMode::kFollowingLanes:
 		lastCarCmd = img_proc_->continue_processing(*image_);
-		lastCarCmd = overtaking_->run(lastCarCmd, image_);
+		lastCarCmd = overtaking_->run(lastCarCmd, image_);  //!< TODO: Overtaking requires gyro and speed sensor.
 		break;
 		
 	// debug only! will be merged with lane following   
@@ -111,6 +113,7 @@ void Car::drive() {
 		break; 
 
   case AutoDriveMode::kOvertaking:
+        //! TODO: this mode is never set.  kFollowingLanes mode calls overtaking directly to avoid obstacles.
 		lastCarCmd = overtaking_->run(lastCarCmd, image_);
 		break;
 

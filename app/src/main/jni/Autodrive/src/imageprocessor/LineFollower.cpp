@@ -21,7 +21,7 @@ using namespace Autodrive;
 
 LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, ImageConfig* img_conf) :
 	img_conf_(img_conf),
-	road_size_(40),
+	road_size_(40), //!< Note hardcoded roadsize of 40. TODO: make configurable
 	is_found_(false)
 	{
 	road_builder_ = make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY, img_conf);
@@ -29,8 +29,6 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 	target_road_distance_ = road_line_.get_mean_start_distance(5);
 }
 
-//TODO: this function uses Setttings from settings.h which are now in ImageProcessor.h
-// How should the settings be accessed from here???
 void LineFollower::draw(cv::Mat* colorCopy, int centerX) {
 	road_line_.draw(colorCopy);
    
@@ -42,7 +40,7 @@ void LineFollower::draw(cv::Mat* colorCopy, int centerX) {
 	//linef(road_builder_->last_start, road_builder_->last_start + POINT(8, -20)).draw(colorCopy, cv::Scalar(0, 255, 255), 1);
 
 	/* DRAW VERTICAL LINE DISPLAYING DISTANCE TO ROAD AND TARGETED DISTANCE TO ROAD*/
-	POINT offsetX = POINT(target_road_distance_,0);
+	POINT offsetX = POINT(target_road_distance_, 0);
 	POINT bottom_center = POINT(centerX, colorCopy->size().height);
 	linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(*colorCopy);
 	offsetX.x = road_line_.get_mean_start_distance(5);

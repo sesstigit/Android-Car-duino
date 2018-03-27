@@ -24,6 +24,10 @@ void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_mat
 	cv::warpPerspective(*mat, *mat, birdseye_matrix, mat->size(), cv::INTER_LINEAR);
 }
 
+//! Canny the input image
+//! get_lane_markings for leftLine and rightLine
+//! stretch the lines
+//! Then get birdseye perspective
 optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, double thresh2) {
 	optional<cv::Mat> birdseye_matrix;
 	cv::Mat matCopy = matIn->clone();
@@ -43,6 +47,7 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 	float xdiff;
 	float height = (float) matCopy.size().height;
 	float width = (float) matCopy.size().width;
+	//! Keep stretching the lines until they converge to width/3
 	do
 	{
 		xdiff = rightLine.leftMost_x() - leftLine.rightMost_x();
@@ -108,8 +113,8 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	bool foundRight = false;
 	int center = canniedMat.size().width / 2;
 
-	static linef lastLML;
-	static linef lastRML;
+	static linef lastLML;  //!< left most line
+	static linef lastRML;  //!< right most line
 	for(cv::Vec4i line : lines){
 		int leftx = line[0];
 		int rightx = line[2];
@@ -120,10 +125,12 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		float dirr = vector.direction_fixed_half();
 		float dir_diff = dirr - Direction::FORWARD;
 
+        //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
 		if (abs(dir_diff) < 0.f || abs(dir_diff) > 1.f)
 			continue;
-
+        //! Draw all the candidate lines - currently thick, blue line.
 		vector.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
+		//! Work out whether it is the left or right line
 		if ( leftx > center + 20) 
 		{
 				if (rightx > leftx && topy > boty && vector.length() > 50) 
@@ -141,7 +148,9 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 
 	lastLML = leftMostLine;
 	lastRML = rightMostline;
+	//! TODO: check logic for getLaneMarkings
 	if (foundRight && foundLeft) {
+	    //! Draw the leftmost line and rightmost line which are likely the lane markers - currently thin red 
 		leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);
 		rightMostline.draw(*drawMat,cv::Scalar(255,0,0),2);
 		if ( abs((-rightMostline.k) - leftMostLine.k) < 0.9f)
@@ -151,9 +160,10 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 			//TODO: Deprecated line
 			//if ((leftMostLine.leftMost_x() >rightMostline.rightMost_x()))
 			{
+			    //! Draw the final chosen lane lines - currently thick blue
 				leftMostLine.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
 				rightMostline.draw(*drawMat,cv::Scalar(0,0,255),5);
-				lanes.left = rightMostline;
+				lanes.left = rightMostline; //!< how does that make sense?
 				lanes.right = leftMostLine;
 				lanes.found = true;
 			}
