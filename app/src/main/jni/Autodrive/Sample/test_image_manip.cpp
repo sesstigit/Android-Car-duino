@@ -43,9 +43,11 @@
 // application inlcudes
 #include "Autodrive.h"
 #include "imageprocessor/ImageProcessor.h"
+#include "imageprocessor/Line.h"
 
 using namespace cv;
 using namespace std;
+using linef = Autodrive::Line<float>;
 
 //! Visualise the effect of each opencv image manipulation method.
 //! i.e. this test program aims to improve understanding of how each
@@ -89,14 +91,27 @@ template<class T> std::string toString(const T& p_arg)
 
 //Globals
 cv::Mat frame, frameGray;  //input frame image, and its greyscale
-cv::Mat manip, manipEdges; //output image after manipulation, e.g. cv::canny
+cv::Mat imCanny, imCannyColor; //output image after cv::canny
+cv::Mat imHough; // output of Hough transform
+cv::Mat imLane; // output of Lane processing
+cv::Mat imBirdseye; // output of Birdseye
+cv::Mat imTest; // just for basic drawing tests
+
 int lowThresh;
 int max_lowThresh = 300;
 int highThresh;
 int max_highThresh = 300;
 int hi_lo_ratio = 3;  //recommended ratio used to convert Canny lowThresh to highThresh
 int kernel_size = 3;
-string window_name = "AutodriveTest";
+string window_name_canny = "Canny Edge Detection Test";
+string window_name_hough = "Hough Line Detection Test";
+string window_name_lane = "Lane Detection Test";
+string window_name_birdseye = "Birdseye Test";
+string window_name_test = "Drawing Test";
+int houghThresh;
+int max_houghThresh = 300;
+
+Autodrive::lanes lane_lines;
 
 void usage() {
   printf("usage: test_image_manip [-f frame_number] [-r WxH]\n");
@@ -117,19 +132,196 @@ void displayWindows(vector<Mat>& frames) {
     }
 }
 
-static void CannyThreshold(int, void*)
-{
-    cv::blur(frameGray, manipEdges, Size(3,3));  //Autodrive does not use blur.  Test with/without.
-    cv::Canny(manipEdges, manipEdges, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
-    //cv::Canny(manipEdges, manipEdges, lowThresh, highThresh, kernel_size);
-    manip = Scalar::all(0); //TODO: has this got anything to do with rgba?
-    frame.copyTo( manip, manipEdges);
+
+static void CannyThreshold() {
+    //cv::blur(frame, imCanny, Size(3,3));  //Autodrive does not use blur.  Test with/without.
+    cv::Canny(frame, imCanny, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
+    //cv::Canny(imCanny, imCanny, lowThresh, highThresh, kernel_size);
+    imCannyColor = Scalar::all(0); // make the image all black
+    frame.copyTo( imCannyColor, imCanny);  // copy frame to "imCannyColor" using mask "imCanny".  i.e. the lines will now be coloured!
     //TODO: print frame number onto screen
-    imshow( window_name, manip ); //Autodrive::show_image makes the image 3 times bigger
+    imshow( window_name_canny, imCannyColor ); //Autodrive::show_image makes the image 3 times bigger
 }
 
+static void HoughThreshold() {
+    vector<cv::Vec4i> lines;
+    
+    imCannyColor.copyTo(imHough);  //start off with the edge detection color image
+    // This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "imCannyColor"
+    // rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
+    //source image must be 8-bit, single-channel 
+    cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+      Vec4i l = lines[i];
+      // params are: output image, start point, end point, colour(BGR), thickness, linetype
+      line( imHough, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 2, CV_AA);
+    }
+    //if (lines.size() > 0) {
+      imshow( window_name_hough, imHough ); 
+    //}
+}
 
+static void LaneThreshold() {
+    std::vector<cv::Vec4i> lines;
+    linef leftMostLine;
+    linef rightMostLine;
+    
+    imCannyColor.copyTo(imLane);  //start off with the edge detection color image
+    
+    // This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "imCanny"
+    // rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
+    // source image must be 8-bit, single-channel 
+    cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);
+    bool foundLeft = false;
+    bool foundRight = false;
+    int center = imCanny.size().width / 2;
+    
+    for(cv::Vec4i one_line : lines) {
+        int startx = one_line[0];
+        int starty = one_line[1];
+        int endx = one_line[2];
+        int endy = one_line[3];
+        linef one_hough_line(one_line);  //call the Line constructor to conver to a linef
+    
+        float dirr = one_hough_line.direction_fixed_half();
+        float dir_diff = dirr - Autodrive::Direction::FORWARD;
+    
+        //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
+        if (abs(dir_diff) < 0.f || abs(dir_diff) > 1.f)
+            continue;
+        //! Draw all remaining candidate lines: image, colour(BGR), thickness
+        one_hough_line.draw(imLane, cv::Scalar(0, 255, 255), 1);
+        //! Work out whether it is the left or right line
+        if ( startx > center + 20) {
+                if (endx > startx && endy > starty && one_hough_line.length() > 50) {  // line starting on RHS, and sloping down further right
+                    rightMostLine = one_hough_line;
+                    foundRight = true;
+                }
+        }
+        if ( endx < center - 20) { // line on LHS of center
+                leftMostLine = one_hough_line;
+                foundLeft = true;
+        }
+    }
+    
+    if (foundRight && foundLeft) {
+    // Draw the likely the lane markers, params=Image,colour(BGR),thckness
+        leftMostLine.draw(imLane,cv::Scalar(0,0,255),2);
+        rightMostLine.draw(imLane,cv::Scalar(0,255,0),2);
+        if ( abs((-rightMostLine.k) - leftMostLine.k) < 0.9f)
+        {   rightMostLine.stretchY(0.f, (float) imCanny.size().height);
+            leftMostLine.stretchY(0.f, (float) imCanny.size().height );
+            //TODO: Deprecated line
+            //if ((leftMostLine.leftMost_x() >rightMostLine.rightMost_x()))
+            {
+                //! Draw the final chosen lane lines (BGR)
+                leftMostLine.draw(imLane, cv::Scalar(0, 0, 255), 5);
+                rightMostLine.draw(imLane,cv::Scalar(0, 255, 0), 5);
+                ::lane_lines.left = leftMostLine; 
+                ::lane_lines.right = rightMostLine;
+                ::lane_lines.found = true;
+            }
+        }
+    }
+    imshow( window_name_lane, imLane ); //Autodrive::show_image makes the image 3 times bigger
+}
 
+void BirdseyeThreshold() {
+    imHough.copyTo(imBirdseye); 
+    if (!::lane_lines.found) {
+            return;
+    }
+
+    //take a copy of the current lanes
+    Autodrive::lanes b_lines = lane_lines;
+    
+    float icrop = 0.f;
+    float xdiff;
+    float height = (float) imBirdseye.size().height;
+    float width = (float) imBirdseye.size().width;
+    //! Keep stretching the lines until they converge to width/3???
+    do
+    {
+        xdiff = b_lines.right.leftMost_x() - b_lines.left.rightMost_x();
+        b_lines.right.stretchY(icrop, height);  //params=bottom, top
+        b_lines.left.stretchY(icrop, height);
+        icrop+=3.f;
+    } while (xdiff < width/3.0f);
+
+    b_lines.right.draw(imBirdseye, cv::Scalar(255,0,0),3);
+    b_lines.left.draw(imBirdseye, cv::Scalar(255,0,0),3);
+    imshow( window_name_birdseye, imBirdseye ); 
+
+/*
+    float bottom = height;
+    float xleft = leftLine.end.x;
+    float xright = rightLine.end.x;
+        {
+            xright = rightLine.begin.x;
+            xleft = leftLine.begin.x;
+        }
+        
+        center_diff_ = (abs(xleft + xright) / 2.f - width /2.f);
+
+        //Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
+        POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+
+        //Warp compresses the bottom two cordinates together
+        POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
+
+        birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
+
+        left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2, leftLine.end.y +2), POINT(0, leftLine.begin.y+2));
+        right_image_border_ = linef(POINT(xright - (rightLine.end.x - width)/2, rightLine.end.y+2), POINT(width, rightLine.begin.y+2));
+        
+    return birdseye_matrix;
+    */
+}
+
+static void TestDrawing() {
+    vector<cv::Vec4i> lines;
+    
+    imCannyColor.copyTo(imTest);  //start off with the edge detection color image
+    // This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "imCannyColor"
+    // rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
+    //source image must be 8-bit, single-channel 
+    cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+      Vec4i l = lines[i];
+      // params are: output image, start point, end point, colour(BGR), thickness, linetype
+      cv::line( imTest, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 2, CV_AA);
+      cv::circle(imTest, Point(l[0], l[1]), 3, Scalar(255,0,0));  //mark start of line
+    }
+    
+    int t_width = imTest.size().width;
+    int t_height = imTest.size().height;
+    cout << "Image dimensions = " << t_width << "x" << t_height << endl;
+    //cv::line(imTest, Point(0,0), Point(t_width,t_height), Scalar(255, 0, 0), 5);
+    //cv::circle(imTest, Point(5,50), 3, Scalar(255,0,0));
+    //cv::line(imTest, Point(40,140), Point(120,40), Scalar(255, 0, 0), 3);
+    //cv::line(imTest, Point(200,40), Point(280,140), Scalar(255, 0, 0), 3);
+    linef leftLine(Point(40,140), Point(120,40));
+    linef rightLine(Point(200,40), Point(280,140));
+    rightLine.draw(imTest, cv::Scalar(255,0,0),3);
+    leftLine.draw(imTest, cv::Scalar(255,0,0),3);
+    
+    // Test Line.stretchY().  Yep, it works.  Lines are stretched to top and bottom of image
+    rightLine.stretchY(0.f, (float) imTest.size().height);
+    leftLine.stretchY(0.f, (float) imTest.size().height );
+    rightLine.draw(imTest, cv::Scalar(0,0,255),1);
+    leftLine.draw(imTest, cv::Scalar(0,0,255),1);
+    imshow( window_name_test, imTest ); 
+}
+
+static void updateThreshold(int, void*) {
+    CannyThreshold();
+    HoughThreshold();
+    LaneThreshold();
+    BirdseyeThreshold();
+    TestDrawing();
+}
 
 int main(int argc, char** argv) {
     cv::Size* resolution = nullptr;
@@ -173,21 +365,30 @@ int main(int argc, char** argv) {
     
     
     
-    namedWindow(window_name, WINDOW_AUTOSIZE);
-
+    namedWindow(window_name_canny, WINDOW_AUTOSIZE);
+    namedWindow(window_name_hough, WINDOW_AUTOSIZE);
+    
     for (int i = 0; i < frame_number; i++){
         capture >> frame;  //fast forward to frame of interest
     }
 
-    //**************** UP TO HERE *******************
-    //TODO: does Autodrive do any image manipulation prior to Canny?
-    // e.g. is the image size set, or greyscale etc??
-    //  This code does greyscale and blur.  Is that done in Autodrive???
-    createTrackbar( "Min Threshold:", window_name, &lowThresh, max_lowThresh, CannyThreshold );
+    // Do same image manipulation prior to Canny as per Autodrive code
+    // i.e. set image size, birdseye transform, normalize.
+    // Note: normalize includes steps: take copy, apply cv::blur, apply cv::cvtColor(grayscale) to find background lighting.lightin
+    //       Then convert input using CV_BGR_2Lab, split the planes, and remove background lighting from plane 0. 
+    //       The input image is then reassembled and converted back to colour = CV_Lab2BGR
+    
+    createTrackbar( "Min Threshold:", window_name_canny, &lowThresh, max_lowThresh, updateThreshold );
+    createTrackbar( "Hough Threshold:", window_name_hough, &houghThresh, max_houghThresh, updateThreshold );
+    
     //Next line no longer required, since the highThresh is set automatically using hi_lo_ratio
     //createTrackbar( "Max Threshold:", window_name, &highThresh, max_highThresh, CannyThreshold );
-    manip.create( frame.size(), frame.type() );  //create a new Mat image of same size as the input frame
-
+    imCannyColor.create( frame.size(), frame.type() );  //create a new Mat image of same size as the input frame
+    imHough.create( frame.size(), frame.type() ); 
+    imLane.create( frame.size(), frame.type() );
+    imBirdseye.create( frame.size(), frame.type() ); 
+    imTest.create( frame.size(), frame.type() ); 
+    
     while (!frame.empty())
     {
 		// START DESCRIPTION
@@ -205,15 +406,15 @@ int main(int argc, char** argv) {
 		// And here is relevant code from find_perspective(mat):
 		// cv::Canny(matCopy, cannied, thresh1, thresh2, 3);
 		// matCopy = cannied;
-		// auto lines = get_lane_markings(matCopy,matIn);
+		// auto lines = get_lane_markings(matCopy,matIn);  //calls cv::HoughLinesP
 		// linef leftLine = lines.left;
 		// linef rightLine = lines.right;
 		// float icrop = 0.f;
 		// Keep stretching the lines until they converge to width/3
 		// stretching code removed ...
 		// Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-		//  POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
-		//  Warp compresses the bottom two cordinates together
+		// POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+		// Warp compresses the bottom two cordinates together
 		// POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
 		// birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
 		// Note: find_perspective() does not normalize_lighting.  Hence need to make the lanes obvious! Also, it does not convert image to grayscale. That is also done in normalize_lighting.
@@ -225,11 +426,11 @@ int main(int argc, char** argv) {
             //cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
     
         // convert to grayscale
-        cv::cvtColor(frame, frameGray, CV_BGR2GRAY);
+        //cv::cvtColor(frame, frameGray, CV_BGR2GRAY);
             //cvv::debugFilter(frame, frameGray, CVVISUAL_LOCATION, "to gray");
         
         // Show the output of the cv::canny function using the input frame 
-        CannyThreshold(0,0);
+        updateThreshold(0,0);
         //show_image(frame, 3, "w");  // display the raw video frame
         
         //Might be needed on track
