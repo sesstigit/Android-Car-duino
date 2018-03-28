@@ -70,6 +70,7 @@ namespace Autodrive {
 			return std::max(begin.x, end.x);
 		};
 
+        //! Stetch the line so it goes from "bottom" (lowest value of y) to "top" (highest value of y)
 		void stretchY(numeric_t bottom, numeric_t top) {
 			numeric_t ychangeBegin = begin.y - bottom;
 			begin = pointT(begin.x - ychangeBegin / k, bottom);
