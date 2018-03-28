@@ -105,66 +105,59 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 
 lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* drawMat) {
 	lanes lanes;
-	::std::vector<cv::Vec4i> lines;
+	std::vector<cv::Vec4i> lines;
 	linef leftMostLine;
-	linef rightMostline;
+	linef rightMostLine;
+	// This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "canniedMat"
+	// rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
+	// source image must be 8-bit, single-channel 
 	cv::HoughLinesP(canniedMat, lines, 1, CV_PI / 180, 20, 10, 50);
 	bool foundLeft = false;
 	bool foundRight = false;
 	int center = canniedMat.size().width / 2;
 
-	static linef lastLML;  //!< left most line
-	static linef lastRML;  //!< right most line
-	for(cv::Vec4i line : lines){
-		int leftx = line[0];
-		int rightx = line[2];
-		int boty = line[1];
-		int topy = line[3];
-		linef vector(line);
+	for(cv::Vec4i one_line : lines) {
+		int startx = one_line[0];
+		int starty = one_line[1];
+		int endx = one_line[2];
+		int endy = one_line[3];
+		linef one_hough_line(one_line);  //call the Line constructor to conver to a linef
 
-		float dirr = vector.direction_fixed_half();
+		float dirr = one_hough_line.direction_fixed_half();
 		float dir_diff = dirr - Direction::FORWARD;
 
         //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
 		if (abs(dir_diff) < 0.f || abs(dir_diff) > 1.f)
 			continue;
-        //! Draw all the candidate lines - currently thick, blue line.
-		vector.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
+        //! Draw all remaining candidate lines: image, colour(BGR), thickness
+		one_hough_line.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
 		//! Work out whether it is the left or right line
-		if ( leftx > center + 20) 
-		{
-				if (rightx > leftx && topy > boty && vector.length() > 50) 
-				{
-					leftMostLine = linef(line);
-					foundLeft = true;
+		if ( startx > center + 20) {
+				if (endx > startx && endy > starty && one_hough_line.length() > 50) {  // line starting on RHS, and sloping down further right
+					rightMostLine = one_hough_line;
+					foundRight = true;
 				}
 		}
-		if ( rightx < center - 20)
-		{
-				rightMostline = linef(line);
-				foundRight = true;
+		if ( endx < center - 20) { // line on LHS of center
+				leftMostLine = one_hough_line;
+				foundLeft = true;
 		}
 	}
-
-	lastLML = leftMostLine;
-	lastRML = rightMostline;
-	//! TODO: check logic for getLaneMarkings
 	if (foundRight && foundLeft) {
-	    //! Draw the leftmost line and rightmost line which are likely the lane markers - currently thin red 
+    // Draw the likely the lane markers, params=Image,colour(BGR),thckness
 		leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);
-		rightMostline.draw(*drawMat,cv::Scalar(255,0,0),2);
-		if ( abs((-rightMostline.k) - leftMostLine.k) < 0.9f)
-		{
-			rightMostline.stretchY(0.f, (float) canniedMat.size().height);
+		rightMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);
+		if ( abs((-rightMostLine.k) - leftMostLine.k) < 0.9f)
+		{   rightMostLine.stretchY(0.f, (float) canniedMat.size().height);
 			leftMostLine.stretchY(0.f, (float) canniedMat.size().height );
 			//TODO: Deprecated line
-			//if ((leftMostLine.leftMost_x() >rightMostline.rightMost_x()))
+			//if ((leftMostLine.leftMost_x() >rightMostLine.rightMost_x()))
 			{
-			    //! Draw the final chosen lane lines - currently thick blue
+			    //! Draw the final chosen lane lines (BGR)
 				leftMostLine.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
-				rightMostline.draw(*drawMat,cv::Scalar(0,0,255),5);
-				lanes.left = rightMostline; //!< how does that make sense?
-				lanes.right = leftMostLine;
+				rightMostLine.draw(*drawMat,cv::Scalar(0,0,255),5);
+				lanes.left = leftMostLine; 
+				lanes.right = rightMostLine;
 				lanes.found = true;
 			}
 		}
