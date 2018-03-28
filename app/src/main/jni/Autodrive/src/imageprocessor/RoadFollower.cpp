@@ -58,6 +58,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 		targetAngle = *rightTargetAngle;
 	}else if(unfound_counter_++ > 5)
 	{
+	     //TODO: should targetAngle be set too???
 		 cmd.set_angle(0);
 	}
 	
