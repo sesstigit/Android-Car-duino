@@ -168,10 +168,6 @@ static void LaneThreshold() {
     linef rightMostLine;
     
     imCannyColor.copyTo(imLane);  //start off with the edge detection color image
-    
-    // This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "imCanny"
-    // rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
-    // source image must be 8-bit, single-channel 
     cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);
     bool foundLeft = false;
     bool foundRight = false;
@@ -182,7 +178,7 @@ static void LaneThreshold() {
         int starty = one_line[1];
         int endx = one_line[2];
         int endy = one_line[3];
-        linef one_hough_line(one_line);  //call the Line constructor to conver to a linef
+        linef one_hough_line(one_line);  //call the Line constructor to convert to a linef
     
         float dirr = one_hough_line.direction_fixed_half();
         float dir_diff = dirr - Autodrive::Direction::FORWARD;
@@ -240,7 +236,8 @@ void BirdseyeThreshold() {
     float xdiff;
     float height = (float) imBirdseye.size().height;
     float width = (float) imBirdseye.size().width;
-    //! Keep stretching the lines until they converge to width/3???
+    //! Stretch the lines, but if they converge at the top of the image,
+    //  keep cropping the top of the lines until they are width/3 pixels apart.
     do
     {
         xdiff = b_lines.right.leftMost_x() - b_lines.left.rightMost_x();
@@ -251,32 +248,31 @@ void BirdseyeThreshold() {
 
     b_lines.right.draw(imBirdseye, cv::Scalar(255,0,0),3);
     b_lines.left.draw(imBirdseye, cv::Scalar(255,0,0),3);
+    
+    //stretchY ensures the lines start at lowY and end at highY
+    //Hence the center point will be half way between either the start point
+    //or the end point.  The difference from the center point is then:
+    center_diff_ = (abs(leftLine.begin.x + rightLine.begin.x) / 2.f - width /2.f);
+
+    //Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
+    POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, height), POINT(rightLine.end.x, height) };
+
+    //Warp compresses the bottom two cordinates together
+    POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(leftLine.begin.x, height), POINT(rightLine.begin.x, height) };
+
+    birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
+
+    left_image_border_ = linef(POINT(leftLine.begin.x - leftLine.end.x / 2, leftLine.end.y +2), POINT(0, leftLine.begin.y+2));
+    right_image_border_ = linef(POINT(rightLine.begin.x - (rightLine.end.x - width)/2, rightLine.end.y+2), POINT(width, rightLine.begin.y+2));
+    //What is that border???
+    left_image_border.draw(imBirdseye, cv::Scalar(0,0,255),1);
+    right_image_border.draw(imBirdseye, cv::Scalar(0,0,255),1);
+    
+    cv::warpPerspective(imBirdseye, imBirdseye, birdseye_matrix, imBirdseye.size(), cv::INTER_LINEAR);
+    
     imshow( window_name_birdseye, imBirdseye ); 
 
-/*
-    float bottom = height;
-    float xleft = leftLine.end.x;
-    float xright = rightLine.end.x;
-        {
-            xright = rightLine.begin.x;
-            xleft = leftLine.begin.x;
-        }
-        
-        center_diff_ = (abs(xleft + xright) / 2.f - width /2.f);
-
-        //Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-        POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
-
-        //Warp compresses the bottom two cordinates together
-        POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
-
-        birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-
-        left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2, leftLine.end.y +2), POINT(0, leftLine.begin.y+2));
-        right_image_border_ = linef(POINT(xright - (rightLine.end.x - width)/2, rightLine.end.y+2), POINT(width, rightLine.begin.y+2));
-        
     return birdseye_matrix;
-    */
 }
 
 static void TestDrawing() {
