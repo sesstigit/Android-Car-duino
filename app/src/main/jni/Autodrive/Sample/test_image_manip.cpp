@@ -22,7 +22,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
-
+#include <string>
+#include <sstream>
 
 // library includes
 #include <opencv2/core/core.hpp>
@@ -94,10 +95,12 @@ cv::Mat frame, frameGray;  //input frame image, and its greyscale
 cv::Mat imCanny, imCannyColor; //output image after cv::canny
 cv::Mat imHough; // output of Hough transform
 cv::Mat imLane; // output of Lane processing
-cv::Mat imBirdseye; // output of Birdseye
+cv::Mat imBirdseye; // image pre-Birdseye warping
+cv::Mat imBirdseyeWarped; // output of Birdseye warping
+cv::Mat birdseye_matrix;
 cv::Mat imTest; // just for basic drawing tests
 
-int lowThresh;
+int lowThresh = 80;  // can be changed in GUI slider
 int max_lowThresh = 300;
 int highThresh;
 int max_highThresh = 300;
@@ -107,9 +110,13 @@ string window_name_canny = "Canny Edge Detection Test";
 string window_name_hough = "Hough Line Detection Test";
 string window_name_lane = "Lane Detection Test";
 string window_name_birdseye = "Birdseye Test";
+string window_name_birdseye_warped = "Birdseye Warped Test";
 string window_name_test = "Drawing Test";
-int houghThresh;
+int houghThresh = 20;  // can be changed in GUI slider
 int max_houghThresh = 300;
+float center_diff_;
+bool birdseye_done = false;  //only calculate the birdseye matrix once, then stop doing it
+long frame_number = 1;  //default go to first frame in video.  Can be overridden on command line using -f
 
 Autodrive::lanes lane_lines;
 
@@ -162,13 +169,16 @@ static void HoughThreshold() {
     //}
 }
 
+// Based on BirdseyeTransformer::get_lane_markings
+// input is imCanny
+// output is lanes drawn on the image
 static void LaneThreshold() {
     std::vector<cv::Vec4i> lines;
     linef leftMostLine;
     linef rightMostLine;
     
     imCannyColor.copyTo(imLane);  //start off with the edge detection color image
-    cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);
+    cv::HoughLinesP(imCanny, lines, 1, CV_PI / 180, 1+houghThresh, 10, 50);  //but only process the GRAYSCALE image
     bool foundLeft = false;
     bool foundRight = false;
     int center = imCanny.size().width / 2;
@@ -214,65 +224,91 @@ static void LaneThreshold() {
                 //! Draw the final chosen lane lines (BGR)
                 leftMostLine.draw(imLane, cv::Scalar(0, 0, 255), 5);
                 rightMostLine.draw(imLane,cv::Scalar(0, 255, 0), 5);
-                ::lane_lines.left = leftMostLine; 
-                ::lane_lines.right = rightMostLine;
-                ::lane_lines.found = true;
+                lane_lines.left = leftMostLine; 
+                lane_lines.right = rightMostLine;
+                lane_lines.found = true;
             }
         }
     }
+    if (lane_lines.found == false) {
+        cv::putText(imLane, "SEARCHING FOR STRAIGHT LANES...", Autodrive::POINT(50.f, imLane.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
+    }
+    std::ostringstream oss;
+    oss << "Frame" << frame_number;
+    //std::string var = oss.str();
+    cv::putText(imLane, oss.str(), Autodrive::POINT(30,30), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
     imshow( window_name_lane, imLane ); //Autodrive::show_image makes the image 3 times bigger
 }
 
+// Based on BirdseyeTransformer::find_perspective()
+// Input = imCanny
 void BirdseyeThreshold() {
-    imHough.copyTo(imBirdseye); 
-    if (!::lane_lines.found) {
+    imCannyColor.copyTo(imBirdseye);   //start off with the Canny color image, so we can draw colour lines on it
+    if (!lane_lines.found) {
             return;
     }
-
-    //take a copy of the current lanes
+    //take a copy of the current lanes, so we can stretch them without affecting the global variable.
     Autodrive::lanes b_lines = lane_lines;
     
     float icrop = 0.f;
     float xdiff;
-    float height = (float) imBirdseye.size().height;
-    float width = (float) imBirdseye.size().width;
+    float im_height = (float) imBirdseye.size().height;
+    float im_width = (float) imBirdseye.size().width;
     //! Stretch the lines, but if they converge at the top of the image,
-    //  keep cropping the top of the lines until they are width/3 pixels apart.
+    //  keep cropping the top of the lines until they are at least X pixels apart
     do
     {
         xdiff = b_lines.right.leftMost_x() - b_lines.left.rightMost_x();
-        b_lines.right.stretchY(icrop, height);  //params=bottom, top
-        b_lines.left.stretchY(icrop, height);
+        b_lines.right.stretchY(icrop, im_height);  //params=bottom(lowest value of y) to "top" (highest value of y)
+        b_lines.left.stretchY(icrop, im_height);
         icrop+=3.f;
-    } while (xdiff < width/3.0f);
+    } while (xdiff < im_width/5.0f);  //was div by 3, but couldn't see far enough ahead
 
-    b_lines.right.draw(imBirdseye, cv::Scalar(255,0,0),3);
+    b_lines.right.draw(imBirdseye, cv::Scalar(255,0,0),3);  //blue lane lines
     b_lines.left.draw(imBirdseye, cv::Scalar(255,0,0),3);
     
     //stretchY ensures the lines start at lowY and end at highY
     //Hence the center point will be half way between either the start point
-    //or the end point.  The difference from the center point is then:
-    center_diff_ = (abs(leftLine.begin.x + rightLine.begin.x) / 2.f - width /2.f);
+    //or the end point.  The difference from the image center is then:
+    center_diff_ = (abs(b_lines.left.begin.x + b_lines.right.begin.x) / 2.f - im_width /2.f);
 
-    //Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-    POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, height), POINT(rightLine.end.x, height) };
-
-    //Warp compresses the bottom two cordinates together
-    POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(leftLine.begin.x, height), POINT(rightLine.begin.x, height) };
+    //getPerspectiveTransform requires 4 vertices of a quadrangle in the source image, and their corresponding points in the dest image
+    //  - source image: choose the start and end of the lane lines
+    //  - dest image: choose the widest part of the lane lines (which fit in the original image) and then straight up
+    cout << "left lane begin" << b_lines.left.begin << endl;
+    cout << "left lane end" << b_lines.left.end << endl;
+    cout << "right lane begin" << b_lines.right.begin << endl;
+    cout << "right lane end" << b_lines.right.end << endl;
+    //! In case the lane lines go outside the image (e.g. off the screen to the right), keep shortening the lines until
+    //! they all fit inside the image.
+    icrop = 0.f;
+    while ((b_lines.left.end.x < 0) || (b_lines.right.end.x > im_width)) {
+        icrop+=0.1f;
+        b_lines.right.stretchY(b_lines.right.begin.y, im_height-icrop); //params=bottom(lowest value of y) to "top" (highest value of y)
+        b_lines.left.stretchY(b_lines.left.begin.y, im_height-icrop);
+    }
+    cout << "new left lane begin" << b_lines.left.begin << endl;
+    cout << "new left lane end" << b_lines.left.end << endl;
+    cout << "new right lane begin" << b_lines.right.begin << endl;
+    cout << "new right lane end" << b_lines.right.end << endl;
+    
+    //Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.end.x, im_height), Autodrive::POINT(b_lines.right.end.x, im_height) };
+    Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.left.end, b_lines.right.end };
+    Autodrive::POINT pts2[] = { Autodrive::POINT(b_lines.left.end.x, 0), Autodrive::POINT(b_lines.right.end.x, 0), b_lines.left.end, b_lines.right.end };
 
     birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-
-    left_image_border_ = linef(POINT(leftLine.begin.x - leftLine.end.x / 2, leftLine.end.y +2), POINT(0, leftLine.begin.y+2));
-    right_image_border_ = linef(POINT(rightLine.begin.x - (rightLine.end.x - width)/2, rightLine.end.y+2), POINT(width, rightLine.begin.y+2));
-    //What is that border???
-    left_image_border.draw(imBirdseye, cv::Scalar(0,0,255),1);
-    right_image_border.draw(imBirdseye, cv::Scalar(0,0,255),1);
+    // This border is the edge of the original image in the warped space (should only plot it in the warped image)
+    linef left_image_border_ = linef(Autodrive::POINT(b_lines.left.begin.x - b_lines.left.end.x / 2, b_lines.left.end.y +2), Autodrive::POINT(0, b_lines.left.begin.y+2));
+    linef right_image_border_ = linef(Autodrive::POINT(b_lines.right.begin.x - (b_lines.right.end.x - im_width)/2, b_lines.right.end.y+2), Autodrive::POINT(im_width, b_lines.right.begin.y+2));
     
-    cv::warpPerspective(imBirdseye, imBirdseye, birdseye_matrix, imBirdseye.size(), cv::INTER_LINEAR);
+    cv::warpPerspective(imBirdseye, imBirdseyeWarped, birdseye_matrix, imBirdseye.size(), cv::INTER_LINEAR);
     
-    imshow( window_name_birdseye, imBirdseye ); 
-
-    return birdseye_matrix;
+    left_image_border_.draw(imBirdseyeWarped, cv::Scalar(0,0,255),1);  //red image border
+    right_image_border_.draw(imBirdseyeWarped, cv::Scalar(0,0,255),1);
+    
+    imshow( window_name_birdseye, imBirdseye );
+    imshow( window_name_birdseye_warped, imBirdseyeWarped ); 
+    birdseye_done = true;
 }
 
 static void TestDrawing() {
@@ -314,14 +350,15 @@ static void TestDrawing() {
 static void updateThreshold(int, void*) {
     CannyThreshold();
     HoughThreshold();
-    LaneThreshold();
-    BirdseyeThreshold();
+    if (!birdseye_done) {
+      LaneThreshold();
+      BirdseyeThreshold();
+    }
     TestDrawing();
 }
 
 int main(int argc, char** argv) {
     cv::Size* resolution = nullptr;
-    int frame_number = 1;  // can override using command line param f
     
     // parse options
     const char* optstring = "hf:r:";
@@ -333,7 +370,7 @@ int main(int argc, char** argv) {
         return 0;
         break;
       case 'f':
-        frame_number = atoi(optarg);
+        frame_number = atol(optarg);
         break;
       case 'r':
         {
@@ -364,7 +401,7 @@ int main(int argc, char** argv) {
     namedWindow(window_name_canny, WINDOW_AUTOSIZE);
     namedWindow(window_name_hough, WINDOW_AUTOSIZE);
     
-    for (int i = 0; i < frame_number; i++){
+    for (long i = 0; i < frame_number; i++) {
         capture >> frame;  //fast forward to frame of interest
     }
 
@@ -382,7 +419,8 @@ int main(int argc, char** argv) {
     imCannyColor.create( frame.size(), frame.type() );  //create a new Mat image of same size as the input frame
     imHough.create( frame.size(), frame.type() ); 
     imLane.create( frame.size(), frame.type() );
-    imBirdseye.create( frame.size(), frame.type() ); 
+    imBirdseye.create( frame.size(), frame.type() );
+    imBirdseyeWarped.create( frame.size(), frame.type() ); 
     imTest.create( frame.size(), frame.type() ); 
     
     while (!frame.empty())
@@ -409,9 +447,9 @@ int main(int argc, char** argv) {
 		// Keep stretching the lines until they converge to width/3
 		// stretching code removed ...
 		// Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-		// POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+		// Autodrive::POINT pts1[] = { leftLine.begin, rightLine.begin, Autodrive::POINT(leftLine.end.x, bottom), Autodrive::POINT(rightLine.end.x, bottom) };
 		// Warp compresses the bottom two cordinates together
-		// POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
+		// Autodrive::POINT pts2[] = { leftLine.begin, rightLine.begin, Autodrive::POINT(xleft, bottom), Autodrive::POINT(xright, bottom) };
 		// birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
 		// Note: find_perspective() does not normalize_lighting.  Hence need to make the lanes obvious! Also, it does not convert image to grayscale. That is also done in normalize_lighting.
 		// END DESCRIPTION
