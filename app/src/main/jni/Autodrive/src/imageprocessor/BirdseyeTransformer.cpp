@@ -47,7 +47,8 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 	float xdiff;
 	float height = (float) matCopy.size().height;
 	float width = (float) matCopy.size().width;
-	//! Keep stretching the lines until they converge to width/3
+	//! Stretch the lines, but if they converge at the top of the image,
+    //  keep cropping the top of the lines until they are at least X pixels apart
 	do
 	{
 		xdiff = rightLine.leftMost_x() - leftLine.rightMost_x();
