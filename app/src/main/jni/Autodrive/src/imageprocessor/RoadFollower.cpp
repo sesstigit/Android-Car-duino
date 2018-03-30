@@ -32,7 +32,7 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* im
 	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
 }
 
-// TODO: main function here.  Also fix case of variables.
+// This is the main method called for each camera image in Autodrive mode.
 CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 	CarCmd cmd;
 	
@@ -80,8 +80,6 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 			cmd.set_angle(newAngle  / 25.0);
 		}
 	}
-	
-
 	return cmd;
 }
 	
@@ -90,10 +88,9 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 	POINT center_bottom(center_x_, cannied.size().height - 8);
 	//!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 10
 	//! Starting at the bottom center of the image we expect to see the car bonnet.
-	//! Lines and white pixels are normally detected on the bonnet.
+	//! Canny line detection finds patterns on the bonnet.
 	//! Hence search upwards until all black +-10 pixels to left and right.
-	//! That should be the black road.
-	//! FIX: this will not work for a white road. Do we need this function?
+	//! That should be the middle of the road lane where there should be no lines detected.
 	bool hit = true;
 	while (hit)
 	{
