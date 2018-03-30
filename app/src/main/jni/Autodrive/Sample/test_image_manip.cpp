@@ -21,9 +21,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <getopt.h>
 #include <string>
 #include <sstream>
+#ifdef __linux__ 
+#include <getopt.h>
+#else
+#include "getopt.h"
+#endif
 
 // library includes
 #include <opencv2/core/core.hpp>
@@ -46,9 +50,10 @@
 #include "imageprocessor/ImageProcessor.h"
 #include "imageprocessor/Line.h"
 
-using namespace cv;
 using namespace std;
-using linef = Autodrive::Line<float>;
+using namespace cv;
+using namespace Autodrive;
+//using linef = Autodrive::Line<float>;
 
 //! Visualise the effect of each opencv image manipulation method.
 //! i.e. this test program aims to improve understanding of how each
@@ -98,6 +103,7 @@ cv::Mat imLane; // output of Lane processing
 cv::Mat imBirdseye; // image pre-Birdseye warping
 cv::Mat imBirdseyeWarped; // output of Birdseye warping
 cv::Mat birdseye_matrix;
+cv::Mat imFrameWarped; //input frame, warped
 cv::Mat imTest; // just for basic drawing tests
 
 int lowThresh = 80;  // can be changed in GUI slider
@@ -106,17 +112,24 @@ int highThresh;
 int max_highThresh = 300;
 int hi_lo_ratio = 3;  //recommended ratio used to convert Canny lowThresh to highThresh
 int kernel_size = 3;
+string window_name_frame = "A frame from the Camera";
 string window_name_canny = "Canny Edge Detection Test";
 string window_name_hough = "Hough Line Detection Test";
 string window_name_lane = "Lane Detection Test";
 string window_name_birdseye = "Birdseye Test";
 string window_name_birdseye_warped = "Birdseye Warped Test";
+string window_name_frame_warped = "Warped Input Frame Normalise Test";
+string window_name_road_follower = "Road Follower Test";
 string window_name_test = "Drawing Test";
 int houghThresh = 20;  // can be changed in GUI slider
 int max_houghThresh = 300;
 float center_diff_;
+std::unique_ptr<RoadFollower> road_follower_;
 bool birdseye_done = false;  //only calculate the birdseye matrix once, then stop doing it
 long frame_number = 1;  //default go to first frame in video.  Can be overridden on command line using -f
+bool init_road_follower_done = false;
+linef left_image_border_;
+linef right_image_border_;
 
 Autodrive::lanes lane_lines;
 
@@ -189,25 +202,42 @@ static void LaneThreshold() {
         int endx = one_line[2];
         int endy = one_line[3];
         linef one_hough_line(one_line);  //call the Line constructor to convert to a linef
-    
+		//! Each Hough Line starts from min x val and ends at max x val (left lane line slopes forward so start is at bottom, right line is opposite)
+		// Direction_fixed_half will take the positive direction of a line (range 0 to PI)
         float dirr = one_hough_line.direction_fixed_half();
         float dir_diff = dirr - Autodrive::Direction::FORWARD;
     
-        //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
-        if (abs(dir_diff) < 0.f || abs(dir_diff) > 1.f)
+        //! Ignore line if it differs from Direction::FORWARD by 1 radian (about 57 degrees)
+        if (abs(dir_diff) > 1.f)
             continue;
         //! Draw all remaining candidate lines: image, colour(BGR), thickness
         one_hough_line.draw(imLane, cv::Scalar(0, 255, 255), 1);
         //! Work out whether it is the left or right line
-        if ( startx > center + 20) {
+        if ( startx > center + 5) {
                 if (endx > startx && endy > starty && one_hough_line.length() > 50) {  // line starting on RHS, and sloping down further right
-                    rightMostLine = one_hough_line;
-                    foundRight = true;
+					if (!foundRight) {
+						rightMostLine = one_hough_line;
+						foundRight = true;
+					}
+					else {
+						if (one_hough_line.length() > rightMostLine.length()) {
+							rightMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
+						}
+					}
                 }
         }
-        if ( endx < center - 20) { // line on LHS of center
-                leftMostLine = one_hough_line;
-                foundLeft = true;
+        if ( endx < center - 5) { // line ends LHS of center (left line slopes forward with start at bottom, end at top)
+			if (startx < endx && starty > endy && one_hough_line.length() > 50) {  //ensure line slopes forward, and is 50 pixels long
+				if (!foundLeft) {
+					leftMostLine = one_hough_line;
+					foundLeft = true;
+				}
+				else {
+					if (one_hough_line.length() > leftMostLine.length()) {
+						leftMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
+					}
+				}
+			}
         }
     }
     
@@ -215,19 +245,21 @@ static void LaneThreshold() {
     // Draw the likely the lane markers, params=Image,colour(BGR),thckness
         leftMostLine.draw(imLane,cv::Scalar(0,0,255),2);
         rightMostLine.draw(imLane,cv::Scalar(0,255,0),2);
-        if ( abs((-rightMostLine.k) - leftMostLine.k) < 0.9f)
-        {   rightMostLine.stretchY(0.f, (float) imCanny.size().height);
+		//! As lines get more vertical, slope becomes a large number.  Hence getting two lines with the same slope +-1 is unlikely.
+		//! Instead, use radians.  Compare the absolute direction of the two lines versus FORWARD.  They should be similar.  Threshold is PI/6, approx 50 degrees.
+		float dir_diff_left = leftMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. PI/4 - PI/2 = -PI/4
+		float dir_diff_right = rightMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. 3PI/4 - PI/2 = PI/4
+		cout << "rightMostLine radian direction from FORWARD = " << dir_diff_left << endl;
+		cout << "leftMostLine radian direction from FORWARD = " << dir_diff_right << ", requires difference < " << CV_PI / 6 << endl;
+		if (abs((dir_diff_left + dir_diff_right)) < (CV_PI / 6)) {
+			rightMostLine.stretchY(0.f, (float) imCanny.size().height);
             leftMostLine.stretchY(0.f, (float) imCanny.size().height );
-            //TODO: Deprecated line
-            //if ((leftMostLine.leftMost_x() >rightMostLine.rightMost_x()))
-            {
-                //! Draw the final chosen lane lines (BGR)
-                leftMostLine.draw(imLane, cv::Scalar(0, 0, 255), 5);
-                rightMostLine.draw(imLane,cv::Scalar(0, 255, 0), 5);
-                lane_lines.left = leftMostLine; 
-                lane_lines.right = rightMostLine;
-                lane_lines.found = true;
-            }
+            //! Draw the final chosen lane lines (BGR)
+            leftMostLine.draw(imLane, cv::Scalar(0, 0, 255), 5);
+            rightMostLine.draw(imLane,cv::Scalar(0, 255, 0), 5);
+            lane_lines.left = leftMostLine; 
+            lane_lines.right = rightMostLine;
+            lane_lines.found = true;
         }
     }
     if (lane_lines.found == false) {
@@ -262,7 +294,7 @@ void BirdseyeThreshold() {
         b_lines.right.stretchY(icrop, im_height);  //params=bottom(lowest value of y) to "top" (highest value of y)
         b_lines.left.stretchY(icrop, im_height);
         icrop+=3.f;
-    } while (xdiff < im_width/5.0f);  //was div by 3, but couldn't see far enough ahead
+    } while (xdiff < im_width/3.0f);  //was div by 3, but can increase this to see further into distance
 
     b_lines.right.draw(imBirdseye, cv::Scalar(255,0,0),3);  //blue lane lines
     b_lines.left.draw(imBirdseye, cv::Scalar(255,0,0),3);
@@ -273,20 +305,20 @@ void BirdseyeThreshold() {
     center_diff_ = (abs(b_lines.left.begin.x + b_lines.right.begin.x) / 2.f - im_width /2.f);
 
     //getPerspectiveTransform requires 4 vertices of a quadrangle in the source image, and their corresponding points in the dest image
-    //  - source image: choose the start and end of the lane lines
-    //  - dest image: choose the widest part of the lane lines (which fit in the original image) and then straight up
+    //  - source image: choose the start and end of the lane lines (tried allowing 10 pixels on the outside of the lines, but then the warped lanes are still not straight)
+    //  - dest image: choose the size of the image (but give a bit of room to left and right to allow lane line detection)
     cout << "left lane begin" << b_lines.left.begin << endl;
     cout << "left lane end" << b_lines.left.end << endl;
     cout << "right lane begin" << b_lines.right.begin << endl;
     cout << "right lane end" << b_lines.right.end << endl;
     //! In case the lane lines go outside the image (e.g. off the screen to the right), keep shortening the lines until
     //! they all fit inside the image.
-    icrop = 0.f;
-    while ((b_lines.left.end.x < 0) || (b_lines.right.end.x > im_width)) {
-        icrop+=0.1f;
-        b_lines.right.stretchY(b_lines.right.begin.y, im_height-icrop); //params=bottom(lowest value of y) to "top" (highest value of y)
-        b_lines.left.stretchY(b_lines.left.begin.y, im_height-icrop);
-    }
+//    icrop = 0.f;
+//    while ((b_lines.left.end.x < 0) || (b_lines.right.end.x > im_width)) {
+//        icrop+=0.1f;
+//        b_lines.right.stretchY(b_lines.right.begin.y, im_height-icrop); //params=bottom(lowest value of y) to "top" (highest value of y)
+//        b_lines.left.stretchY(b_lines.left.begin.y, im_height-icrop);
+//    }
     cout << "new left lane begin" << b_lines.left.begin << endl;
     cout << "new left lane end" << b_lines.left.end << endl;
     cout << "new right lane begin" << b_lines.right.begin << endl;
@@ -294,14 +326,21 @@ void BirdseyeThreshold() {
     
     //Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.end.x, im_height), Autodrive::POINT(b_lines.right.end.x, im_height) };
     Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.left.end, b_lines.right.end };
-    Autodrive::POINT pts2[] = { Autodrive::POINT(b_lines.left.end.x, 0), Autodrive::POINT(b_lines.right.end.x, 0), b_lines.left.end, b_lines.right.end };
+	//Autodrive::POINT pts1[] = { Autodrive::POINT(b_lines.left.begin.x -10, b_lines.left.begin.y), Autodrive::POINT(b_lines.right.begin.x +10, b_lines.right.begin.y), Autodrive::POINT(b_lines.left.end.x -10, b_lines.left.end.y), Autodrive::POINT(b_lines.right.end.x +10, b_lines.right.end.y) };
+    // Next two lines tried to stretch the single lane out to the whole screen, however it distorted the image too much, and made the lane lines too fuzzy
+	//Autodrive::POINT pts2[] = { Autodrive::POINT(b_lines.left.end.x, 0), Autodrive::POINT(b_lines.right.end.x, 0), b_lines.left.end, b_lines.right.end };
+	//Autodrive::POINT pts2[] = { Autodrive::POINT(20,0), Autodrive::POINT(im_width-50,0), Autodrive::POINT(20,im_height), Autodrive::POINT(im_width-50,im_height) };
+	// pts2 just ensures the lanes are now made straight, by going from the start of the detected lines (near top of image), then straight down to bottom of image.
+	Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.begin.x, im_height), Autodrive::POINT(b_lines.right.begin.x, im_height) };
 
     birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
     // This border is the edge of the original image in the warped space (should only plot it in the warped image)
-    linef left_image_border_ = linef(Autodrive::POINT(b_lines.left.begin.x - b_lines.left.end.x / 2, b_lines.left.end.y +2), Autodrive::POINT(0, b_lines.left.begin.y+2));
-    linef right_image_border_ = linef(Autodrive::POINT(b_lines.right.begin.x - (b_lines.right.end.x - im_width)/2, b_lines.right.end.y+2), Autodrive::POINT(im_width, b_lines.right.begin.y+2));
-    
-    cv::warpPerspective(imBirdseye, imBirdseyeWarped, birdseye_matrix, imBirdseye.size(), cv::INTER_LINEAR);
+    // The border is always detected by Canny as a line, so we need to know where it is so we can blank the Cannied lines there.
+	// The calculation here isnt perfect for some reason, but it is good enough. Have fudged +5 to each x value.  FIX.
+	left_image_border_ = linef(Autodrive::POINT(b_lines.left.begin.x - b_lines.left.end.x / 2 +5, b_lines.left.end.y), Autodrive::POINT(0, b_lines.left.begin.y));
+    right_image_border_ = linef(Autodrive::POINT(b_lines.right.begin.x - (b_lines.right.end.x - im_width) / 2 +5, b_lines.right.end.y), Autodrive::POINT(im_width, b_lines.right.begin.y));
+
+	cv::warpPerspective(imBirdseye, imBirdseyeWarped, birdseye_matrix, imBirdseye.size(), cv::INTER_LINEAR);
     
     left_image_border_.draw(imBirdseyeWarped, cv::Scalar(0,0,255),1);  //red image border
     right_image_border_.draw(imBirdseyeWarped, cv::Scalar(0,0,255),1);
@@ -310,6 +349,55 @@ void BirdseyeThreshold() {
     imshow( window_name_birdseye_warped, imBirdseyeWarped ); 
     birdseye_done = true;
 }
+
+void init_road_follower() {
+	// birdseyeTransform
+	cv::warpPerspective(frame, imFrameWarped, birdseye_matrix, frame.size(), cv::INTER_LINEAR);
+	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer ysed
+	cv::Mat imFrameWarpedCannied;
+	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
+	int the_center = static_cast<int>(frame.size().width / 2.f + center_diff_);
+	road_follower_ = Autodrive::make_unique<Autodrive::RoadFollower>(imFrameWarpedCannied, the_center, car.img_conf());
+	imshow(window_name_frame_warped, imFrameWarped);
+	init_road_follower_done = true;
+}
+
+void continue_road_follower()
+{
+	imshow(window_name_frame, frame);
+	cv::warpPerspective(frame, imFrameWarped, birdseye_matrix, frame.size(), cv::INTER_LINEAR);
+	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
+	//draw the border of the warped image (to check it is calculated correctly)
+	left_image_border_.draw(imFrameWarped, cv::Scalar(0, 0, 255), 2);  //red image border
+	right_image_border_.draw(imFrameWarped, cv::Scalar(0, 0, 255), 2);
+	imshow(window_name_frame_warped, imFrameWarped);
+
+	cv::Mat imFrameWarpedCannied;
+	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
+	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
+	//cout << "center_diff_ is" << center_diff_ << endl;
+	left_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf()->transform_line_removal_threshold_);
+	right_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf()->transform_line_removal_threshold_);
+	imshow(window_name_canny, imFrameWarpedCannied);
+
+	//! Key step is to call update on the road_follower
+	// ***************** UP TO HERE ************************  need to understand steps in this update method. Particularly does it do a Hough Transform???
+	Autodrive::CarCmd cmnd = road_follower_->update(imFrameWarpedCannied, frame);
+	float angle = Autodrive::Direction::FORWARD;
+
+	if (cmnd.changed_angle())
+	{
+		//TODO: *15 really needed.  Mathf was prepended by Autodrive::
+		angle = static_cast<float>(((90.0 - cmnd.angle()*15.0)* Mathf::PI) / 180.f);
+	}
+
+	POINT center(frame.size().width / 2.f, (float)frame.size().height);
+	//! Draw a green line from center bottom in direction of the changed angle
+	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(frame, CV_RGB(0, 250, 0));
+	imshow(window_name_road_follower, frame);
+	
+}
+
 
 static void TestDrawing() {
     vector<cv::Vec4i> lines;
@@ -348,13 +436,23 @@ static void TestDrawing() {
 }
 
 static void updateThreshold(int, void*) {
-    CannyThreshold();
-    HoughThreshold();
-    if (!birdseye_done) {
-      LaneThreshold();
-      BirdseyeThreshold();
-    }
-    TestDrawing();
+	if (!init_road_follower_done) {
+		CannyThreshold();
+		HoughThreshold();
+		if (!birdseye_done) {
+			LaneThreshold();
+			BirdseyeThreshold();
+		}
+		else {
+			init_road_follower();
+		}
+	}
+	else {
+		//Problem with this is all the windows no longer update
+		// Does this do a Hough transform????
+		continue_road_follower();
+	}
+    //TestDrawing();
 }
 
 int main(int argc, char** argv) {
@@ -374,9 +472,14 @@ int main(int argc, char** argv) {
         break;
       case 'r':
         {
-          char dummych;
+		  char dummych[1];
+          
           resolution = new cv::Size();
+#ifdef __linux__
           if (sscanf(optarg, "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
+#else
+		  if (sscanf_s(optarg, "%d%1s%d", &resolution->width, dummych, (unsigned)sizeof(dummych), &resolution->height) != 3) {
+#endif
             printf("%s not a valid resolution\n", optarg);
             return 1;
           }
@@ -400,6 +503,7 @@ int main(int argc, char** argv) {
     
     namedWindow(window_name_canny, WINDOW_AUTOSIZE);
     namedWindow(window_name_hough, WINDOW_AUTOSIZE);
+	namedWindow(window_name_frame_warped, WINDOW_AUTOSIZE);
     
     for (long i = 0; i < frame_number; i++) {
         capture >> frame;  //fast forward to frame of interest
@@ -407,13 +511,9 @@ int main(int argc, char** argv) {
 
     // Do same image manipulation prior to Canny as per Autodrive code
     // i.e. set image size, birdseye transform, normalize.
-    // Note: normalize includes steps: take copy, apply cv::blur, apply cv::cvtColor(grayscale) to find background lighting.lightin
-    //       Then convert input using CV_BGR_2Lab, split the planes, and remove background lighting from plane 0. 
-    //       The input image is then reassembled and converted back to colour = CV_Lab2BGR
-    
     createTrackbar( "Min Threshold:", window_name_canny, &lowThresh, max_lowThresh, updateThreshold );
     createTrackbar( "Hough Threshold:", window_name_hough, &houghThresh, max_houghThresh, updateThreshold );
-    
+	
     //Next line no longer required, since the highThresh is set automatically using hi_lo_ratio
     //createTrackbar( "Max Threshold:", window_name, &highThresh, max_highThresh, CannyThreshold );
     imCannyColor.create( frame.size(), frame.type() );  //create a new Mat image of same size as the input frame
@@ -421,60 +521,15 @@ int main(int argc, char** argv) {
     imLane.create( frame.size(), frame.type() );
     imBirdseye.create( frame.size(), frame.type() );
     imBirdseyeWarped.create( frame.size(), frame.type() ); 
+	imFrameWarped.create(frame.size(), frame.type());
     imTest.create( frame.size(), frame.type() ); 
     
     while (!frame.empty())
     {
-		// START DESCRIPTION
-		// Emulate what is done in imageprocessor/ImageProcessor, i.e.
-		// BirdseyeTransformer xformer;
-		// auto found_pespective = xformer.find_perspective(mat);
-		// if (found_pespective) {
-		//    perspective_ = *found_pespective;
-		//    xformer.birds_eye_transform(mat, perspective_);
-		//    if (img_conf_->normalize_lighting_)
-		//    	normalize_lighting(mat, blur_i_, intensity_ / 100.f);
-		//    cv::Mat cannied_mat;
-		//    cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
-		//
-		// And here is relevant code from find_perspective(mat):
-		// cv::Canny(matCopy, cannied, thresh1, thresh2, 3);
-		// matCopy = cannied;
-		// auto lines = get_lane_markings(matCopy,matIn);  //calls cv::HoughLinesP
-		// linef leftLine = lines.left;
-		// linef rightLine = lines.right;
-		// float icrop = 0.f;
-		// Keep stretching the lines until they converge to width/3
-		// stretching code removed ...
-		// Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-		// Autodrive::POINT pts1[] = { leftLine.begin, rightLine.begin, Autodrive::POINT(leftLine.end.x, bottom), Autodrive::POINT(rightLine.end.x, bottom) };
-		// Warp compresses the bottom two cordinates together
-		// Autodrive::POINT pts2[] = { leftLine.begin, rightLine.begin, Autodrive::POINT(xleft, bottom), Autodrive::POINT(xright, bottom) };
-		// birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-		// Note: find_perspective() does not normalize_lighting.  Hence need to make the lanes obvious! Also, it does not convert image to grayscale. That is also done in normalize_lighting.
-		// END DESCRIPTION
-		
-        //vector<Mat> images;  //empty vector
-        //string frameString{"frame"};
-        //frameString += toString(frame_number);
-            //cvv::showImage(frame, CVVISUAL_LOCATION, frameString.c_str());
-    
-        // convert to grayscale
-        //cv::cvtColor(frame, frameGray, CV_BGR2GRAY);
-            //cvv::debugFilter(frame, frameGray, CVVISUAL_LOCATION, "to gray");
-        
-        // Show the output of the cv::canny function using the input frame 
+        // Show the output of the cv::canny and other functions on the input frame 
         updateThreshold(0,0);
         //show_image(frame, 3, "w");  // display the raw video frame
-        
-        //Might be needed on track
-        //cv::erode(matCopy, matCopy, cv::Mat(), cv::Point(-1, -1), 1);
-
-
-        //Autodrive::car.img_proc()->continue_processing(frame);
-
-        
-        waitKey(0); // waits to display frame
+        waitKey(0); // waits until a keystroke
         capture >> frame;
         frame_number++;
     }
