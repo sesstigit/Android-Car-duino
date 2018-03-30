@@ -24,8 +24,8 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	img_conf_(img_conf),
 	thresh1_(181),
 	thresh2_(71),
-	intensity_(110), //was 110
-	blur_i_(11),
+	//intensity_(110), //was 110
+	//blur_i_(11),
 	road_follower_(nullptr) {
 }
 //Note: did not initialise the following class members
@@ -42,8 +42,10 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 	{
 		perspective_ = *found_pespective;
 		xformer.birds_eye_transform(mat, perspective_);
-		if (img_conf_->normalize_lighting_)
-			normalize_lighting(mat, blur_i_, intensity_ / 100.f);
+		if (img_conf_->normalize_lighting_) {
+			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
+			normalize_lighting(mat);
+		}
 		cv::Mat cannied_mat;
 		cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
 		int the_center = static_cast<int>(mat->size().width / 2.f + xformer.center_diff());
@@ -60,13 +62,15 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 {
 	BirdseyeTransformer xformer;
 	xformer.birds_eye_transform(&mat, perspective_);
-	if (img_conf_->normalize_lighting_)
-		normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
+	if (img_conf_->normalize_lighting_) {
+		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
+		normalize_lighting(&mat);
+	}
 
 	cv::Mat cannied_mat;
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
 
-	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black
+	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
 	xformer.left_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	xformer.right_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
 	
@@ -123,13 +127,14 @@ int ImageProcessor::dashed_line_gaps() {
 	return road_follower_->dashed_line_gaps();
 }
 
-void ImageProcessor::normalize_lighting(cv::Mat* bgr_image,int blur,float intensity)
+/*  Removed this version of normalize which requires two parameters.
+void ImageProcessor::normalize_lighting(cv::Mat* bgr_image, int blur, float intensity)
 {
 	cv::Mat light_mat;
 	cv::blur(*bgr_image, light_mat, cv::Size(blur, blur));
 	cv::cvtColor(light_mat, light_mat, CV_BGR2GRAY);
 
-	cv::Mat lab_image;
+	//cv::Mat lab_image;  //bgr_image is modified in place, so don't need this.
 	cv::cvtColor(*bgr_image, *bgr_image, CV_BGR2Lab);
 
 	// Extract the L channel
@@ -143,4 +148,30 @@ void ImageProcessor::normalize_lighting(cv::Mat* bgr_image,int blur,float intens
 
 	// convert back to RGB
 	cv::cvtColor(*bgr_image, *bgr_image, CV_Lab2BGR);
+}
+*/
+
+//! Normalize lighting with the CLAHE algorithm
+void ImageProcessor::normalize_lighting(cv::Mat* bgr_image)
+{
+	// convert bgr_image to Lab
+	cv::Mat lab_image;
+	cv::cvtColor(*bgr_image, lab_image, CV_BGR2Lab);
+
+	// Extract the L channel
+	std::vector<cv::Mat> lab_planes(3);
+	cv::split(lab_image, lab_planes);  // now we have the L image in lab_planes[0]
+
+	// apply the CLAHE algorithm to the L channel
+	cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+	clahe->setClipLimit(4);
+	cv::Mat dst;
+	clahe->apply(lab_planes[0], dst);
+
+	// Merge the the color planes back into an Lab image
+	dst.copyTo(lab_planes[0]);
+	cv::merge(lab_planes, lab_image);
+
+	// convert back to RGB
+	cv::cvtColor(lab_image, *bgr_image, CV_Lab2BGR);  
 }

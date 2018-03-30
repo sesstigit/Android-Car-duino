@@ -45,19 +45,21 @@ namespace Autodrive {
 		ImageProcessor(ImageConfig* img_conf);
 		bool init_processing(cv::Mat* mat);
 		CarCmd continue_processing(cv::Mat& mat);
+		//void normalize_lighting(cv::Mat* bgr_image, int blur = 20, float intensity = 0.5f);
+		void normalize_lighting(cv::Mat* bgr_image);
 	private:
 		bool left_line_found();
 		bool right_line_found();
 		bool is_left_lane();
 		bool is_right_lane();
 		int dashed_line_gaps();
-		void normalize_lighting(cv::Mat* bgr_image, int blur = 20, float intensity = 0.5f);
+		
 
 		ImageConfig* img_conf_;
 		int thresh1_;   // used in cv::Canny function
 		int thresh2_;   // used in cv::Canny function
-		int intensity_; // used in normalize lighting.  High value (200) means very few lines detected.  Low value (10) means lots of noisy lines detected.
-		int blur_i_;    // used in normalize lighting
+		//int intensity_; // used in normalize lighting.  High value (200) means very few lines detected.  Low value (10) means lots of noisy lines detected.
+		//int blur_i_;    // used in normalize lighting
 		std::unique_ptr<RoadFollower> road_follower_;
 		cv::Mat perspective_;
 
