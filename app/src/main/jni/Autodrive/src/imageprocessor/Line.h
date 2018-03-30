@@ -79,6 +79,7 @@ namespace Autodrive {
 			end = pointT(end.x - ychangeTop / k, top);
 		}
 
+		//! Converts any negative direction into a positive one, i.e. any line has two directions. This function chooses the positive direction.
 		float direction_fixed_half() {
 			float dirr = direction();
 			if (dirr < 0.f) {
