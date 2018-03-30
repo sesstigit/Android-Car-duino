@@ -32,7 +32,7 @@ namespace Autodrive {
 		ImageConfig();
 		// From settings.h
 		bool normalize_lighting_; //!< whether to normalize to account for changes in ambient brightness
-		//! TODO: work out why these configuration settings are required jist to find road above car
+		//! TODO: work out why these configuration settings are required just to find where road starts above car bonnet
 		int first_fragment_max_dist_; //!< 15-60, Maximum vertical distance to the first pixel from car_y
 		int left_iteration_length_; //!< 1-15, // How many pixels to iterate to the left, for each pixel
 		int right_iteration_length_; //!< 1-15, How many pixels to iterate to the right, for each pixel
