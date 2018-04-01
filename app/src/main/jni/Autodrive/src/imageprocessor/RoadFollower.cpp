@@ -25,9 +25,11 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* im
 	unfound_counter_(0) {
 
 	car_y_ = find_car_end(cannied);
+	//! Find the left and right road lines
 	POINT right_line_start = find_line_start(cannied, Direction::RIGHT);
 	POINT left_line_start = find_line_start(cannied, Direction::LEFT);
 
+	// The LineFollower constructor uses the found lines as a starting point 
 	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_, img_conf);
 	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
 }
@@ -39,13 +41,13 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 	left_line_follower_->update(cannied);
 	right_line_follower_->update(cannied);
 
-	drawMat = draw(cannied);
+	drawMat = draw(cannied);  //!< show the Canny edge detection of the camera image
 
 	optional<int> leftTargetAngle = left_line_follower_->get_prefered_angle();
 	optional<int> rightTargetAngle = right_line_follower_->get_prefered_angle();
 	optional<int> targetAngle = nullptr;
 	
-	//! Choose preferred angle to move
+	//! Choose preferred angle to move, based on the preferred angle for both the left and right lines
 	if (leftTargetAngle && rightTargetAngle && img_conf_->use_left_line_)
 	{
 		// Give the right line just a bit more priority since it seems more reliable
@@ -67,10 +69,11 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 		unfound_counter_ = 0;
 		if(img_conf_->smoothening_ == 0)
 		{
-			cmd.set_angle(*targetAngle / 25.0);
+			cmd.set_angle(*targetAngle / 25.0);  //TODO: why divide by 25???
 		}
 		else
 		{
+			// Calculate average of all previous angles in past "smoothening" targetAngles, e.g. average of past 5 frames.
 			int sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
 			int newAngle = sum / float(prev_dirs_.size() + 1);
 			prev_dirs_.push_back(newAngle);
@@ -106,12 +109,15 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 
 POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 {
+	//! Starting point is the center of the image at the top of the car bonnet
 	POINT iter(center_x_, car_y_);
 	SearchResult searchRes;
-	//SEARCH UPWARDS UNTIL HIT ON THE RIGHT or LEFT (dependant on direction value)
+	//! SEARCH UPWARDS UNTIL HIT ON THE RIGHT or LEFT (dependant on direction value).  Hit is a Canny edge represented as a white line
 	while (!searchRes.found)
 	{
-		searchRes = firstnonzero_direction(cannied, iter, direction, 360);// 0 = RIGHT
+		//! firstnonzero_direction(image, startpoint, direction, max_dist), so search for 360 pixels in specified direction from startpoint "iter"
+		// This is used to find the left line (by searching left) and the right line (by searching right) on a subsequent method call.
+		searchRes = firstnonzero_direction(cannied, iter, direction, 360);
 		if (!searchRes.found)
 			iter.y--;
 	}

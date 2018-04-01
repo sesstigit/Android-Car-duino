@@ -26,10 +26,13 @@ RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, I
 	max_dist_from_start_(22), max_upwards_iterations_(100), total_gap_(0) {
 }
 
+//! Called by LineFollower->update() on each line of the road.
 RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {
+	// Create a RoadLine, specifying the center_x_ point, and a start_point (calculated as get_first_point())
     RoadLine road(center_x_, get_first_point(cannied), img_conf_);
     optional<POINT> new_point;
     total_gap_ = 0;
+	// Keep adding points to the RoadLine up to maxsize (the road size)
     while ((new_point = get_next_point(cannied, road.get_estimated_angle(), road.back_points(), step_dist_)).valid && road.num_points() < maxsize)
     {
         if (!road.add_point(*new_point))
@@ -64,17 +67,18 @@ SearchResult RoadLineBuilder::find_point(const cv::Mat& cannied, POINT start, fl
     return right_search;
 }
 
-
+// Calculate the first point in a RoadLine.
 POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
 {
     SearchResult searchRes;
     int unfound = 0;  //!< incremented each time a search fails
-
+	// Begin search from previously found point.
     POINT start_point = last_start_;
 
-    //SEARCH UPWARDS UNTIL HIT (end search when firstFragmentMaxDist reached)
+    //SEARCH UPWARDS UNTIL HIT (end search when firstFragmentMaxDist reached).  HIT is a white point.
     while (!searchRes.found && unfound++ < img_conf_->first_fragment_max_dist_)
     {
+		//! Search both to left and right of start_point for a Canny edge detection white line.
         searchRes = find_point(cannied, start_point, Direction::LEFT, Direction::RIGHT,img_conf_->iterate_reduce_on_start_);
         if (!searchRes.found)
             start_point.y--;
@@ -82,7 +86,7 @@ POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
 
     // SEARCH DOWNWARDS IF HIT ON FIRST Y AXIS
     SearchResult new_hit;
-    new_hit = searchRes;
+    new_hit = searchRes;  //!< new_hit is initialised to the point found above (which has found=true)
     int yStart = 0;
     //!< unfound==1 means the search upwards was successful first time
     while (new_hit.found && unfound == 1 && yStart++ < 5 && searchRes.point.y < car_y_)
@@ -96,13 +100,14 @@ POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
             break;
     }
 
+	//! Set last_start_ at state for the next search
     if (linef(first_start_, searchRes.point).length2() <= max_dist_from_start_*max_dist_from_start_)
         last_start_ = searchRes.point;
 
     return searchRes.point;
 }
 
-//! 
+//! Get next point in a line based on the prev_point, an est_angle to search, and a step_distance to the next point.  Search left and right at each step.
 optional<POINT> RoadLineBuilder::get_next_point(const cv::Mat& cannied, float est_angle, const POINT& prev_point,int step_dist = 2)
 {
 
@@ -114,7 +119,7 @@ optional<POINT> RoadLineBuilder::get_next_point(const cv::Mat& cannied, float es
         it.y-=step_dist;
         it.x += cosf(est_angle)*step_dist;
         searchResult = find_point(cannied, it, Direction::LEFT, Direction::RIGHT);
-        total_gap_++;
+        total_gap_++;  //increments on each search step
         unfound++;
     }
 

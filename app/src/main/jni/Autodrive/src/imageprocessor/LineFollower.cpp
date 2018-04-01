@@ -21,7 +21,7 @@ using namespace Autodrive;
 
 LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, ImageConfig* img_conf) :
 	img_conf_(img_conf),
-	road_size_(40), //!< Note hardcoded roadsize of 40. TODO: make configurable
+	road_size_(40), //!< Note hardcoded roadsize of 40. This is how much of the road is built at a time.
 	is_found_(false)
 	{
 	road_builder_ = make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY, img_conf);
@@ -82,7 +82,8 @@ optional<int> LineFollower::get_prefered_angle() {
 	return nullptr;
 }
 
+//! RoadFollower->update() calls this method for both the left and right lines of the road.
 void LineFollower::update(cv::Mat& cannied) {
-	road_line_ = road_builder_->build(cannied, road_size_);
+	road_line_ = road_builder_->build(cannied, road_size_);  //!< road_size_ used by RoadLineBuilder as the max number of points to build
 	is_found_ = (road_line_.num_points() > 5 && fabs(road_line_.get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);
 }
