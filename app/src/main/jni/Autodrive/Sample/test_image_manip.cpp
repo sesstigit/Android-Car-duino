@@ -382,6 +382,7 @@ void continue_road_follower()
 
 	//! Key step is to call update on the road_follower
 	// ***************** UP TO HERE ************************  need to understand steps in this update method. Particularly does it do a Hough Transform???
+	// This uses image "imFrameWarpedCannied" to follow the road, and draws results on the image "frame"
 	Autodrive::CarCmd cmnd = road_follower_->update(imFrameWarpedCannied, frame);
 	float angle = Autodrive::Direction::FORWARD;
 
@@ -392,8 +393,14 @@ void continue_road_follower()
 	}
 
 	POINT center(frame.size().width / 2.f, (float)frame.size().height);
-	//! Draw a green line from center bottom in direction of the changed angle
-	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(frame, CV_RGB(0, 250, 0));
+	//! Draw a short green line from center bottom in direction of the changed angle (line starts at car bonnet)
+	linef(center, center + POINT(std::cos(angle) * 100, -sin(angle) * 100)).draw(frame, CV_RGB(0, 250, 0));
+
+	//What are other lines:
+	// - pink marks car_y
+	// - green vertical parallel lines?
+	// - aqua vertical line
+	// - blue lane lines
 	imshow(window_name_road_follower, frame);
 	
 }
