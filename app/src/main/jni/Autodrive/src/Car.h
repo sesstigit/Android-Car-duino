@@ -75,6 +75,8 @@ namespace Autodrive {
 		Overtaking* overtaking() { return overtaking_; }; //getter
 		ImageConfig* img_conf() { return img_conf_; }; //getter
 		ImageProcessor* img_proc() { return img_proc_; }; //getter
+		bool changed_speed() { return changed_speed_; }; //getter
+		bool changed_angle() { return changed_angle_; }; //getter
 		void set_initial_mode(AutoDriveMode new_mode); //setter
 		void set_mode(AutoDriveMode new_mode); //setter
 		void reset_mode();  //setter
@@ -103,6 +105,8 @@ namespace Autodrive {
 		const double slow_speed_;
 		const double normal_speed_;
 		const double backwards_speed_;
+		
+		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).
 
 	private:
 		ImageConfig* img_conf_;
@@ -115,7 +119,6 @@ namespace Autodrive {
 		AutoDriveMode initial_mode_;
 		AutoDriveMode mode_;
 
-		cv::Mat* image_;
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_CAR_H_
