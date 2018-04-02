@@ -182,6 +182,7 @@ static void HoughThreshold() {
     //}
 }
 
+// METHOD COPIED TO AUTODRIVE
 // Based on BirdseyeTransformer::get_lane_markings
 // input is imCanny
 // output is lanes drawn on the image
@@ -272,6 +273,7 @@ static void LaneThreshold() {
     imshow( window_name_lane, imLane ); //Autodrive::show_image makes the image 3 times bigger
 }
 
+// METHOD COPIED TO AUTODRIVE
 // Based on BirdseyeTransformer::find_perspective()
 // Input = imCanny
 void BirdseyeThreshold() {
@@ -350,10 +352,11 @@ void BirdseyeThreshold() {
     birdseye_done = true;
 }
 
+// METHOD COPIED TO AUTODRIVE
 void init_road_follower() {
 	// birdseyeTransform
 	cv::warpPerspective(frame, imFrameWarped, birdseye_matrix, frame.size(), cv::INTER_LINEAR);
-	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer ysed
+	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
 	cv::Mat imFrameWarpedCannied;
 	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
 	//! the center is the x coordinate of the middle of the road found during initialisation
@@ -363,6 +366,7 @@ void init_road_follower() {
 	init_road_follower_done = true;
 }
 
+// METHOD COPIED TO AUTODRIVE
 void continue_road_follower()
 {
 	imshow(window_name_frame, frame);
@@ -407,7 +411,7 @@ void continue_road_follower()
 	
 }
 
-
+// METHOD NOT REQUIRED
 static void TestDrawing() {
     vector<cv::Vec4i> lines;
     
