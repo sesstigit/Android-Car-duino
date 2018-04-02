@@ -6,6 +6,7 @@ properties.load(project.rootProject.file('local.properties').newDataInputStream(
 def sdkDir = properties.getProperty('sdk.dir')
 def ndkDir = properties.getProperty('ndk.dir')
 def openCvDir = properties.getProperty('opencv.dir')
+//def autodriveDir = properties.getProperty('autodrive.dir')
 def sources = "AutodriveJavaFacade.cpp"
 android {
 
@@ -61,6 +62,8 @@ android {
                     "LOCAL_MODULE := autodrive\n" +
                     "LOCAL_SRC_FILES := $sources\n" +
                     "LOCAL_LDLIBS += -llog -ldl -lstdc++\n" +
+                    "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src;\n" +
+                    "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src\\imageprocessor\n" +
                     "include \$(BUILD_SHARED_LIBRARY)"
             makefile.write(ANDROIDMK)
         }
