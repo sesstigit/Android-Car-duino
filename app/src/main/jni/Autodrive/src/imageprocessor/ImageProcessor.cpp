@@ -86,7 +86,7 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 
 	POINT center(mat.size().width / 2.f, (float) mat.size().height);
 	//! Draw a green line from center bottom in direction of the changed angle
-	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 250, 0));
+	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 125, 0));
 	return cmnd;
 }
 

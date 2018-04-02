@@ -35,13 +35,18 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* im
 }
 
 // This is the main method called for each camera image in Autodrive mode.
+// - It calls update on the two line followers (left line and right line)
+// - gets the preferred angle for each of those lines
+// - returns an angle which weights the left line higher, and with smoothing applied.
+// - TODO: work out which angles are radians and which are degrees
 CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 	CarCmd cmd;
 	
 	left_line_follower_->update(cannied);
 	right_line_follower_->update(cannied);
 
-	drawMat = draw(cannied);  //!< show the Canny edge detection of the camera image
+    //! Method calls RoadFollower::draw which in turn calls draw for each LineFollower object
+	drawMat = draw(cannied);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
 
 	optional<int> leftTargetAngle = left_line_follower_->get_prefered_angle();
 	optional<int> rightTargetAngle = right_line_follower_->get_prefered_angle();
@@ -127,6 +132,7 @@ POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 cv::Mat RoadFollower::draw(const cv::Mat& cannied)
 {
 	cv::Mat colorCopy;
+	//! Make a color copy so we can draw extra colour lines on the image to represent the detected road
 	cv::cvtColor(cannied, colorCopy, CV_GRAY2RGB);
 
 	left_line_follower_->draw(&colorCopy,center_x_);
