@@ -45,62 +45,42 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 
 	float icrop = 0.f;
 	float xdiff;
-	float height = (float) matCopy.size().height;
-	float width = (float) matCopy.size().width;
+	float im_height = (float) matCopy.size().height;
+	float im_width = (float) matCopy.size().width;
 	//! Stretch the lines, but if they converge at the top of the image,
     //  keep cropping the top of the lines until they are at least X pixels apart
 	do
 	{
 		xdiff = rightLine.leftMost_x() - leftLine.rightMost_x();
-		rightLine.stretchY(icrop, height);
-		leftLine.stretchY(icrop, height);
+		rightLine.stretchY(icrop, im_height); //params=bottom(lowest value of y) to "top" (highest value of y)
+		leftLine.stretchY(icrop, im_height);
 		icrop+=3.f;
-	} while (xdiff < width/3.0f);
+	} while (xdiff < im_width/3.0f); //div by 3, but can increase this to see further into distance
 
-	float bottom = height;
-	float xleft = leftLine.end.x;
-	float xright = rightLine.end.x;
-//#define _VISUAL_WARP  //not used in final Autodrive
-#ifdef _VISUAL_WARP
-	while (warping){
-		if (xleft < leftLine.begin.x || xright > rightLine.begin.x)
-		{
-			if (xleft < leftLine.begin.x){
-				xleft++;
-			}
-			if (xright > rightLine.begin.x){
-				xright--;
-			}
-		}
-		else
-#endif
-		{
-			xright = rightLine.begin.x;
-			xleft = leftLine.begin.x;
-		}
-		
-		center_diff_ = (abs(xleft + xright) / 2.f - width /2.f);
+	lines.right.draw(matCopy, cv::Scalar(255, 0, 0), 3);  //blue lane lines
+	lines.left.draw(matCopy, cv::Scalar(255, 0, 0), 3);
 
-		//Crop moves the two upper cordinates farther appart, both from each other and from the lower cordinates (Outside the image)
-		POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+	float bottom = im_height;
+	float xleft = leftLine.begin.x;
+	float xright = rightLine.begin.x;
+	
+	//stretchY ensures the lines start at lowY and end at highY
+	//Hence the center point will be half way between either the start points
+	//or the end points.  Chosen difference from the image center is then:
+	center_diff_ = (abs(xleft + xright) / 2.f - im_width /2.f);
 
-		//Warp compresses the bottom two cordinates together
-		POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
+	// Choose the input quadrangle for warping
+	//POINT pts1[] = { leftLine.begin, rightLine.begin, POINT(leftLine.end.x, bottom), POINT(rightLine.end.x, bottom) };
+	POINT pts1[] = { leftLine.begin, rightLine.begin, leftLine.end, rightLine.end };
+	// Choose the output quadrangle for warping
+	//POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(xleft, bottom), POINT(xright, bottom) };
+	POINT pts2[] = { leftLine.begin, rightLine.begin, POINT(leftLine.begin.x, im_height), POINT(rightLine.begin.x, im_height) };
 
-		birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
+	birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
 
-		left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2, leftLine.end.y +2), POINT(0, leftLine.begin.y+2));
-		right_image_border_ = linef(POINT(xright - (rightLine.end.x - width)/2, rightLine.end.y+2), POINT(width, rightLine.begin.y+2));
-		
-#ifdef _VISUAL_WARP
-		cv::Mat warped_image;
-		cv::warpPerspective(matCopy, warped_image, *birdseye_matrix, matCopy.size(), cv::INTER_LINEAR);
-
-		cv::resize(warped_image, warped_image, warped_image.size() * 3);//resize image
-		cv::imshow("mainwindow", warped_image);
-		cv::waitKey(1); // waits to display frame
-	}
-#endif
+	left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2 + 5, leftLine.end.y), POINT(0, leftLine.begin.y));
+	right_image_border_ = linef(POINT(xright - (rightLine.end.x - im_width)/2 + 5, rightLine.end.y), POINT(im_width, rightLine.begin.y));
+	
 	return birdseye_matrix;
 }
 
@@ -109,7 +89,7 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	std::vector<cv::Vec4i> lines;
 	linef leftMostLine;
 	linef rightMostLine;
-	// This transform detects straight "lines" as extremes (x0,y0, x1,y1) in image "canniedMat"
+	// This transform detects straight "lines" by their endpoints (x0,y0, x1,y1) in image "canniedMat"
 	// rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
 	// source image must be 8-bit, single-channel 
 	cv::HoughLinesP(canniedMat, lines, 1, CV_PI / 180, 20, 10, 50);
@@ -128,39 +108,54 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		float dir_diff = dirr - Direction::FORWARD;
 
         //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
-		if (abs(dir_diff) < 0.f || abs(dir_diff) > 1.f)
+		if (abs(dir_diff) > 1.f)
 			continue;
         //! Draw all remaining candidate lines: image, colour(BGR), thickness
-		one_hough_line.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
+		one_hough_line.draw(*drawMat, cv::Scalar(0, 255, 255), 1);
 		//! Work out whether it is the left or right line
-		if ( startx > center + 20) {
-				if (endx > startx && endy > starty && one_hough_line.length() > 50) {  // line starting on RHS, and sloping down further right
-					rightMostLine = one_hough_line;
-					foundRight = true;
+		if ( startx > center + 5) {
+			if (!foundRight) {
+				rightMostLine = one_hough_line;
+				foundRight = true;
+			} else {
+				if (one_hough_line.length() > rightMostLine.length()) {
+					rightMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
 				}
+			}
 		}
-		if ( endx < center - 20) { // line on LHS of center
-				leftMostLine = one_hough_line;
-				foundLeft = true;
+		if (endx < center - 5) { // line ends LHS of center (left line slopes forward with start at bottom, end at top)
+			if (startx < endx && starty > endy && one_hough_line.length() > 50) {  //ensure line slopes forward, and is 50 pixels long
+				if (!foundLeft) {
+					leftMostLine = one_hough_line;
+					foundLeft = true;
+				}
+				else {
+					if (one_hough_line.length() > leftMostLine.length()) {
+						leftMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
+					}
+				}
+			}
 		}
 	}
 	if (foundRight && foundLeft) {
     // Draw the likely the lane markers, params=Image,colour(BGR),thckness
-		leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);
-		rightMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);
-		if ( abs((-rightMostLine.k) - leftMostLine.k) < 0.9f)
-		{   rightMostLine.stretchY(0.f, (float) canniedMat.size().height);
-			leftMostLine.stretchY(0.f, (float) canniedMat.size().height );
-			//TODO: Deprecated line
-			//if ((leftMostLine.leftMost_x() >rightMostLine.rightMost_x()))
-			{
-			    //! Draw the final chosen lane lines (BGR)
-				leftMostLine.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
-				rightMostLine.draw(*drawMat,cv::Scalar(0,0,255),5);
-				lanes.left = leftMostLine; 
-				lanes.right = rightMostLine;
-				lanes.found = true;
-			}
+		leftMostLine.draw(*drawMat,cv::Scalar(0,0,255),2);
+		rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),2);
+		//! As lines get more vertical, slope becomes a large number.  Hence getting two lines with the same slope +-1 is unlikely.
+		//! Instead, use radians.  Compare the absolute direction of the two lines versus FORWARD.  They should be similar.  Threshold is PI/6, approx 50 degrees.
+		float dir_diff_left = leftMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. PI/4 - PI/2 = -PI/4
+		float dir_diff_right = rightMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. 3PI/4 - PI/2 = PI/4
+		//cout << "rightMostLine radian direction from FORWARD = " << dir_diff_left << endl;
+		//cout << "leftMostLine radian direction from FORWARD = " << dir_diff_right << ", requires difference < " << CV_PI / 6 << endl;
+		if (abs((dir_diff_left + dir_diff_right)) < (CV_PI / 6)) {
+			rightMostLine.stretchY(0.f, (float)(*drawMat).size().height);
+			leftMostLine.stretchY(0.f, (float)(*drawMat).size().height);
+			//! Draw the final chosen lane lines (BGR)
+			leftMostLine.draw(*drawMat, cv::Scalar(0, 0, 255), 5);
+			rightMostLine.draw(*drawMat, cv::Scalar(0, 255, 0), 5);
+			lanes.left = leftMostLine;
+			lanes.right = rightMostLine;
+			lanes.found = true;
 		}
 	}
 	return lanes;
