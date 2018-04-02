@@ -300,8 +300,8 @@ void BirdseyeThreshold() {
     b_lines.left.draw(imBirdseye, cv::Scalar(255,0,0),3);
     
     //stretchY ensures the lines start at lowY and end at highY
-    //Hence the center point will be half way between either the start point
-    //or the end point.  The difference from the image center is then:
+    //Hence the center point will be half way between either the start points
+    //or the end points.  Chosen difference from the image center is then:
     center_diff_ = (abs(b_lines.left.begin.x + b_lines.right.begin.x) / 2.f - im_width /2.f);
 
     //getPerspectiveTransform requires 4 vertices of a quadrangle in the source image, and their corresponding points in the dest image
@@ -356,6 +356,7 @@ void init_road_follower() {
 	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer ysed
 	cv::Mat imFrameWarpedCannied;
 	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
+	//! the center is the x coordinate of the middle of the road found during initialisation
 	int the_center = static_cast<int>(frame.size().width / 2.f + center_diff_);
 	road_follower_ = Autodrive::make_unique<Autodrive::RoadFollower>(imFrameWarpedCannied, the_center, car.img_conf());
 	imshow(window_name_frame_warped, imFrameWarped);
@@ -381,8 +382,9 @@ void continue_road_follower()
 	imshow(window_name_canny, imFrameWarpedCannied);
 
 	//! Key step is to call update on the road_follower
-	// ***************** UP TO HERE ************************  need to understand steps in this update method. Particularly does it do a Hough Transform???
-	// This uses image "imFrameWarpedCannied" to follow the road, and draws results on the image "frame"
+	//! This uses image "imFrameWarpedCannied" to follow the road, and draws results on the image "frame"
+	//! Note: it does not do a Hough Transform to find lines, but rather has custom code to follow an existing line
+	//! Return is a CarCmd object with steering and speed changes required to follow road
 	Autodrive::CarCmd cmnd = road_follower_->update(imFrameWarpedCannied, frame);
 	float angle = Autodrive::Direction::FORWARD;
 
