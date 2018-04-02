@@ -1,16 +1,25 @@
 #include <jni.h>
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
 //TODO: Only enable when debugging emulator
-#define _DEBUG
-#include "Autodrive/Include/autodrive.hpp"
-#include "Autodrive/Include/sensordata.hpp"
-#include "Autodrive/Include/maneuver.hpp"
+//#define _DEBUG
+#undef _DEBUG
+#include "Autodrive.h"
+#include "imageprocessor/ImageProcessor.h"
+#include "Car.h"
+//#include "Autodrive/src/Autodrive.h"
+//#include "Autodrive/src/Car.h"
+//#include "Autodrive/src/CarCmd.h"
+//#include "Autodrive/src/CarSensor.h"
+//#include "Autodrive/src/ParkingManeuver.h"
+//#include "Autodrive/src/Overtaking.h"
 
 using namespace std;
 using namespace cv;
+using namespace Autodrive;
 
 #define TYPE(x) JNIEXPORT x JNICALL
 #define NAME(x) Java_pegasus_bluetootharduino_Autodrive_##x
@@ -18,7 +27,22 @@ using namespace cv;
 
 extern "C" 
 {
-    TYPE(void) NAME (drive)()
+	TYPE(jlong) NAME(createCar)() {
+		Autodrive::Car* pCar = new Autodrive::Car();
+		return (long)pCar;
+	}
+
+	TYPE(void) NAME(drive)(jlong lp) {
+		Autodrive::Car* pCar = (Car*)lp;
+		pCar->drive();
+	}
+	
+	TYPE(void) NAME(drive3)(jlong lp) {
+		Autodrive::Car* pCar = (Car*)lp;
+		pCar->drive();
+	}
+	
+    TYPE(void) NAME(drive2)()
     {
         Autodrive::car.drive();
     }
@@ -30,17 +54,17 @@ extern "C"
 
     TYPE(void) NAME(setParkingMode)()
     {
-        Autodrive::setInitialStatus(Autodrive::DETECTING_GAP);
+        Autodrive::car.set_initial_mode(Autodrive::AutoDriveMode::kDetectingGap);
     }
     
     TYPE(void) NAME(resetParking)()
     {
-        Autodrive::Parking::Reset();
+        Autodrive::car.parking()->reset();
     }
 
     TYPE(void) NAME(setLeftLane) PARAMS(bool boolean)
     {
-        Autodrive::Status::setLeftLane(boolean);
+        Autodrive::car.img_conf()->use_left_line_ = boolean;
     }
     
     TYPE(void) NAME(setCarLength) PARAMS(int _carLength)
@@ -50,12 +74,12 @@ extern "C"
 
     TYPE(void) NAME(lineLeftFound)()
     {
-        Autodrive::SensorData::lineLeftFound = true;
+        Autodrive::car.line_LHS_sensor_.set_value(true);
     }
 
     TYPE(void) NAME(lineRightFound)()
     {
-        Autodrive::SensorData::lineRightFound = true;
+        Autodrive::car.line_RHS_sensor_.set_value(true);
     }
     
     TYPE(jint) NAME(getCarLength)()
@@ -69,36 +93,36 @@ extern "C"
 
    TYPE(jboolean)NAME(isGapDepthOk)()
    {
-        return Autodrive::Parking::gapDepthOk;
+        return Autodrive::car.parking()->gap_depth_ok();
    }
 
    TYPE(jboolean)NAME(isInitialGap)()
    {
-        return Autodrive::Parking::initialGap;
+        return Autodrive::car.parking()->initial_gap();
    }
 
    
    TYPE(jint) NAME(gapLength)()
   	{
-	    return Autodrive::Parking::gapLength;
+	    return Autodrive::car.parking()->gap_length();
 	}
     
     TYPE(jint) NAME(angleTurned)()
     {
-        return Autodrive::Status::currentAngle;
+        return Autodrive::car.parking()->turned_angle();
     }
     
     TYPE(jint)NAME(getManeuver)()
     {
-        switch(Autodrive::Parking::currentManeuver.type)
+        switch(Autodrive::car.parking()->mode())
         {
-            case Autodrive::NO_MANEUVER:
+            case Autodrive::ParkingManeuverMode::kNoManeuver:
                 return 0;
-            case Autodrive::PARALLEL_STANDARD:
+            case Autodrive::ParkingManeuverMode::kParallelStandard:
                 return 1;
-            case Autodrive::PARALLEL_WIDE:
+            case Autodrive::ParkingManeuverMode::kParallelWide:
                 return 2;
-            case Autodrive::PERPENDICULAR_STANDARD:
+            case Autodrive::ParkingManeuverMode::kPerpendicularStandard:
                 return 3;
             default:
                 return -1;
@@ -107,24 +131,26 @@ extern "C"
     
     TYPE(jint)NAME(getManeuverState)()
     {
-        switch(Autodrive::Parking::currentManeuver.currentState)
+        switch(Autodrive::car.parking()->current_state())
         {
-            case Autodrive::maneuver::mState::NOT_MOVING:
+            case Autodrive::ParkingManeuverState::kNotMoving:
                 return 0;
-            case Autodrive::maneuver::mState::FORWARD:
+            case Autodrive::ParkingManeuverState::kForward:
                 return 1;
-            case Autodrive::maneuver::mState::BACKWARD:
+            case Autodrive::ParkingManeuverState::kBackward:
                 return 2;
-            case Autodrive::maneuver::mState::FORWARD_RIGHT:
+            case Autodrive::ParkingManeuverState::kForwardRight:
                 return 3;
-            case Autodrive::maneuver::mState::BACKWARD_RIGHT:
+            case Autodrive::ParkingManeuverState::kBackwardRight:
                 return 4;
-            case Autodrive::maneuver::mState::FORWARD_LEFT:
+            case Autodrive::ParkingManeuverState::kForwardLeft:
                 return 5;
-            case Autodrive::maneuver::mState::BACKWARD_LEFT:
+            case Autodrive::ParkingManeuverState::kBackwardLeft:
                 return 6;
-            case Autodrive::maneuver::mState::DONE:
+            case Autodrive::ParkingManeuverState::kDone:
                 return 7;
+			//case Autodrive::ParkingManeuverState::kEmergency:
+            //    return 8;
             default:
                 return -1;
         }
@@ -136,37 +162,37 @@ extern "C"
     
     TYPE(jint)NAME(usFront)()
     {
-        return Autodrive::car.ultrasound_.front.get_value();
+        return Autodrive::car.ultrasound_.front.value();
     }
     
     TYPE(jint)NAME(usFrontRight)()
     {
-        return Autodrive::car.ultrasound_.frontright.get_value();
+        return Autodrive::car.ultrasound_.frontright.value();
     }
     
     TYPE(jint)NAME(usRear)()
     {
-        return Autodrive::car.ultrasound_.rear.get_value();
+        return Autodrive::car.ultrasound_.rear.value();
     }
     
     TYPE(jint)NAME(irFrontRight)()
     {
-        return Autodrive::car.infrared_.frontright.get_value();
+        return Autodrive::car.infrared_.frontright.value();
     }
     
     TYPE(jint)NAME(irRearRight)()
     {
-        return Autodrive::car.infrared_.rearright.get_value();
+        return Autodrive::car.infrared_.rearright.value();
     }
     
     TYPE(jint)NAME(irRear)()
     {
-        return Autodrive::car.infrared_.rear.get_value();
+        return Autodrive::car.infrared_.rear.value();
     }
     
     TYPE(jint)NAME(gyroHeading)()
     {
-        return Autodrive::car.gyro_.get_value();
+        return Autodrive::car.gyro_.value();
     }
     
     //TYPE(jint)NAME(razorHeading)()
@@ -207,7 +233,7 @@ extern "C"
                 break;
             default:
             case 2:
-                Autodrive::SensorData::infrared_.rear.set_value(value);
+                Autodrive::car.infrared_.rear.set_value(value);
                 break;
         }
 
@@ -230,74 +256,75 @@ extern "C"
 	
     TYPE(jboolean) NAME(speedChanged)() 
     {
-        return Autodrive::speedChanged();
+        return Autodrive::car.changed_speed();
     }
 
     TYPE(jboolean) NAME(angleChanged)()
     {
-        return Autodrive::angleChanged();
+        return Autodrive::car.changed_angle();
     }
 
     TYPE(jdouble) NAME(getTargetSpeed)()
     {
-        return Autodrive::getSpeed();
+        return Autodrive::car.motor_.value();
     }
 
     TYPE(jdouble) NAME(getTargetAngle)()
     {
-        return Autodrive::getAngle();
+        return Autodrive::car.steering_.value();
     }
 	
 	/* SETTINGS */
 	
     TYPE(void) NAME(setSettingLightNormalization) PARAMS(bool on)
     {
-        Autodrive::Settings::normalizeLightning = on;
+        Autodrive::car.img_conf()->normalize_lighting_ = on;
     }
     
+	//Note: interpreted the same as setLeftLane (same meaning???)
     TYPE(void) NAME(setSettingUseLeftLine) PARAMS(bool on)
     {
-        Autodrive::Settings::useLeftLine = on;
+        Autodrive::car.img_conf()->use_left_line_ = on;
     }
     
     TYPE(void) NAME(setSettingSmoothening) PARAMS(int value)
     {
-        Autodrive::Settings::smoothening = value;
+        Autodrive::car.img_conf()->smoothening_ = value;
     }
 
     TYPE(void) NAME(setSettingFirstFragmentMaxDist) PARAMS(int value)
     {
-        Autodrive::Settings::firstFragmentMaxDist = value;
+        Autodrive::car.img_conf()->first_fragment_max_dist_ = value;
     }
 
     TYPE(void) NAME(setSettingLeftIterationLength) PARAMS(int value)
     {
-        Autodrive::Settings::leftIterationLength = value;
+        Autodrive::car.img_conf()->left_iteration_length_ = value;
     }
 
     TYPE(void) NAME(setSettingRightIterationLength) PARAMS(int value)
     {
-        Autodrive::Settings::rightIterationLength = value;
+        Autodrive::car.img_conf()->right_iteration_length_ = value;
     }
 
     TYPE(void) NAME(setSettingMaxAngleDiff) PARAMS(float value)
     {
-        Autodrive::Settings::maxAngleDiff = value;
+        Autodrive::car.img_conf()->max_angle_diff_ = value;
     }
 
     TYPE(void) NAME(setPIDkp) PARAMS(float value)
     {
-        Autodrive::Settings::kp = value;
+        Autodrive::car.img_conf()->kp_ = value;
     }
 
     TYPE(void) NAME(setPIDki) PARAMS(float value)
     {
-        Autodrive::Settings::ki = value;
+        Autodrive::car.img_conf()->ki_ = value;
     }
 
     TYPE(void) NAME(setPIDkd) PARAMS(float value)
     {
-        Autodrive::Settings::kd = value;
+        Autodrive::car.img_conf()->kd_ = value;
     }
 }
 
