@@ -22,11 +22,12 @@ using namespace Autodrive;
 
 ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	img_conf_(img_conf),
-	thresh1_(181),
-	thresh2_(71),
+	thresh1_(80),
+	//thresh2_(71),
 	//intensity_(110), //was 110
 	//blur_i_(11),
 	road_follower_(nullptr) {
+	thresh2_ = 3 * thresh1_;  //as recommended for Canny edge detection
 }
 //Note: did not initialise the following class members
 //perspective_(nullptr),  
@@ -85,8 +86,8 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	}
 
 	POINT center(mat.size().width / 2.f, (float) mat.size().height);
-	//! Draw a green line from center bottom in direction of the changed angle
-	linef(center, center + POINT(std::cos(angle) * 200, -sin(angle) * 200)).draw(mat, CV_RGB(0, 125, 0));
+	//! Draw a short green line from center bottom in direction of the changed angle (line starts at car bonnet)
+	linef(center, center + POINT(std::cos(angle) * 100, -sin(angle) * 100)).draw(mat, CV_RGB(0, 125, 0));
 	return cmnd;
 }
 
