@@ -110,7 +110,7 @@ public class Autodrive
     }
 
     public static int getConvertedAngle(){
-        return (int)(getTargetAngle() * carConfiguration.maxAngle);
+        return (int)(getTargetAngle() * carConfiguration.maxAngle * -1);  //TODO FIX hack.  I reversed steering using -1
     }
 
 /*---- SETTINGS -----*/
