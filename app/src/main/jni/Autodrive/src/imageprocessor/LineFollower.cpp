@@ -29,7 +29,7 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 	target_road_distance_ = road_line_.get_mean_start_distance(5);
 }
 
-void LineFollower::draw(cv::Mat* colorCopy, int centerX) {
+void LineFollower::draw(const cv::Mat* colorCopy, int centerX) {
 	road_line_.draw(colorCopy);
    
 	/* DRAW PURPLE RECTANGLE FOR POSSIBLE FIRST HITS*/

@@ -39,14 +39,14 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* im
 // - gets the preferred angle for each of those lines
 // - returns an angle which weights the left line higher, and with smoothing applied.
 // - TODO: work out which angles are radians and which are degrees
-CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
+CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	CarCmd cmd;
 	
 	left_line_follower_->update(cannied);
 	right_line_follower_->update(cannied);
 
-    //! Method calls RoadFollower::draw which in turn calls draw for each LineFollower object
-	drawMat = draw(cannied);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
+    //! Method calls RoadFollower::draw which returns a color copy of cannied, and also calls draw for each LineFollower object
+	RoadFollower::draw(cannied, drawInOut);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
 
 	optional<int> leftTargetAngle = left_line_follower_->get_prefered_angle();
 	optional<int> rightTargetAngle = right_line_follower_->get_prefered_angle();
@@ -67,6 +67,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 	{
 	     //TODO: should targetAngle be set too???
 		 cmd.set_angle(0);
+		 cmd.set_speed(0);  //FIX: should be slow speed
 	}
 	
 	if(targetAngle)
@@ -75,6 +76,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 		if(img_conf_->smoothening_ == 0)
 		{
 			cmd.set_angle(*targetAngle / 25.0);  //TODO: why divide by 25???
+			cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 		}
 		else
 		{
@@ -85,7 +87,8 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawMat) {
 			if(prev_dirs_.size() > img_conf_->smoothening_)
 				prev_dirs_.erase(prev_dirs_.begin());
 			
-			cmd.set_angle(newAngle  / 25.0);
+			cmd.set_angle(newAngle / 25.0);
+			cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 		}
 	}
 	return cmd;
@@ -129,16 +132,31 @@ POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 	return searchRes.point;
 }
 
-cv::Mat RoadFollower::draw(const cv::Mat& cannied)
+void RoadFollower::draw(const cv::Mat& cannied, const cv::Mat& colorCopy)
 {
-	cv::Mat colorCopy;
-	//! Make a color copy so we can draw extra colour lines on the image to represent the detected road
-	cv::cvtColor(cannied, colorCopy, CV_GRAY2RGB);
+	cv::Mat tempColorCopy;
+	//! Convert input GRAY image onto output color image so we can draw extra colour lines on the image to represent the detected road
+	//! Make sure we encode the image the same as colorCopy (since that is the encoding of the input image, and for Android we want to display it on the screen in place of the camera image).
+	//! TODO: assumes we only have CV_8UC4 or CV_8UC3 input image types.  Otherwise this will crash.
+	if (colorCopy.type() == CV_8UC4) {
+		cv::cvtColor(cannied, tempColorCopy, CV_GRAY2RGBA);  //android input image appears to be RGBA
+	} else {
+		cv::cvtColor(cannied, tempColorCopy, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+	}
+#ifdef _DEBUG
+	std::ostringstream oss;
+	std::string tx = type2str(cannied.type());
+	std::string ty = type2str(colorCopy.type());
+	std::string tz =  type2str(tempColorCopy.type() );
+	//oss << "Mat types cannied, colorCopy, temp: " 
+	//oss << tx << " " << cannied.cols << "x" << cannied.rows << ",";
+	oss << ty << " " << colorCopy.cols << "x" << colorCopy.rows << "," << tz << " " << tempColorCopy.cols << "x" << tempColorCopy.rows;
+	cv::putText(tempColorCopy, oss.str(), Autodrive::POINT(30, 50), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(125, 255, 125), 1);
+#endif
 
-	left_line_follower_->draw(&colorCopy,center_x_);
-	right_line_follower_->draw(&colorCopy, center_x_);
-
-	return colorCopy;
+	left_line_follower_->draw(&tempColorCopy,center_x_);
+	right_line_follower_->draw(&tempColorCopy, center_x_);
+	tempColorCopy.copyTo(colorCopy);
 }
 
 bool RoadFollower::left_line_found() {

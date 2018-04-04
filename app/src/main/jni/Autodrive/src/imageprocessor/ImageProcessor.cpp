@@ -26,7 +26,8 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	//thresh2_(71),
 	//intensity_(110), //was 110
 	//blur_i_(11),
-	road_follower_(nullptr) {
+	road_follower_(nullptr),
+	birdseye_(nullptr) {
 	thresh2_ = 3 * thresh1_;  //as recommended for Canny edge detection
 }
 //Note: did not initialise the following class members
@@ -37,19 +38,19 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 //! init_processing is the first function called by Autodrive.
 //! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
-	BirdseyeTransformer xformer;
-	auto found_pespective = xformer.find_perspective(mat);
+	birdseye_ = new BirdseyeTransformer();
+	auto found_pespective = birdseye_->find_perspective(mat);
 	if (found_pespective)
 	{
 		perspective_ = *found_pespective;
-		xformer.birds_eye_transform(mat, perspective_);
+		birdseye_->birds_eye_transform(mat, perspective_);
 		if (img_conf_->normalize_lighting_) {
 			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 			normalize_lighting(mat);
 		}
 		cv::Mat cannied_mat;
 		cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
-		int the_center = static_cast<int>(mat->size().width / 2.f + xformer.center_diff());
+		int the_center = static_cast<int>(mat->size().width / 2.f + birdseye_->center_diff());
 		road_follower_ = make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
 		return true;
 	} else{
@@ -61,8 +62,9 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 
 CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 {
-	BirdseyeTransformer xformer;
-	xformer.birds_eye_transform(&mat, perspective_);
+	CarCmd cmnd;
+	
+	birdseye_->birds_eye_transform(&mat, perspective_);
 	if (img_conf_->normalize_lighting_) {
 		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 		normalize_lighting(&mat);
@@ -72,11 +74,14 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
 
 	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
-	xformer.left_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
-	xformer.right_image_border().draw(cannied_mat, cv::Scalar(0, 0, 0), img_conf_->transform_line_removal_threshold_);
-	
+	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_->transform_line_removal_threshold_);
+	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_->transform_line_removal_threshold_);
+	//TEST birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(255), 10);
+	//TEST birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(255), 10);
+	//TEST imshow("New Window", cannied_mat);
+
 	//! Key step is to call update on the road_follower
-	CarCmd cmnd = road_follower_->update(cannied_mat, mat);
+	cmnd = road_follower_->update(cannied_mat, mat);
 	float angle =  Direction::FORWARD;
 
 	if (cmnd.changed_angle())
@@ -173,6 +178,14 @@ void ImageProcessor::normalize_lighting(cv::Mat* bgr_image)
 	dst.copyTo(lab_planes[0]);
 	cv::merge(lab_planes, lab_image);
 
-	// convert back to RGB
-	cv::cvtColor(lab_image, *bgr_image, CV_Lab2BGR);  
+	// convert back to original number of color channels
+	if (bgr_image->type() == CV_8UC4) {
+		cv::Mat temp_bgr_image;
+		cv::cvtColor(lab_image, temp_bgr_image, CV_Lab2RGB);
+		cv::cvtColor(temp_bgr_image, *bgr_image, CV_RGB2RGBA);  //android images appear to be RGBA
+	}
+	else {
+		cv::cvtColor(lab_image, *bgr_image, CV_Lab2BGR);
+	}
+	
 }

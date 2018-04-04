@@ -10,12 +10,10 @@
 #include "Autodrive.h"
 #include "imageprocessor/ImageProcessor.h"
 #include "Car.h"
-//#include "Autodrive/src/Autodrive.h"
-//#include "Autodrive/src/Car.h"
-//#include "Autodrive/src/CarCmd.h"
-//#include "Autodrive/src/CarSensor.h"
-//#include "Autodrive/src/ParkingManeuver.h"
-//#include "Autodrive/src/Overtaking.h"
+#include "CarCmd.h"
+#include "CarSensor.h"
+#include "ParkingManeuver.h"
+#include "Overtaking.h"
 
 using namespace std;
 using namespace cv;
@@ -27,29 +25,16 @@ using namespace Autodrive;
 
 extern "C" 
 {
-	TYPE(jlong) NAME(createCar)() {
-		Autodrive::Car* pCar = new Autodrive::Car();
-		return (long)pCar;
-	}
-
-	TYPE(void) NAME(drive)(jlong lp) {
-		Autodrive::Car* pCar = (Car*)lp;
-		pCar->drive();
-	}
-	
-	TYPE(void) NAME(drive3)(jlong lp) {
-		Autodrive::Car* pCar = (Car*)lp;
-		pCar->drive();
-	}
-	
-    TYPE(void) NAME(drive2)()
+    TYPE(void) NAME(drive)()
     {
-        Autodrive::car.drive();
+		//Autodrive::Car* pcar = Autodrive::get_pcar();
+        //pcar->drive();
+		Autodrive::car.drive();
     }
 	
     TYPE(void) NAME(reset)()
     {
-        return Autodrive::car.reset_mode();
+        Autodrive::car.reset_mode();
     }
 
     TYPE(void) NAME(setParkingMode)()
@@ -84,7 +69,8 @@ extern "C"
     
     TYPE(jint) NAME(getCarLength)()
     {
-        return Autodrive::car.car_length_;
+        return static_cast<int>(1);
+		//Autodrive::car.car_length_;
     }
 
    /*----- DEBUGDATA -----*/
@@ -195,17 +181,17 @@ extern "C"
         return Autodrive::car.gyro_.value();
     }
     
-    //TYPE(jint)NAME(razorHeading)()
-    //{
-    //    return Autodrive::SensorData::razorHeading;
-    //}
+    TYPE(jint)NAME(razorHeading)()
+    {
+        return Autodrive::car.gyro_.value(); //FIX TODO we dont have a razor gyro, so just return normal gyro reading.
+    }
     
    // setters
 
     TYPE(void) NAME(setImage) PARAMS(long newMat){
         Autodrive::car.image_ = (cv::Mat*)newMat;
     }
-
+	
     TYPE(void) NAME(setUltrasound) PARAMS(int sensor,int value){
         switch (sensor)
         {
@@ -238,7 +224,7 @@ extern "C"
         }
 
     }
-
+	
     TYPE(void) NAME(setEncoderPulses) PARAMS(long value){
         Autodrive::car.distance_.set_value(value);
     }
@@ -247,9 +233,9 @@ extern "C"
         Autodrive::car.gyro_.set_value(value);
     }
     
-    //TYPE(void) NAME(setRazorHeading) PARAMS(int value){
-    //    Autodrive::SensorData::razorHeading = value;
-    //}
+    TYPE(void) NAME(setRazorHeading) PARAMS(int value){
+        Autodrive::car.gyro_.set_value(value);  //FIX: we dont have a razor gyro.  If we get one, set value to normal gyro?
+    }
     
 	
 	/*----- RESULTING AUTODRIVE DATA -----*/

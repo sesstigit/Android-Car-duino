@@ -21,7 +21,7 @@ using namespace Autodrive;
 
 //Constructor
 ImageConfig::ImageConfig() :
-  normalize_lighting_(true),
+  normalize_lighting_(false),
   first_fragment_max_dist_(30),
   left_iteration_length_(5),
   right_iteration_length_(6),

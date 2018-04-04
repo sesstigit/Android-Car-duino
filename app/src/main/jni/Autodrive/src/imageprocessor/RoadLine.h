@@ -36,7 +36,7 @@ namespace Autodrive {
 		RoadLine();
 		RoadLine(int center_x, POINT start_point, ImageConfig* img_conf);
 		//! Draw a thick blue line between each point in the line
-		void draw(cv::Mat* draw_mat);
+		void draw(const cv::Mat* draw_mat);
 		//! Adds point to RoadLine, unless angle to point does not match line.
 		//! @param p The point to add
 		//! @return A boolean to flag whether the point was added successfully.

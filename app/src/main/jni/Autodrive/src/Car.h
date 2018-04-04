@@ -27,7 +27,8 @@
 
 //using namespace std;
 namespace Autodrive {
-
+	//make enum a class
+	
 	enum class AutoDriveMode : unsigned int {
 		kDetectingGap = 0,
 		kParking = 1,

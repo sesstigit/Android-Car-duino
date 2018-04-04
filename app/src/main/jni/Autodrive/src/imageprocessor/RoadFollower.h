@@ -23,12 +23,19 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 
+#ifdef _DEBUG
+#include <string>
+#include <stdio.h>
+#include <sstream>
+#endif
+
 #include "LineFollower.h"
 #include "CarCmd.h"
 #include "ImageConfig.h"
 #include "Util.h"
 
-//using namespace cv;
+using namespace std;
+
 namespace Autodrive {
 
 	class LineFollower;  //forward declaration
@@ -42,12 +49,12 @@ namespace Autodrive {
 		bool is_left_lane();
 		bool is_right_lane();
 		int dashed_line_gaps();
-		CarCmd update(cv::Mat& cannied, cv::Mat& drawMat);
+		CarCmd update(cv::Mat& cannied, cv::Mat& drawOut);
 
 	private:
 		int find_car_end(const cv::Mat& cannied);
 		POINT find_line_start(const cv::Mat& cannied, float direction);
-		cv::Mat draw(const cv::Mat& cannied);
+		void draw(const cv::Mat& cannied, const cv::Mat& colorCopy);
 
 		int car_y_; //! TODO: why is car_y_ declared here and in RoadLineBuilder???
 		int center_x_;

@@ -25,6 +25,9 @@
 #include <opencv2/core/mat.hpp>
 
 #include <memory>
+#ifdef _DEBUG
+#include <string>
+#endif
 
 namespace Autodrive {
 
@@ -104,6 +107,11 @@ namespace Autodrive {
 	{
 		return (val1*val1_multiplier + val2) / (val1_multiplier + 1);
 	}
+	
+#ifdef _DEBUG
+	//! Convert a Mat type to a human readable string
+	std::string type2str(int type);
+#endif
 }
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_UTIL_H_

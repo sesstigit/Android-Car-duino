@@ -38,7 +38,6 @@ namespace Autodrive {
 	//int intersection_protect = 0;
 
 #define _AUTODRIVE_DILATE
-#define _DEBUG
 
 	class ImageProcessor {
 	public:
@@ -56,6 +55,7 @@ namespace Autodrive {
 		
 
 		ImageConfig* img_conf_;
+		BirdseyeTransformer* birdseye_;
 		int thresh1_;   // used in cv::Canny function
 		int thresh2_;   // used in cv::Canny function
 		//int intensity_; // used in normalize lighting.  High value (200) means very few lines detected.  Low value (10) means lots of noisy lines detected.

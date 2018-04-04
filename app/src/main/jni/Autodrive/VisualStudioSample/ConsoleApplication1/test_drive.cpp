@@ -50,6 +50,8 @@ int main()
 
 	capture >> frame;
 	while (!Autodrive::car.img_proc()->init_processing(&frame)) {
+		show_image(frame, 3, "w");
+		waitKey();
 		capture >> frame;
 	}
 	for (;;)
@@ -63,7 +65,8 @@ int main()
 		Autodrive::car.img_proc()->continue_processing(frame);
 
 		show_image(frame, 3, "w");
-		waitKey(10); // waits to display frame
+		waitKey(); //wait for user input to continue
+		waitKey(10); // waits short time to display frame
 	}
 	return 0;
 }

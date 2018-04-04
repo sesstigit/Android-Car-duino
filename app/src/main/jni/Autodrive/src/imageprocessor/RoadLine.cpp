@@ -29,7 +29,7 @@ RoadLine::RoadLine(int center_x, POINT start_point, ImageConfig* img_conf) :
 RoadLine::RoadLine() {
 }
 
-void RoadLine::draw(cv::Mat* draw_mat) {
+void RoadLine::draw(const cv::Mat* draw_mat) {
     for (unsigned int i = 0; i < points_.size() - 1; i++)
     {
         linef(points_[i], points_[i + 1]).draw(*draw_mat, cv::Scalar(255, 0, 0), 4);

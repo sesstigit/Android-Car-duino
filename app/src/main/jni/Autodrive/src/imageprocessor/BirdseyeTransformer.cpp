@@ -67,6 +67,7 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 	//stretchY ensures the lines start at lowY and end at highY
 	//Hence the center point will be half way between either the start points
 	//or the end points.  Chosen difference from the image center is then:
+	//TODO: FIX.  Due to warping this may not be a correct formula.  It doesn't appear correct.
 	center_diff_ = (abs(xleft + xright) / 2.f - im_width /2.f);
 
 	// Choose the input quadrangle for warping
@@ -78,8 +79,8 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
 
 	birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
 
-	left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2 + 5, leftLine.end.y), POINT(0, leftLine.begin.y));
-	right_image_border_ = linef(POINT(xright - (rightLine.end.x - im_width)/2 + 5, rightLine.end.y), POINT(im_width, rightLine.begin.y));
+	left_image_border_ = linef(POINT(xleft - leftLine.end.x / 2 + center_diff_, leftLine.end.y + 5), POINT(0, leftLine.begin.y));
+	right_image_border_ = linef(POINT(xright - (rightLine.end.x - im_width)/2 + center_diff_, rightLine.end.y + 5), POINT(im_width, rightLine.begin.y));
 	
 	return birdseye_matrix;
 }
@@ -92,6 +93,7 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	// This transform detects straight "lines" by their endpoints (x0,y0, x1,y1) in image "canniedMat"
 	// rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
 	// source image must be 8-bit, single-channel 
+	//! Each Hough Line starts from min x val and ends at max x val (left lane line slopes forward so start is at bottom, right line is opposite)
 	cv::HoughLinesP(canniedMat, lines, 1, CV_PI / 180, 20, 10, 50);
 	bool foundLeft = false;
 	bool foundRight = false;
@@ -102,7 +104,7 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		int starty = one_line[1];
 		int endx = one_line[2];
 		int endy = one_line[3];
-		linef one_hough_line(one_line);  //call the Line constructor to conver to a linef
+		linef one_hough_line(one_line);  //call the Line constructor to convert to a linef
 
 		float dirr = one_hough_line.direction_fixed_half();
 		float dir_diff = dirr - Direction::FORWARD;
@@ -113,13 +115,16 @@ lanes BirdseyeTransformer::get_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
         //! Draw all remaining candidate lines: image, colour(BGR), thickness
 		one_hough_line.draw(*drawMat, cv::Scalar(0, 255, 255), 1);
 		//! Work out whether it is the left or right line
-		if ( startx > center + 5) {
-			if (!foundRight) {
-				rightMostLine = one_hough_line;
-				foundRight = true;
-			} else {
-				if (one_hough_line.length() > rightMostLine.length()) {
-					rightMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
+		if ( (startx > center + 5) && (dir_diff >=0)) {
+			//! check line starts on RHS of center, and sloping down further right, and is long enough
+	        if (endx > startx && endy > starty && one_hough_line.length() > 50) {  		
+				if (!foundRight) {
+					rightMostLine = one_hough_line;
+					foundRight = true;
+				} else {
+					if (one_hough_line.length() > rightMostLine.length()) {
+						rightMostLine = one_hough_line; //this line is longer than the one previous found, so keep this one.
+					}
 				}
 			}
 		}

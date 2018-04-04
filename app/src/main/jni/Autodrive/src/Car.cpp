@@ -34,8 +34,8 @@ Car::Car() :
   initial_mode_(AutoDriveMode::kSearchingForLanes),
   mode_(initial_mode_),
   car_length_(1),  //TODO: initialise these from previous settings?
-  slow_speed_(0.26),
-  normal_speed_(0.28),
+  slow_speed_(0.22),  //was 0.26
+  normal_speed_(0.23), //was 0.28
   backwards_speed_(-0.65),
   image_(nullptr) {
 	// All sensors are objects, so constructor should take care of them.
@@ -75,12 +75,12 @@ void Car::drive() {
   // By comparing the CarCmd object to the current Car motor and steering parameters, parameters
   // angle_changed or speed_changed can be set.  These are used from the Java bluetooth code 
   // to send CarCmds to the physical car.
-  CarCmd lastCarCmd;  // Reset the CarCmd by initialising a new one.
+  CarCmd lastCarCmd;  // Use a new CarCmd object each time this method is called.
 
   switch (mode_)
   {
   case AutoDriveMode::kSearchingForLanes:
-      if (img_proc_->init_processing(image_))  //!< must successfully find lanes first.
+      if ((image_ != NULL) && img_proc_->init_processing(image_))  //!< must successfully find lanes first.
         {
 		  lastCarCmd.set_speed(normal_speed_);
           mode_ = AutoDriveMode::kFollowingLanes; //!< Now can follow the lanes
@@ -88,8 +88,10 @@ void Car::drive() {
         break;
                 
   case AutoDriveMode::kFollowingLanes:
-		lastCarCmd = img_proc_->continue_processing(*image_);
-		lastCarCmd = overtaking_->run(lastCarCmd, image_);  //!< TODO: Overtaking requires gyro and speed sensor.
+		if (image_ != NULL) {
+			lastCarCmd = img_proc_->continue_processing(*image_);
+			//lastCarCmd = overtaking_->run(lastCarCmd, image_);  //!< TODO: Overtaking requires gyro and speed sensor.
+		}
 		break;
 		
 	// debug only! will be merged with lane following   
@@ -125,13 +127,15 @@ void Car::drive() {
     }
 
   //Set Car actuators based on the CarCmd object
-  if (lastCarCmd.speed() == motor_.value()) {
+  //if (lastCarCmd.speed() == motor_.value()) {
+  if (lastCarCmd.changed_speed() == false) {
 	  changed_speed_ = false;
   } else {
 	  changed_speed_ = true;
 	  motor_.set_value(lastCarCmd.speed());
   }
-  if (lastCarCmd.angle() == steering_.value()) {
+  //if (lastCarCmd.angle() == steering_.value()) {
+  if (lastCarCmd.changed_angle() == false) {
 	  changed_angle_ = false;
   } else {
 	  changed_angle_ = true;
