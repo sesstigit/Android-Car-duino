@@ -60,13 +60,18 @@ android {
                     "OPENCV_CAMERA_MODULES:=on\n" +
                     "include $openCvDir\\sdk\\native\\jni\\OpenCV.mk\n" +
                     "LOCAL_MODULE := autodrive\n" +
+                    "FILE_LIST1 := \$(wildcard \$(LOCAL_PATH)\\Autodrive\\src\\*.cpp)\n" +
+                    "FILE_LIST2 := \$(wildcard \$(LOCAL_PATH)\\Autodrive\\src\\imageprocessor\\*.cpp)\n" +
                     "LOCAL_SRC_FILES := $sources\n" +
+                    "LOCAL_SRC_FILES += \$(FILE_LIST1:\$(LOCAL_PATH)\\%=%)\n" +
+                    "LOCAL_SRC_FILES += \$(FILE_LIST2:\$(LOCAL_PATH)\\%=%)\n" +
                     "LOCAL_LDLIBS += -llog -ldl -lstdc++\n" +
-                    "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src;\n" +
+                    "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src\n" +
                     "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src\\imageprocessor\n" +
                     "include \$(BUILD_SHARED_LIBRARY)"
             makefile.write(ANDROIDMK)
         }
+
         if (Os.isFamily(Os.FAMILY_WINDOWS)) {
             commandLine ndkDir + '/ndk-build.cmd', '-C', file('src/main').absolutePath
         } else {
@@ -95,4 +100,9 @@ android {
 }
 dependencies {
     compile project(':openCVLibrary340')
+}
+android.packagingOptions {
+    exclude 'META-INF/notice.txt'
+    exclude 'META-INF/license.txt'
+    exclude 'libs/armeabi-v7a/libgnustl_shared.so'
 }
