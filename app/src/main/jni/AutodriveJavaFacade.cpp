@@ -49,7 +49,7 @@ extern "C"
 
     TYPE(void) NAME(setLeftLane) PARAMS(bool boolean)
     {
-        Autodrive::car.img_conf()->use_left_line_ = boolean;
+        //Autodrive::car.img_conf()->use_left_line_ = boolean;
     }
     
     TYPE(void) NAME(setCarLength) PARAMS(int _carLength)
@@ -69,8 +69,7 @@ extern "C"
     
     TYPE(jint) NAME(getCarLength)()
     {
-        return static_cast<int>(1);
-		//Autodrive::car.car_length_;
+        return Autodrive::car.car_length_;
     }
 
    /*----- DEBUGDATA -----*/
@@ -298,19 +297,9 @@ extern "C"
         Autodrive::car.img_conf()->max_angle_diff_ = value;
     }
 
-    TYPE(void) NAME(setPIDkp) PARAMS(float value)
+    TYPE(void) NAME(setCannyThresh) PARAMS(int value)
     {
-        Autodrive::car.img_conf()->kp_ = value;
-    }
-
-    TYPE(void) NAME(setPIDki) PARAMS(float value)
-    {
-        Autodrive::car.img_conf()->ki_ = value;
-    }
-
-    TYPE(void) NAME(setPIDkd) PARAMS(float value)
-    {
-        Autodrive::car.img_conf()->kd_ = value;
+        Autodrive::car.img_conf()->canny_thresh_ = value;
     }
 }
 
