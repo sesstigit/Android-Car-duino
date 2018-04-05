@@ -38,7 +38,7 @@ namespace Autodrive {
 	class BirdseyeTransformer {
 	public:
 		void birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_matrix);
-		optional<cv::Mat> find_perspective(cv::Mat* matIn, double thresh1 = 300, double thresh2 = 150);
+		optional<cv::Mat> find_perspective(cv::Mat* matIn, double thresh1 = 80, double thresh2 = 240);
 		float center_diff() { return center_diff_; };  //getter
 		linef left_image_border() { return left_image_border_; }; //getter
 		linef right_image_border() { return right_image_border_; }; //getter
