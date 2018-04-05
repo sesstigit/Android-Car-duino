@@ -22,13 +22,13 @@ using namespace Autodrive;
 
 ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 	img_conf_(img_conf),
-	thresh1_(80),
-	//thresh2_(71),
-	//intensity_(110), //was 110
-	//blur_i_(11),
+	//thresh1_(80),    //replaced by canny_thresh_
+	//thresh2_(71),    //replaced by canny_thresh_ * 3
+	//intensity_(110), //replaced by parameter free light normalisation
+	//blur_i_(11),     //replaced by parameter free light normalisation
 	road_follower_(nullptr),
 	birdseye_(nullptr) {
-	thresh2_ = 3 * thresh1_;  //as recommended for Canny edge detection
+	//thresh2_ = 3 * thresh1_;  //as recommended for Canny edge detection
 }
 //Note: did not initialise the following class members
 //perspective_(nullptr),  
@@ -39,7 +39,7 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 //! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	birdseye_ = new BirdseyeTransformer();
-	auto found_pespective = birdseye_->find_perspective(mat);
+	auto found_pespective = birdseye_->find_perspective(mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3);
 	if (found_pespective)
 	{
 		perspective_ = *found_pespective;
@@ -49,7 +49,7 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 			normalize_lighting(mat);
 		}
 		cv::Mat cannied_mat;
-		cv::Canny(*mat, cannied_mat, thresh1_, thresh2_, 3);
+		cv::Canny(*mat, cannied_mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
 		int the_center = static_cast<int>(mat->size().width / 2.f + birdseye_->center_diff());
 		road_follower_ = make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
 		return true;
@@ -71,7 +71,7 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	}
 
 	cv::Mat cannied_mat;
-	cv::Canny(mat, cannied_mat, thresh1_, thresh2_, 3);
+	cv::Canny(mat, cannied_mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3, 3);
 
 	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
 	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_->transform_line_removal_threshold_);
