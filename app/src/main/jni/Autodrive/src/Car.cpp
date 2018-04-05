@@ -33,8 +33,8 @@ Car::Car() :
   changed_angle_(false),
   initial_mode_(AutoDriveMode::kSearchingForLanes),
   mode_(initial_mode_),
-  car_length_(1),  //TODO: initialise these from previous settings?
-  slow_speed_(0.22),  //was 0.26
+  car_length_(30),  //30cm? TODO: initialise these from previous settings?
+  slow_speed_(0.22),  //was 0.26.  Speed ranges between -1 and 1.
   normal_speed_(0.23), //was 0.28
   backwards_speed_(-0.65),
   image_(nullptr) {
