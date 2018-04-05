@@ -20,10 +20,12 @@
 
 using namespace Autodrive;
 
+//max_dist_from_start_ was 22
+//step_distance was 4
 RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf) :
     first_start_(start_point), last_start_(start_point), center_x_(center_x),
-	car_y_(car_y), img_conf_(img_conf), step_dist_(4), 
-	max_dist_from_start_(22), max_upwards_iterations_(100), total_gap_(0) {
+	car_y_(car_y), img_conf_(img_conf), step_dist_(2), 
+	max_dist_from_start_(50), max_upwards_iterations_(100), total_gap_(0) {
 }
 
 //! Called by LineFollower->update() on each line of the road.
@@ -100,10 +102,24 @@ POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
             break;
     }
 
-	//! Set last_start_ at state for the next search
-    if (linef(first_start_, searchRes.point).length2() <= max_dist_from_start_*max_dist_from_start_)
-        last_start_ = searchRes.point;
-
+	//! Set last_start_ as state for the next search
+	if (searchRes.found) {
+		if (linef(first_start_, searchRes.point).length2() <= max_dist_from_start_*max_dist_from_start_)
+			last_start_ = searchRes.point;
+	} else {
+		//cannot find the line, so move slowly back to first_start_ to avoid getting stuck searching a long way from the start.
+		if (last_start_.x > first_start_.x) {
+			last_start_.x--;
+		} else if (last_start_.x < first_start_.x) {
+			last_start_.x++;
+		}
+		if (last_start_.y > first_start_.y) {
+			last_start_.y--;
+		}
+		else if (last_start_.y < first_start_.y) {
+			last_start_.y++;
+		}
+	}
     return searchRes.point;
 }
 
