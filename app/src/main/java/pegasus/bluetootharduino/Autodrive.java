@@ -135,9 +135,5 @@ public class Autodrive
     // value should be between 0.4-1.4
     public static native void setSettingMaxAngleDiff(float value);
 
-    public static native void setPIDkp(float value);
-
-    public static native void setPIDki(float value);
-
-    public static native void setPIDkd(float value);
+    public static native void setCannyThresh(int value);
 }

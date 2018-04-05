@@ -11,21 +11,21 @@
         android:layout_gravity="center_vertical">
 
         <TextView
+            android:id="@+id/progress1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progress1"
-            android:text="kp value"
-            android:textColor="@color/white"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:layout_above="@+id/kp"
+            android:layout_above="@+id/cannyThresh"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="canny thresh"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
 
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/kp"
+            android:id="@+id/cannyThresh"
             android:indeterminate="false"
             android:paddingTop="2dp"
             android:layout_above="@+id/progress2"
@@ -34,21 +34,21 @@
             android:layout_marginBottom="39dp" />
 
         <TextView
+            android:id="@+id/progress2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progress2"
-            android:text="ki value"
-            android:textColor="@color/white"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:layout_above="@+id/ki"
+            android:layout_above="@+id/carMaxSpeed"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="car max speed"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
 
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/ki"
+            android:id="@+id/carMaxSpeed"
             android:indeterminate="false"
             android:paddingTop="2dp"
             android:layout_centerVertical="true"
@@ -56,21 +56,21 @@
             android:layout_alignParentStart="true" />
 
         <TextView
+            android:id="@+id/progress3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progress3"
-            android:text="kd value"
-            android:textColor="@color/white"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:layout_above="@+id/kd"
+            android:layout_above="@+id/carMaxAngle"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="car max angle"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
 
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/kd"
+            android:id="@+id/carMaxAngle"
             android:indeterminate="false"
             android:paddingTop="2dp"
             android:layout_alignParentBottom="true"

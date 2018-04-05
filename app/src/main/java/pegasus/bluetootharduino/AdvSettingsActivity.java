@@ -12,7 +12,7 @@ import android.widget.TextView;
 
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
 
-    SeekBar kp, ki, kd, smoothening, fragment, leftIteration, rightIteration, angle;
+    SeekBar cannyThresh, carMaxSpeed, carMaxAngle, smoothening, fragment, leftIteration, rightIteration, angle;
     GestureDetector detector;
     SharedPreferences shared;
     float progressValue;
@@ -27,23 +27,23 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
         detector = new GestureDetector(this);
 
         //SEEK BARS
-        kp = (SeekBar)findViewById(R.id.kp);
-        kp.setMax(50);
-        ((TextView)findViewById(R.id.progress1)).setText("kp value set to " + shared.getFloat("kp", progressValue));
-        kp.setProgress((int) (shared.getFloat("kp", progressValue) *10));
-        kp.setOnSeekBarChangeListener(this);
+        cannyThresh = (SeekBar)findViewById(R.id.cannyThresh);
+        cannyThresh.setMax(200);
+        ((TextView)findViewById(R.id.progress1)).setText("cannyThresh value set to " + shared.getFloat("cannyThresh", progressValue));
+        cannyThresh.setProgress((int) (shared.getFloat("cannyThresh", progressValue) ));
+        cannyThresh.setOnSeekBarChangeListener(this);
 
-        ki = (SeekBar)findViewById(R.id.ki);
-        ki.setMax(50);
-        ((TextView)findViewById(R.id.progress2)).setText("ki value set to " + shared.getFloat("ki", progressValue));
-        ki.setProgress((int) (shared.getFloat("ki", progressValue) *10));
-        ki.setOnSeekBarChangeListener(this);
+        carMaxSpeed = (SeekBar)findViewById(R.id.carMaxSpeed);
+        carMaxSpeed.setMax(600);
+        ((TextView)findViewById(R.id.progress2)).setText("carMaxSpeed value set to " + shared.getFloat("carMaxSpeed", progressValue));
+        carMaxSpeed.setProgress((int) (shared.getFloat("carMaxSpeed", progressValue) ));
+        carMaxSpeed.setOnSeekBarChangeListener(this);
 
-        kd = (SeekBar)findViewById(R.id.kd);
-        kd.setMax(50);
-        ((TextView)findViewById(R.id.progress3)).setText("kd value set to " + shared.getFloat("kd", progressValue));
-        kd.setProgress((int) (shared.getFloat("kd", progressValue) *10));
-        kd.setOnSeekBarChangeListener(this);
+        carMaxAngle = (SeekBar)findViewById(R.id.carMaxAngle);
+        carMaxAngle.setMax(40);
+        ((TextView)findViewById(R.id.progress3)).setText("carMaxAngle value set to " + shared.getFloat("carMaxAngle", progressValue));
+        carMaxAngle.setProgress((int) (shared.getFloat("carMaxAngle", progressValue) ));
+        carMaxAngle.setOnSeekBarChangeListener(this);
 
         smoothening = (SeekBar)findViewById(R.id.smoothening);
         smoothening.setMax(8); // values 0-8
@@ -81,34 +81,36 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
         switch (seekBar.getId()) {
-            case R.id.kp:
+            case R.id.cannyThresh:
                 if(fromUser) {
-                    progressValue = (float) (progress / 10.0);
-                    ((TextView)findViewById(R.id.progress1)).setText("kp value set to " + progressValue);
+                    progressValue = progress;
+                    ((TextView)findViewById(R.id.progress1)).setText("cannyThresh value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
-                    sharedEditor.putFloat("kp", progressValue);
+                    sharedEditor.putFloat("cannyThresh", progressValue);
                     sharedEditor.apply();
-                    Autodrive.setPIDkp(progressValue);
+                    Autodrive.setCannyThresh(progress);
                 }
                 break;
-            case R.id.ki:
+            case R.id.carMaxSpeed:
                 if(fromUser) {
-                    progressValue = (float) (progress / 10.0);
-                    ((TextView)findViewById(R.id.progress2)).setText("ki value set to " + progressValue);
+                    progressValue = progress;
+                    ((TextView)findViewById(R.id.progress2)).setText("carMaxSpeed value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
-                    sharedEditor.putFloat("ki", progressValue);
+                    sharedEditor.putFloat("carMaxSpeed", progressValue);
                     sharedEditor.apply();
-                    Autodrive.setPIDki(progressValue);
+                    //Autodrive.setCarMaxSpeed(progressValue);
+                    carConfiguration.maxSpeed = progress;
                 }
                 break;
-            case R.id.kd:
+            case R.id.carMaxAngle:
                 if(fromUser) {
-                    progressValue = (float) (progress / 10.0);
-                    ((TextView)findViewById(R.id.progress3)).setText("kd value set to " + progressValue);
+                    progressValue = progress;
+                    ((TextView)findViewById(R.id.progress3)).setText("carMaxAngle value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
-                    sharedEditor.putFloat("kd", progressValue);
+                    sharedEditor.putFloat("carMaxAngle", progressValue);
                     sharedEditor.apply();
-                    Autodrive.setPIDkd(progressValue);
+                    //Autodrive.setCarMaxAngle(progressValue);
+                    carConfiguration.maxAngle = progress;
                 }
                 break;
             case R.id.smoothening:
