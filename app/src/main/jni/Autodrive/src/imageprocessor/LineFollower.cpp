@@ -32,8 +32,7 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 void LineFollower::draw(const cv::Mat* colorCopy, int centerX) {
 	road_line_.draw(colorCopy);
    
-	/* DRAW PURPLE RECTANGLE FOR POSSIBLE FIRST HITS*/
-	//! TODO: FIX, I have changed this to minus POINT (was plus point), so upperLeft is in left direction and upwards
+	/* DRAW PURPLE RECTANGLE FOR AREA OF POSSIBLE FIRST HITS*/
 	POINT upperLeft = road_builder_->last_start() - POINT(img_conf_->left_iteration_length_, img_conf_->first_fragment_max_dist_);
 	POINT lowerRight = road_builder_->last_start() + POINT(img_conf_->right_iteration_length_, 0);
 	cv::rectangle(*colorCopy,upperLeft , lowerRight,cv::Scalar(255,0,255));
