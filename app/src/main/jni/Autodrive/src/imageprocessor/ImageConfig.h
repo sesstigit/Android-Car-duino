@@ -16,7 +16,7 @@
 **/
  
 //! @file ImageConfig.h
-//! A clas to simply hold all the configuration settings for image processing.
+//! A class to simply hold all the configuration settings for image processing.
 
 #pragma once
 
@@ -30,21 +30,42 @@ namespace Autodrive {
 	class ImageConfig {
 	public:
 		ImageConfig();
-		// From settings.h
-		bool normalize_lighting_; //!< whether to normalize to account for changes in ambient brightness
-		//! TODO: work out why these configuration settings are required just to find where road starts above car bonnet
-		int first_fragment_max_dist_; //!< 15-60, Maximum vertical distance to the first pixel from car_y
-		int left_iteration_length_; //!< 1-15, // How many pixels to search to the left for a white point (RoadLineBuilder)
-		int right_iteration_length_; //!< 1-15, How many pixels to search to the right for a white point (RoadLineBuilder)
-		int transform_line_removal_threshold_; //!< Width of pixels at the transform border to remove from the canny
-		bool use_left_line_; //!< If the middle line should be taken into consideration or not
-		float iterate_reduce_on_start_; //!< How much less to iterate right and left when finding the first point
-		float max_angle_diff_; //!< 0.4 - 1.4, Every pixel in a line can not have an angle from the previous pixel that deviates more than this
-		unsigned int smoothening_; //!< 0 - 8v, N Frames to take the mean value from, i.e. smooth across frames
-		// PID SETTINGS
-		float kp_;
-		float ki_;
-		float kd_;
+		//! whether to normalize to account for changes in ambient brightness.  Try "on"
+		bool normalize_lighting_;
+		
+		//! TODO: work out why so many configuration settings are required just to find where road starts above car bonnet
+		//! 15-60, maximum vertical distance to the first pixel from car_y.  Try 30
+		int first_fragment_max_dist_;
+		
+		//! 1-15, how many pixels to search to the left for a white point (RoadLineBuilder). Try 6
+		int left_iteration_length_;
+		
+		//! 1-15, how many pixels to search to the right for a white point (RoadLineBuilder). Try 6
+		int right_iteration_length_;
+		
+		//! Width of pixels to blank at birdseye transform border (otherwise can be detected as a line). Try 12
+		int transform_line_removal_threshold_;
+		
+		//! Track middle line or not.  Named left line because we are driving in right lane!. Try "on"
+		bool use_left_line_;
+		
+		//! Unused (set to zero).  Was used to reduce right and left search distance when finding next point in a line.
+		float iterate_reduce_on_start_; 
+		
+		//!< 0.4 - 1.4, each pixel in a line must deviate from line angle (measured in radians) less than this. Try 1.0
+		float max_angle_diff_;
+		
+		//!< 0 - 8v, number of Frames to take the mean value from, i.e. smooth across frames. Try 0.
+		unsigned int smoothening_;
+		
+		//! 1 - 200, threshold for Canny line detection.  Lower value will find more lines on screen image.  Try 90
+		int canny_thresh_;
+
+		//Other Autodrive settings handled elsewhere
+		// Car Length: Measured in cm.  Read only.  Used for obstacle avoidance and parking.  Ensures the car drives far enough around objects so the back does not hit.
+		// Left Lane: currently unused.  Should be used to instruct car to use Left Lane (in Aus) or Right Lane (in USA).
+		// Car Max Speed: increase to make car navigate faster. (try 400)
+		// Car Max Angle: increase to make car turn sharper, but at risk of swerving too far (try 25)
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_IMAGECONFIG_H_
