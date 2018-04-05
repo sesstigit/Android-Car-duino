@@ -33,6 +33,14 @@ using namespace cv;
 using namespace std;
 using namespace Autodrive;
 
+void resize_frame(Mat& in, Mat& out) {
+	cv::Size inSize = in.size();
+	cv::Size* outSize = new Size(240, 135);
+	if (inSize != *outSize) {
+		cv::resize(in, out, *outSize, 0, 0, cv::INTER_NEAREST);
+	}
+}
+
 int main()
 {
 	std::cout << "main";
@@ -42,6 +50,7 @@ int main()
 	//string filename = "Test4-1.m4v";
 	VideoCapture capture(filename);
 	Mat frame;
+	Mat resized_frame;
 
 	if (!capture.isOpened())
 		throw "Error when opening test4.avi";
@@ -49,10 +58,14 @@ int main()
 	namedWindow(window, 1);
 
 	capture >> frame;
-	while (!Autodrive::car.img_proc()->init_processing(&frame)) {
-		show_image(frame, 3, "w");
+	resize_frame(frame, resized_frame);
+	
+
+	while (!Autodrive::car.img_proc()->init_processing(&resized_frame)) {
+		show_image(resized_frame, 3, "w");
 		waitKey();
 		capture >> frame;
+		resize_frame(frame, resized_frame);
 	}
 	for (;;)
 	{
@@ -61,10 +74,10 @@ int main()
 			capture.open(filename);
 			continue;
 		}
+		resize_frame(frame, resized_frame);
+		Autodrive::car.img_proc()->continue_processing(resized_frame);
 
-		Autodrive::car.img_proc()->continue_processing(frame);
-
-		show_image(frame, 3, "w");
+		show_image(resized_frame, 3, "w");
 		waitKey(); //wait for user input to continue
 		waitKey(10); // waits short time to display frame
 	}
