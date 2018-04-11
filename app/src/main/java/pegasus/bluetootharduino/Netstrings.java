@@ -1,5 +1,6 @@
 package pegasus.bluetootharduino;
 
+//! "Netstrings" provides a method to decode data from the car, and encode data to the car.
 public class Netstrings {
 	
 	Netstrings(){}

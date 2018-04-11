@@ -1,6 +1,7 @@
 package pegasus.bluetootharduino;
 
-//TODO: We might want to remove this class completely and just use something like Autodrive.SensorData instead
+//! "SensorData" has Autodrive param setter methods for ultrasonic, infrared, gyro and razor sensors after reading the values from the car via bluetooth using handleInput(). Note: the debug code is currently commented out.
+//! TODO: We might want to remove this class completely and just use something like Autodrive.SensorData instead
 public class SensorData {
     public static int ultrasonicFront = 0,
         ultrasonicFrontRight = 0,

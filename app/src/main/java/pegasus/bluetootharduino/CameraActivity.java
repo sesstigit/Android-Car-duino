@@ -21,7 +21,11 @@ import org.opencv.core.Mat;
 
 import java.io.IOException;
 
-
+//! This class is activated when the user clicks Auto driving mode.
+//! Each camera frame is processed for navigation with line:
+//! driver.processImage(inputFrame.rgba());
+//! i.e. the image has rgba format.
+//! Debug information is sent to a view called "R.id.debugConsole". It includes all the car sensor readings!
 public class CameraActivity extends Activity implements CvCameraViewListener2, OnGestureListener {
 
     private CameraBridgeViewBase mOpenCvCameraView;

@@ -10,6 +10,7 @@ import android.view.MotionEvent;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+//! This class handles the advanced settings GUI screen.  It changes Autodrive settings to configure the car for different driving conditions.
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
 
     SeekBar cannyThresh, carMaxSpeed, carMaxAngle, smoothening, fragment, leftIteration, rightIteration, angle;

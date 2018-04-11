@@ -12,7 +12,7 @@ import android.view.View.OnClickListener;
 
 import java.io.IOException;
 
-
+//!"ManualActivity" simply sends commands from the manual forward/back/left/right buttons over bluetooth to the car.  The "more" buttons are used to increase or decrease a value, e.g. make forward speed faster.
 public class ManualActivity extends Activity implements OnClickListener, OnGestureListener {
 
     BluetoothConnection btc = new BluetoothConnection();

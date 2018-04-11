@@ -13,7 +13,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.app.ProgressDialog;
 
-
+//! "PairDeviceActivity" displays the paired devices (from history) and allows the user to pair with any of those devices
 public class PairDeviceActivity extends Activity implements AdapterView.OnItemClickListener, GestureDetector.OnGestureListener {
 
     BluetoothPairing blue = new BluetoothPairing();

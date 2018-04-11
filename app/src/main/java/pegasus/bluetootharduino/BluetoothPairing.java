@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import java.util.ArrayList;
 import java.util.Set;
 
+//! "BluetoothPairing" lists the available bluetooth devices, and then pairs with the one chosen by the user.
 public class BluetoothPairing {
 
     BluetoothAdapter adapter;

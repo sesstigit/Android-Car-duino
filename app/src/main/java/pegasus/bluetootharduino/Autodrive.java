@@ -5,6 +5,11 @@ import org.opencv.core.Mat;
 /**
  * Created by David on 2015-04-07.
  */
+//! This class is an interface to the C++ autodrive library.
+//! It loads some libraries including autodrive.
+//! e.g. When auto driving mode is clicked in the App GUI, then
+//! Java function drive() in this class calls the drive() function 
+//! from the autodrive library.
 public class Autodrive
 {
     static

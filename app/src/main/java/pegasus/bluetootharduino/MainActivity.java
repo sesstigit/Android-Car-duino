@@ -16,6 +16,8 @@ import org.opencv.android.OpenCVLoader;
 
 import static android.content.ContentValues.TAG;
 
+//! This class implements onClick functions behind the App main screen.  It allows the user to change basic configuration options, start autodrive mode, start manual drive mode, pair bluetooth, or enter advanced settings.
+//! Bluetooth is used for all communication between the Android device and the App, so the phone must be paired with the car prior to use.  All data sent over bluetooth is encoded/decoded using the Netstrings class.
 public class MainActivity extends Activity implements OnClickListener, CompoundButton.OnCheckedChangeListener, TextWatcher {
 
     @Override

@@ -13,6 +13,9 @@ import android.bluetooth.*;
 import android.os.Handler;
 import android.util.Log;
 
+//! This class handles all bluetooth communication with the car.
+//! There are some hardcoded strings such as "carduino" MAC address, and the UUID for the SerialPortService ID
+//! "BluetoothConnection" has a method called runBT which established a bluetooth socket connection and in a new thread is processes incoming data, calling SensorData.handleInput() each time data is available. It also has a send method which encodes data before sending to the car. A method sendToManualMode encodes steering and motor commands from the GUI manual mode and sends them to the car.
 public class BluetoothConnection {
 
     static BluetoothSocket socket;
