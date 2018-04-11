@@ -61,7 +61,7 @@ int main()
 	resize_frame(frame, resized_frame);
 	
 
-	while (!Autodrive::car.img_proc()->init_processing(&resized_frame)) {
+	while (!Autodrive::car.img_proc_->init_processing(&resized_frame)) {
 		show_image(resized_frame, 3, "w");
 		waitKey();
 		capture >> frame;
@@ -75,7 +75,7 @@ int main()
 			continue;
 		}
 		resize_frame(frame, resized_frame);
-		Autodrive::car.img_proc()->continue_processing(resized_frame);
+		Autodrive::car.img_proc_->continue_processing(resized_frame);
 
 		show_image(resized_frame, 3, "w");
 		waitKey(); //wait for user input to continue

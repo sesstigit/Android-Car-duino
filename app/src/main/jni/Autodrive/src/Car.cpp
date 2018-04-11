@@ -25,9 +25,9 @@ using namespace Autodrive;
 
 //Constructor
 Car::Car() :
-  img_proc_(new ImageProcessor(img_conf_)),
-  parking_(new ParkingManeuver(this, ParkingManeuverMode::kNoManeuver)),
-  overtaking_(new Overtaking(this)),
+  img_proc_(make_unique<ImageProcessor>(img_conf_)),
+  parking_(make_unique<ParkingManeuver>(this, ParkingManeuverMode::kNoManeuver)),
+  overtaking_(make_unique<Overtaking>(this)),
   changed_speed_(false),
   changed_angle_(false),
   initial_mode_(AutoDriveMode::kSearchingForLanes),
@@ -41,12 +41,13 @@ Car::Car() :
 }
 
 Car::~Car() {
-	delete img_proc_;
-    delete parking_;
-    delete overtaking_;
-	if (image_ != nullptr) {
-		delete image_;
-	}
+	//delete img_proc_;
+    //delete parking_;
+    //delete overtaking_;
+	//Do not delete the input image as that memory is managed by the caller.
+	//if (image_ != nullptr) {
+	//	delete image_;
+	//}
 }
 
 void Car::reset_mode() {

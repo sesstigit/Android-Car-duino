@@ -21,6 +21,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/mat.hpp>
+#include <memory>
 
 #include "ImageConfig.h"
 #include "CarSensor.h"
@@ -73,10 +74,8 @@ namespace Autodrive {
 		// public methods
 		void drive();  // main method for Car Autodrive.  Search for lanes, then follow them.
 		AutoDriveMode mode() { return mode_; }; //getter
-		ParkingManeuver* parking() { return parking_; }; //getter
-		Overtaking* overtaking() { return overtaking_; }; //getter
 		ImageConfig& img_conf() { return img_conf_; }; //getter
-		ImageProcessor* img_proc() { return img_proc_; }; //getter
+		//std::unique_ptr<ImageProcessor> img_proc() { return img_proc_; }; //getter.  Cannot do this as it tries to copy a unique_ptr
 		bool changed_speed() { return changed_speed_; }; //getter
 		bool changed_angle() { return changed_angle_; }; //getter
 		void set_initial_mode(AutoDriveMode new_mode); //setter
@@ -109,14 +108,15 @@ namespace Autodrive {
 		const double normal_speed_;
 		const double backwards_speed_;
 		
-		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).
-
+		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).  Memory managed by caller.
+		
+		std::unique_ptr<ImageProcessor> img_proc_;
 	private:
 	    // private members (params)
 		ImageConfig img_conf_;
-		ImageProcessor* img_proc_;
-		ParkingManeuver* parking_; //object with methods for car parking
-		Overtaking* overtaking_;  //object with methods for car overtaking
+		
+		std::unique_ptr<ParkingManeuver> parking_; //object with methods for car parking
+		std::unique_ptr<Overtaking> overtaking_;  //object with methods for car overtaking
 		bool changed_speed_;  // flag whether Autodrive has changed speed this frame
 		bool changed_angle_;  // same, but for angle.
 

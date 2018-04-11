@@ -50,7 +50,7 @@ void LineFollower::draw(const cv::Mat* colorCopy, int centerX) {
 }
 
 
-// Prerequicite for wheter a road is found or not
+// Prerequisite for whether a road is found or not
 bool LineFollower::is_found() {
 	return is_found_;
 }
