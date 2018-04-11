@@ -22,13 +22,8 @@ using namespace Autodrive;
 
 ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 	img_conf_(img_conf),
-	//thresh1_(80),    //replaced by canny_thresh_
-	//thresh2_(71),    //replaced by canny_thresh_ * 3
-	//intensity_(110), //replaced by parameter free light normalisation
-	//blur_i_(11),     //replaced by parameter free light normalisation
 	road_follower_(nullptr),
 	birdseye_(nullptr) {
-	//thresh2_ = 3 * thresh1_;  //as recommended for Canny edge detection
 }
 //Note: did not initialise the following class members
 //perspective_(nullptr),  
@@ -38,7 +33,7 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 //! init_processing is the first function called by Autodrive.
 //! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
-	birdseye_ = new BirdseyeTransformer();
+	birdseye_ = make_unique<BirdseyeTransformer>();
 	auto found_pespective = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	if (found_pespective)
 	{

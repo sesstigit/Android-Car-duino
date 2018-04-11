@@ -55,11 +55,7 @@ namespace Autodrive {
 		
 
 		const ImageConfig& img_conf_;
-		BirdseyeTransformer* birdseye_;
-		//int thresh1_;   // used in cv::Canny function.  Replaced by canny_thresh_
-		//int thresh2_;   // used in cv::Canny function.  Replaced by canny_thresh_ * 3
-		//int intensity_; // used in normalize lighting.  High value (200) means very few lines detected.  Low value (10) means lots of noisy lines detected.
-		//int blur_i_;    // used in normalize lighting
+		std::unique_ptr<BirdseyeTransformer> birdseye_;
 		std::unique_ptr<RoadFollower> road_follower_;
 		cv::Mat perspective_;
 
