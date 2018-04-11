@@ -28,7 +28,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
 
         //SEEK BARS
         cannyThresh = (SeekBar)findViewById(R.id.cannyThresh);
-        cannyThresh.setMax(200);
+        cannyThresh.setMax(300);
         ((TextView)findViewById(R.id.progress1)).setText("cannyThresh value set to " + shared.getFloat("cannyThresh", progressValue));
         cannyThresh.setProgress((int) (shared.getFloat("cannyThresh", progressValue) ));
         cannyThresh.setOnSeekBarChangeListener(this);
