@@ -70,6 +70,7 @@ namespace Autodrive {
 	public:
 		Car();
 		~Car();
+		// public methods
 		void drive();  // main method for Car Autodrive.  Search for lanes, then follow them.
 		AutoDriveMode mode() { return mode_; }; //getter
 		ParkingManeuver* parking() { return parking_; }; //getter
@@ -83,6 +84,7 @@ namespace Autodrive {
 		void reset_mode();  //setter
 		void set_car_length(int car_len);  //setter
 
+        // public members (params)
 		// All sensors are public as they are updated externally (e.g. via JNI)
 		CarESC motor_;
 		CarServo steering_;
@@ -110,6 +112,7 @@ namespace Autodrive {
 		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).
 
 	private:
+	    // private members (params)
 		ImageConfig* img_conf_;
 		ImageProcessor* img_proc_;
 		ParkingManeuver* parking_; //object with methods for car parking
