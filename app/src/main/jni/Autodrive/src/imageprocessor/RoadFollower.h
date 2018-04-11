@@ -42,7 +42,7 @@ namespace Autodrive {
 
 	class RoadFollower {
 	public:
-		RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* img_conf);
+		RoadFollower(const cv::Mat& cannied, int center_x, const ImageConfig& img_conf);
 		bool left_line_found();
 		bool right_line_found();
 		//! Determine lane by finding which line has more gaps, i.e. dotted line
@@ -63,7 +63,7 @@ namespace Autodrive {
 
 		std::vector<int> prev_dirs_;
 		int unfound_counter_;
-		ImageConfig* img_conf_;
+		const ImageConfig& img_conf_;
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_ROADFOLLOWER_H_

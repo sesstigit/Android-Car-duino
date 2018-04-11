@@ -25,7 +25,6 @@ using namespace Autodrive;
 
 //Constructor
 Car::Car() :
-  img_conf_(new ImageConfig()),
   img_proc_(new ImageProcessor(img_conf_)),
   parking_(new ParkingManeuver(this, ParkingManeuverMode::kNoManeuver)),
   overtaking_(new Overtaking(this)),
@@ -42,7 +41,6 @@ Car::Car() :
 }
 
 Car::~Car() {
-	delete img_conf_;
 	delete img_proc_;
     delete parking_;
     delete overtaking_;

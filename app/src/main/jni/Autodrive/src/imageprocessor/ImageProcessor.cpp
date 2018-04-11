@@ -20,7 +20,7 @@
 
 using namespace Autodrive;
 
-ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
+ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 	img_conf_(img_conf),
 	//thresh1_(80),    //replaced by canny_thresh_
 	//thresh2_(71),    //replaced by canny_thresh_ * 3
@@ -39,17 +39,17 @@ ImageProcessor::ImageProcessor(ImageConfig* img_conf) :
 //! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	birdseye_ = new BirdseyeTransformer();
-	auto found_pespective = birdseye_->find_perspective(mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3);
+	auto found_pespective = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	if (found_pespective)
 	{
 		perspective_ = *found_pespective;
 		birdseye_->birds_eye_transform(mat, perspective_);
-		if (img_conf_->normalize_lighting_) {
+		if (img_conf_.normalize_lighting_) {
 			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 			normalize_lighting(mat);
 		}
 		cv::Mat cannied_mat;
-		cv::Canny(*mat, cannied_mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
+		cv::Canny(*mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
 		int the_center = static_cast<int>(mat->size().width / 2.f + birdseye_->center_diff());
 		road_follower_ = make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
 		return true;
@@ -65,17 +65,17 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	CarCmd cmnd;
 	
 	birdseye_->birds_eye_transform(&mat, perspective_);
-	if (img_conf_->normalize_lighting_) {
+	if (img_conf_.normalize_lighting_) {
 		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 		normalize_lighting(&mat);
 	}
 
 	cv::Mat cannied_mat;
-	cv::Canny(mat, cannied_mat, img_conf_->canny_thresh_, img_conf_->canny_thresh_ * 3, 3);
+	cv::Canny(mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);
 
 	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
-	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_->transform_line_removal_threshold_);
-	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_->transform_line_removal_threshold_);
+	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
+	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
 	//TEST birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(255), 10);
 	//TEST birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(255), 10);
 	//TEST imshow("New Window", cannied_mat);

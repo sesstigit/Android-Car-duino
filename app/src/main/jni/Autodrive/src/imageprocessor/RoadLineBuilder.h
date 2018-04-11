@@ -31,11 +31,11 @@ namespace Autodrive {
 	class RoadLineBuilder
 	{
 	public:
-		RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf);
+		RoadLineBuilder(POINT start_point, float center_x, int car_y, const ImageConfig& img_conf);
 		//! Build a road up to maxsize
 		//! @param cannied Input image after canny function, i.e. line detection
 		//! @param maxsize The maximum road RoadLine in pixels
-		RoadLine build(const cv::Mat& cannied, size_t maxsize);
+		std::unique_ptr<RoadLine> build(const cv::Mat& cannied, size_t maxsize);
 		POINT first_start() { return first_start_; };  //!< getter
 		POINT last_start() { return last_start_; };  //!< getter
 
@@ -48,7 +48,7 @@ namespace Autodrive {
 		POINT first_start_; //!< used in get_first_point to mark where the search starts
 		POINT last_start_; //!!< used in get_first_point to mark last point in the search, assuming it was < max_dist_from_start 
 		float center_x_;
-		ImageConfig* img_conf_;
+		const ImageConfig& img_conf_;
 		//find_point was previously declated static
 		//! find_point searches from "start" along leftAngle and rightAngle (normally just left and right) looking for a white point (the road white line). 
 		//! The SearchResult from the leftAngle is preferred over rightAngle, unless the latter point is much closer.

@@ -22,33 +22,33 @@ using namespace Autodrive;
 
 //max_dist_from_start_ was 22
 //step_distance was 4
-RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, ImageConfig* img_conf) :
+RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, const ImageConfig& img_conf) :
     first_start_(start_point), last_start_(start_point), center_x_(center_x),
 	car_y_(car_y), img_conf_(img_conf), step_dist_(2), 
 	max_dist_from_start_(50), max_upwards_iterations_(100), total_gap_(0) {
 }
 
 //! Called by LineFollower->update() on each line of the road.
-RoadLine RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {
+std::unique_ptr<RoadLine> RoadLineBuilder::build(const cv::Mat& cannied, size_t maxsize) {
 	// Create a RoadLine, specifying the center_x_ point, and a start_point (calculated as get_first_point())
-    RoadLine road(center_x_, get_first_point(cannied), img_conf_);
+	std::unique_ptr<RoadLine> road = make_unique<RoadLine>(center_x_, get_first_point(cannied), img_conf_);
     optional<POINT> new_point;
     total_gap_ = 0;
 	// Keep adding points to the RoadLine up to maxsize (the road size)
-    while ((new_point = get_next_point(cannied, road.get_estimated_angle(), road.back_points(), step_dist_)).valid && road.num_points() < maxsize)
+    while ((new_point = get_next_point(cannied, road->get_estimated_angle(), road->back_points(), step_dist_)).valid && road->num_points() < maxsize)
     {
-        if (!road.add_point(*new_point))
+        if (!road->add_point(*new_point))
             break;
     }
-    road.set_total_gap(total_gap_);
+    road->set_total_gap(total_gap_);
 
     return road;
 }
 
 //TODO: was "static" on next line    
 SearchResult RoadLineBuilder::find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle, float iteration_reduction) {
-	SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, static_cast<int>(img_conf_->right_iteration_length_ - iteration_reduction)); //!< find a white point in given direction
-    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, static_cast<int>(img_conf_->left_iteration_length_ - iteration_reduction));
+	SearchResult right_search = firstnonzero_direction(cannied, start, fight_angle, static_cast<int>(img_conf_.right_iteration_length_ - iteration_reduction)); //!< find a white point in given direction
+    SearchResult left_search = firstnonzero_direction(cannied, start, left_angle, static_cast<int>(img_conf_.left_iteration_length_ - iteration_reduction));
     //! OK to find either line, or both.
     if (left_search.found && right_search.found)
     {
@@ -78,10 +78,10 @@ POINT RoadLineBuilder::get_first_point(const cv::Mat& cannied)
     POINT start_point = last_start_;
 
     //SEARCH UPWARDS UNTIL HIT (end search when firstFragmentMaxDist reached).  HIT is a white point.
-    while (!searchRes.found && unfound++ < img_conf_->first_fragment_max_dist_)
+    while (!searchRes.found && unfound++ < img_conf_.first_fragment_max_dist_)
     {
 		//! Search both to left and right of start_point for a Canny edge detection white line.
-        searchRes = find_point(cannied, start_point, Direction::LEFT, Direction::RIGHT,img_conf_->iterate_reduce_on_start_);
+        searchRes = find_point(cannied, start_point, Direction::LEFT, Direction::RIGHT,img_conf_.iterate_reduce_on_start_);
         if (!searchRes.found)
             start_point.y--;
     }

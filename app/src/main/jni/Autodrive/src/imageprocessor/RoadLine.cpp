@@ -19,14 +19,14 @@
 
 using namespace Autodrive;
 
-RoadLine::RoadLine(int center_x, POINT start_point, ImageConfig* img_conf) :
+RoadLine::RoadLine(int center_x, POINT start_point, const ImageConfig& img_conf) :
 	center_x_(center_x), img_conf_(img_conf) {
 	angles_.push_back(Direction::FORWARD);
 	points_.push_back(start_point);
 	angle_diffs_.push_back(0);
 }
 
-RoadLine::RoadLine() {
+RoadLine::RoadLine(const ImageConfig& img_conf) : img_conf_(img_conf) {
 }
 
 void RoadLine::draw(const cv::Mat* draw_mat) {
@@ -42,7 +42,7 @@ bool RoadLine::add_point(POINT p) {
 
     float mean = get_mean_angle(0);
     //Almost never happens - ?
-    if (fabs(newAngle - mean) > img_conf_->max_angle_diff_)//Mathf::PI_2 / 2.0f)
+    if (fabs(newAngle - mean) > img_conf_.max_angle_diff_)//Mathf::PI_2 / 2.0f)
         return false;
 
     angles_.push_back(newAngle);

@@ -22,7 +22,7 @@ using namespace Autodrive;
 //Constructor
 ImageConfig::ImageConfig() :
   normalize_lighting_(false),
-  first_fragment_max_dist_(30),
+  first_fragment_max_dist_(20),
   left_iteration_length_(6),
   right_iteration_length_(6),
   transform_line_removal_threshold_(12),

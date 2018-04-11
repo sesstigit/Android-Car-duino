@@ -41,7 +41,7 @@ namespace Autodrive {
 
 	class ImageProcessor {
 	public:
-		ImageProcessor(ImageConfig* img_conf);
+		ImageProcessor(const ImageConfig& img_conf);
 		bool init_processing(cv::Mat* mat);
 		CarCmd continue_processing(cv::Mat& mat);
 		//void normalize_lighting(cv::Mat* bgr_image, int blur = 20, float intensity = 0.5f);
@@ -54,7 +54,7 @@ namespace Autodrive {
 		int dashed_line_gaps();
 		
 
-		ImageConfig* img_conf_;
+		const ImageConfig& img_conf_;
 		BirdseyeTransformer* birdseye_;
 		//int thresh1_;   // used in cv::Canny function.  Replaced by canny_thresh_
 		//int thresh2_;   // used in cv::Canny function.  Replaced by canny_thresh_ * 3

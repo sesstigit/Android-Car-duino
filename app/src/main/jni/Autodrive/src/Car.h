@@ -22,6 +22,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/mat.hpp>
 
+#include "ImageConfig.h"
 #include "CarSensor.h"
 
 
@@ -58,7 +59,6 @@ namespace Autodrive {
 
 	class ParkingManeuver;  //forward declaration
 	class Overtaking;  //forward declaration
-	class ImageConfig;  //forward declaration
 	class ImageProcessor;  //forward declaration
 
 	//! Base Class
@@ -75,7 +75,7 @@ namespace Autodrive {
 		AutoDriveMode mode() { return mode_; }; //getter
 		ParkingManeuver* parking() { return parking_; }; //getter
 		Overtaking* overtaking() { return overtaking_; }; //getter
-		ImageConfig* img_conf() { return img_conf_; }; //getter
+		ImageConfig& img_conf() { return img_conf_; }; //getter
 		ImageProcessor* img_proc() { return img_proc_; }; //getter
 		bool changed_speed() { return changed_speed_; }; //getter
 		bool changed_angle() { return changed_angle_; }; //getter
@@ -113,7 +113,7 @@ namespace Autodrive {
 
 	private:
 	    // private members (params)
-		ImageConfig* img_conf_;
+		ImageConfig img_conf_;
 		ImageProcessor* img_proc_;
 		ParkingManeuver* parking_; //object with methods for car parking
 		Overtaking* overtaking_;  //object with methods for car overtaking

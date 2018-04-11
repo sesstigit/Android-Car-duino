@@ -33,7 +33,7 @@ namespace Autodrive {
 	class LineFollower
 	{
 	public:
-		LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, ImageConfig* img_conf);
+		LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, const ImageConfig& img_conf);
 		void update(cv::Mat& cannied);
 		optional<int> get_prefered_angle();
         //! centerX is the x coordinate of the middle of the road found during initialisation
@@ -43,8 +43,8 @@ namespace Autodrive {
 
 	private:
 		// params
-		ImageConfig* img_conf_;
-		RoadLine road_line_;
+		const ImageConfig& img_conf_;
+		std::unique_ptr<RoadLine> road_line_;
 		std::unique_ptr<RoadLineBuilder> road_builder_;
 		int road_size_;
 		bool is_found_;

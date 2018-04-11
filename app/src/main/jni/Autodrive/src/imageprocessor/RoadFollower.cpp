@@ -19,7 +19,7 @@
 
 using namespace Autodrive;
 
-RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, ImageConfig* img_conf) :
+RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, const ImageConfig& img_conf) :
 	center_x_(center_x),
 	img_conf_(img_conf),
 	unfound_counter_(0) {
@@ -53,11 +53,11 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	optional<int> targetAngle = nullptr;
 	
 	//! Choose preferred angle to move, based on the preferred angle for both the left and right lines
-	if (leftTargetAngle && rightTargetAngle && img_conf_->use_left_line_)
+	if (leftTargetAngle && rightTargetAngle && img_conf_.use_left_line_)
 	{
 		// Give the right line just a bit more priority since it seems more reliable
 		targetAngle = weighted_average(*rightTargetAngle, *leftTargetAngle, 3);
-	} else if (leftTargetAngle && img_conf_->use_left_line_)
+	} else if (leftTargetAngle && img_conf_.use_left_line_)
 	{
 		targetAngle = *leftTargetAngle;
 	} else if (rightTargetAngle)
@@ -73,7 +73,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	if(targetAngle)
 	{
 		unfound_counter_ = 0;
-		if(img_conf_->smoothening_ == 0)
+		if(img_conf_.smoothening_ == 0)
 		{
 			cmd.set_angle(*targetAngle / 25.0);  //TODO: why divide by 25???
 			cmd.set_speed(0.23);  //TODO: Fix hardcoded number
@@ -84,7 +84,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 			int sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
 			int newAngle = sum / float(prev_dirs_.size() + 1);
 			prev_dirs_.push_back(newAngle);
-			if(prev_dirs_.size() > img_conf_->smoothening_)
+			if(prev_dirs_.size() > img_conf_.smoothening_)
 				prev_dirs_.erase(prev_dirs_.begin());
 			
 			cmd.set_angle(newAngle / 25.0);
