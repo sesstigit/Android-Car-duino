@@ -41,7 +41,7 @@ public class AutomaticCarDriver{
         Autodrive.setImage(resized.getNativeObjAddr());
         Autodrive.drive();
         BluetoothConnection.send();
-        if(Settings.DisplayDebugInformation)
+        if(Settings.DisplayDebug)
             Imgproc.resize(resized, image, prevSize,0,0,Imgproc.INTER_NEAREST);
 
         return image;

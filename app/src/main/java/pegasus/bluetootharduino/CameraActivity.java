@@ -81,24 +81,21 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     }
 
     static public void updateDebuggingConsole() {
-        debugConsole.setText("");
-        debugConsole.append("SENSORS:\n");
-        debugConsole.append("ultrasonicFront: " + String.valueOf(Autodrive.usFront()) + "\n");
-        debugConsole.append("ultrasonicFrontRight: " + String.valueOf(Autodrive.usFrontRight()) + "\n");
-        debugConsole.append("ultrasonicRearLeft: " + String.valueOf(Autodrive.usRear()) + "\n");
-        debugConsole.append("infraredSideFront: " + String.valueOf(Autodrive.irFrontRight()) + "\n");
-        debugConsole.append("infraredSideRear: " + String.valueOf(Autodrive.irRearRight()) + "\n");
-        debugConsole.append("infraredRear: " + String.valueOf(Autodrive.irRear()) + "\n");
-        debugConsole.append("gyroscope: " + String.valueOf(Autodrive.gyroHeading()) + "\n");
-        //debugConsole.append("razorboard: " + String.valueOf(Autodrive.razorHeading()) + "\n");
-        debugConsole.append("\n");
-        debugConsole.append("PARKING:\n");
-        debugConsole.append("gap length: " + String.valueOf(Autodrive.gapLength()) + "\n");
-        debugConsole.append("current maneuver: " + Autodrive.maneuver() + "\n");
-        debugConsole.append("maneuver state: " + Autodrive.maneuverstate() + "\n");
-        debugConsole.append("current angle: " + Autodrive.angleTurned() + "\n");
-        debugConsole.append("is initial gap: " + String.valueOf(Autodrive.isInitialGap()) + "\n");
-        debugConsole.append("has correct depth: " + String.valueOf(Autodrive.isGapDepthOk()) + "\n");
+	StringBuilder sb = new StringBuilder();
+
+        sb.append("SENSORS:\n");
+        sb.append("US F,FR,RL: " + String.valueOf(Autodrive.usFront()) + "," + String.valueOf(Autodrive.usFrontRight()) + "," + String.valueOf(Autodrive.usRear()) + "\n");
+        sb.append("IR SF,SR,R: " + String.valueOf(Autodrive.irFrontRight()) + "," + String.valueOf(Autodrive.irRearRight()) + "," + String.valueOf(Autodrive.irRear()) + "\n");
+        sb.append("gyro: " + String.valueOf(Autodrive.gyroHeading()) + "\n");
+        sb.append("PARKING:\n");
+        sb.append("gap length: " + String.valueOf(Autodrive.gapLength()) + "\n");
+        sb.append("maneuver mode, state: " + Autodrive.maneuver() + "," + Autodrive.maneuverstate() + "\n");
+        sb.append("current angle: " + Autodrive.angleTurned() + "\n");
+        sb.append("is initial gap: " + String.valueOf(Autodrive.isInitialGap()) + "\n");
+        sb.append("has correct depth: " + String.valueOf(Autodrive.isGapDepthOk()) + "\n");
+
+	debugConsole.setText(sb.toString());
+
     }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {

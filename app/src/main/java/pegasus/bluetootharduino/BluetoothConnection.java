@@ -96,7 +96,9 @@ public class BluetoothConnection {
                                     handler.post(new Runnable() {
                                         public void run() {
                                             returnResult = nt.decodedNetstring(result);
-                                            Log.i("result", returnResult);
+					    if (Settings.LogDebug) {
+                                              Log.d("runBT result ", returnResult);
+					    }
                                             SensorData.handleInput(returnResult);
                                         }
                                     });
@@ -129,6 +131,9 @@ public class BluetoothConnection {
 
                 if(!text.isEmpty()) {
                     if (socket.isConnected()) {
+			if (Settings.LogDebug) {
+			  Log.d("runBT send", text);
+			}
                         out.write(text.getBytes());
                     }
                 }
@@ -165,6 +170,9 @@ public class BluetoothConnection {
 
             if(!text.isEmpty()) {
                 if (socket.isConnected()) {
+		    if (Settings.LogDebug) {
+		      Log.d("runBT manual ", text);
+		    }
                     out.write(text.getBytes());
                 }
             }
