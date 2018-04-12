@@ -20,35 +20,45 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <string>
 
-#define _AUTODRIVE_SHOWCANNY
-#define _AUTODRIVE_SHOWHOUGH
+//#define _AUTODRIVE_SHOWCANNY
+//#define _AUTODRIVE_SHOWHOUGH
 
 #undef _DEBUG
 #include "Autodrive.h"
 #include "imageprocessor/ImageProcessor.h"
+#include "imageprocessor/Line.h"
 
 using namespace cv;
 using namespace std;
+using namespace Autodrive;
 
 int main()
 {
-std::cout<<"main";
+    cv::Mat frame;
+    cout << "Entering test_drive main()" << endl;
     string filename = "testreal_small.mp4";
     //string filename = "vid1.mp4";
     //string filename = "Test4-1.m4v";
-    VideoCapture capture(filename);
-    Mat frame;
-
-    if (!capture.isOpened())
-    throw "Error when opening test4.avi";
-    string window = "w";
-    namedWindow(window, 1);
+    cv::VideoCapture capture(filename);
+    if (!capture.isOpened()) {
+        cerr << "Error when opening input video:" << filename << endl;
+        exit(1);
+    }
+    string drive_window = "DrivingWindow";
+    namedWindow(drive_window, WINDOW_AUTOSIZE);
 
     capture >> frame;
-    while (!Autodrive::car.img_proc()->init_processing(&frame)){
+    cout << "calling init_processing()" << endl;
+    while (!Autodrive::car.img_proc_->init_processing(&frame)){
+        Autodrive::show_image(frame, 3, drive_window);
+        //cv::imshow(drive_window, frame);
+        waitKey(); // waits to display frame
         capture >> frame;
     }
+    Autodrive::show_image(frame, 3, drive_window);
+    waitKey(); // waits to display frame
     for (;;)
     {
         capture >> frame;
@@ -57,9 +67,9 @@ std::cout<<"main";
             continue;
         }
 
-        Autodrive::car.img_proc()->continue_processing(frame);
-
-        Autodrive::show_image(frame, 3, "w");
+        Autodrive::car.img_proc_->continue_processing(frame);
+        Autodrive::show_image(frame, 3, drive_window);
+        //cv::imshow(drive_window, frame);
         waitKey(10); // waits to display frame
     }
     return 0;
