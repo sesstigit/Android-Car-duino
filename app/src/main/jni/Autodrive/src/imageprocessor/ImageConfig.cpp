@@ -30,5 +30,5 @@ ImageConfig::ImageConfig() :
   iterate_reduce_on_start_(-0.f),
   max_angle_diff_(1.0f),  //was 0.7 radians
   smoothening_(0),
-  canny_thresh_(90) {
+  canny_thresh_(80) {
   }
