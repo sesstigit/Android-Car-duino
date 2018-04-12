@@ -14,7 +14,7 @@ LDLIBS=$(shell pkg-config opencv --libs)
 INC=-I$(AUTODRIVE_HOME)/src/
 SRCDIR1=$(AUTODRIVE_HOME)/src/
 SRCDIR2=$(AUTODRIVE_HOME)/src/imageprocessor/
-SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp)
+SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp) 
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 all: Sample/test_main Sample/test_drive Sample/test_image_manip docs
@@ -43,9 +43,14 @@ docs: doxyfile.inc $(SRCS)
 
 clean:
 	$(RM) $(OBJS)
+	$(RM) Sample/test_main.o
+	$(RM) Sample/test_drive.o
+	$(RM) Sample/test_image_manip.o
 
 distclean: clean
-	$(RM) test_main
+	$(RM) Sample/test_main
+	$(RM) Sample/test_drive
+	$(RM) Sample/test_image_manip
 
 CXXFLAGS += -MMD
 -include $(OBJ_FILES:.o=.d)
