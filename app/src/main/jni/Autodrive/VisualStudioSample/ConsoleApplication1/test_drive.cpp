@@ -20,14 +20,15 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <string>
 
-#define _AUTODRIVE_SHOWCANNY
-#define _AUTODRIVE_SHOWHOUGH
+//#define _AUTODRIVE_SHOWCANNY
+//#define _AUTODRIVE_SHOWHOUGH
 
 #undef _DEBUG
 #include "Autodrive.h"
 #include "imageprocessor/ImageProcessor.h"
-#include "Util.h"
+#include "imageprocessor/Line.h"
 
 using namespace cv;
 using namespace std;
@@ -43,26 +44,26 @@ void resize_frame(Mat& in, Mat& out) {
 
 int main()
 {
-	std::cout << "main";
-	//string filename = "testdrive.mp4";
+	cv::Mat frame;
+	cv::Mat resized_frame;
+	cout << "Entering test_drive main()" << endl;
 	string filename = "testreal_small.mp4";
-	//string filename = "vid1.mp4";
+	//string filename = "testdrive.mp4";
 	//string filename = "Test4-1.m4v";
-	VideoCapture capture(filename);
-	Mat frame;
-	Mat resized_frame;
-
-	if (!capture.isOpened())
-		throw "Error when opening test4.avi";
-	string window = "w";
-	namedWindow(window, 1);
+	cv::VideoCapture capture(filename);
+	if (!capture.isOpened()) {
+		cerr << "Error when opening input video:" << filename << endl;
+        exit(1);
+	}
+	string drive_window = "DrivingWindow";
+	namedWindow(drive_window, WINDOW_AUTOSIZE);
 
 	capture >> frame;
 	resize_frame(frame, resized_frame);
 	
-
+	cout << "calling init_processing()" << endl;
 	while (!Autodrive::car.img_proc_->init_processing(&resized_frame)) {
-		show_image(resized_frame, 3, "w");
+		show_image(resized_frame, 3, drive_window);
 		waitKey();
 		capture >> frame;
 		resize_frame(frame, resized_frame);
@@ -77,9 +78,9 @@ int main()
 		resize_frame(frame, resized_frame);
 		Autodrive::car.img_proc_->continue_processing(resized_frame);
 
-		show_image(resized_frame, 3, "w");
+		show_image(resized_frame, 3, drive_window);
 		waitKey(); //wait for user input to continue
-		waitKey(10); // waits short time to display frame
+		//waitKey(10); // waits short time to display frame
 	}
 	return 0;
 }
