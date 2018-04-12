@@ -105,6 +105,7 @@ int main() {
 // TEST3
 // ******************************************
 #include "Autodrive.h"
+#include "ParkingManeuver.h"
 #include <iostream>
 
 using namespace std;
@@ -143,13 +144,13 @@ cout << "Current car mode is: " << car.mode() << endl;
 cout << "reset_mode()" << endl;
 car.reset_mode();
 cout << "Current car mode is: " << car.mode() << endl;
-cout << "Current ParkingManueverMode is: " << car.parking()->mode() << endl;
-car.parking()->reset();
-cout << "After reset, current ParkingManueverMode is: " << car.parking()->mode() << endl;
-cout << "Current ParkingManueverState is: " << car.parking()->current_state() << endl;
-cout << "Current value of _is_left_lane: " << car.parking()->is_left_lane() << endl;
-car.parking()->set_left_lane(true);
-cout << "Current value of _is_left_lane: " << car.parking()->is_left_lane() << endl;
+cout << "Current ParkingManueverMode is: " << car.parking_->mode() << endl;
+car.parking_->reset();
+cout << "After reset, current ParkingManueverMode is: " << car.parking_->mode() << endl;
+cout << "Current ParkingManueverState is: " << car.parking_->current_state() << endl;
+cout << "Current value of _is_left_lane: " << car.parking_->is_left_lane() << endl;
+car.parking_->set_left_lane(true);
+cout << "Current value of _is_left_lane: " << car.parking_->is_left_lane() << endl;
 cout << "car length is " << car.car_length_ << endl;
 car.car_length_ = 54;
 cout << "car length is " << car.car_length_ << endl;
@@ -159,12 +160,12 @@ cout << "line_LHS_sensor =  " << car.line_LHS_sensor_.value() << endl;
 cout << "line_RHS_sensor =  " << car.line_RHS_sensor_.value() << endl;
 car.line_RHS_sensor_.set_value(true);
 cout << "line_RHS_sensor =  " << car.line_RHS_sensor_.value() << endl;
-cout << "Parking gap_depth_ok =  " << car.parking()->gap_depth_ok() << endl;
-cout << "Parking inital_gap =  " << car.parking()->initial_gap() << endl;
-cout << "Parking gap_length =  " << car.parking()->gap_length() << endl;
-cout << "Parking turned angle =  " << car.parking()->turned_angle() << endl;
-cout << "Current ParkingManueverMode is: " << static_cast<int>(car.parking()->mode()) << endl;
-cout << "Current ParkingManueverState is: " << static_cast<int>(car.parking()->current_state()) << endl;
+cout << "Parking gap_depth_ok =  " << car.parking_->gap_depth_ok() << endl;
+cout << "Parking inital_gap =  " << car.parking_->initial_gap() << endl;
+cout << "Parking gap_length =  " << car.parking_->gap_length() << endl;
+cout << "Parking turned angle =  " << car.parking_->turned_angle() << endl;
+cout << "Current ParkingManueverMode is: " << static_cast<int>(car.parking_->mode()) << endl;
+cout << "Current ParkingManueverState is: " << static_cast<int>(car.parking_->current_state()) << endl;
 
 cout << "Ultrasound front, frontright, rear:  " << car.ultrasound_.front.value();
 cout << ", " << car.ultrasound_.frontright.value() << ", " << car.ultrasound_.rear.value() <<endl;
@@ -196,15 +197,15 @@ cout << "Motor speed reading: " << car.motor_.value() <<endl;
 cout << "Angle reading: " << car.gyro_.value() <<endl;
 
 	// SETTINGS
-car.img_conf()->normalize_lighting_ = true;
-car.img_conf()->use_left_line_ = true;
-car.img_conf()->smoothening_ = 0;
-car.img_conf()->first_fragment_max_dist_ = 30;
-car.img_conf()->left_iteration_length_ = 5;
-car.img_conf()->right_iteration_length_ = 6;
-car.img_conf()->max_angle_diff_ = 0.7f;
-car.img_conf()->kp_ = 0.5;
-car.img_conf()->ki_ = 0.0;
-car.img_conf()->kd_ = 0.0;
+car.img_conf().normalize_lighting_ = true;
+car.img_conf().use_left_line_ = true;
+car.img_conf().smoothening_ = 0;
+car.img_conf().first_fragment_max_dist_ = 30;
+car.img_conf().left_iteration_length_ = 5;
+car.img_conf().right_iteration_length_ = 6;
+car.img_conf().max_angle_diff_ = 0.7f;
+//car.img_conf().kp_ = 0.5;
+//car.img_conf().ki_ = 0.0;
+//car.img_conf().kd_ = 0.0;
 
 }
