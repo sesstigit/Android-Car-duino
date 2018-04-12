@@ -103,7 +103,7 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 	//! Hence search upwards until all black +-10 pixels to left and right.
 	//! That should be the middle of the road lane where there should be no lines detected.
 	bool hit = true;
-	while (hit)
+	while (hit && (center_bottom.y >= 0))
 	{
 		hit = firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::RIGHT), 10).found
 			|| firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::LEFT), 10).found;
@@ -121,7 +121,7 @@ POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 	POINT iter(center_x_, car_y_);
 	SearchResult searchRes;
 	//! SEARCH UPWARDS UNTIL HIT ON THE RIGHT or LEFT (dependant on direction value).  Hit is a Canny edge represented as a white line
-	while (!searchRes.found)
+	while (!searchRes.found && (iter.y >= 0))
 	{
 		//! firstnonzero_direction(image, startpoint, direction, max_dist), so search for 360 pixels in specified direction from startpoint "iter"
 		// This is used to find the left line (by searching left) and the right line (by searching right) on a subsequent method call.
@@ -132,7 +132,7 @@ POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 	return searchRes.point;
 }
 
-void RoadFollower::draw(const cv::Mat& cannied, const cv::Mat& colorCopy)
+void RoadFollower::draw(const cv::Mat& cannied, cv::Mat& colorCopy)
 {
 	cv::Mat tempColorCopy;
 	//! Convert input GRAY image onto output color image so we can draw extra colour lines on the image to represent the detected road
@@ -154,8 +154,8 @@ void RoadFollower::draw(const cv::Mat& cannied, const cv::Mat& colorCopy)
 	cv::putText(tempColorCopy, oss.str(), Autodrive::POINT(30, 50), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(125, 255, 125), 1);
 #endif
 
-	left_line_follower_->draw(&tempColorCopy,center_x_);
-	right_line_follower_->draw(&tempColorCopy, center_x_);
+	left_line_follower_->draw(tempColorCopy,center_x_);
+	right_line_follower_->draw(tempColorCopy, center_x_);
 	tempColorCopy.copyTo(colorCopy);
 }
 

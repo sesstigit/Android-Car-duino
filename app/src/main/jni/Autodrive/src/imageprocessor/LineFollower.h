@@ -37,7 +37,7 @@ namespace Autodrive {
 		void update(cv::Mat& cannied);
 		optional<int> get_prefered_angle();
         //! centerX is the x coordinate of the middle of the road found during initialisation
-		void draw(const cv::Mat* colorCopy, int centerX);
+		void draw(cv::Mat& colorCopy, int centerX);
 		bool is_found();
 		int total_gap();
 

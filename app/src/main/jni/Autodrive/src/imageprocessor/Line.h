@@ -91,7 +91,7 @@ namespace Autodrive {
 			return dirr;
 		}
 
-		void draw(const cv::Mat& mat, cv::Scalar color = cv::Scalar(0, 255, 0), int thickness = 1) {
+		void draw(cv::Mat& mat, cv::Scalar color = cv::Scalar(0, 255, 0), int thickness = 1) {
 			cv::line(mat, begin, end, color, thickness);
 		}
 

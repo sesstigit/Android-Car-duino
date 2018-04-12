@@ -29,24 +29,24 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 	target_road_distance_ = road_line_->get_mean_start_distance(5);
 }
 
-void LineFollower::draw(const cv::Mat* colorCopy, int centerX) {
+void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	road_line_->draw(colorCopy);
    
 	/* DRAW PURPLE RECTANGLE FOR AREA OF POSSIBLE FIRST HITS*/
 	POINT upperLeft = road_builder_->last_start() - POINT(img_conf_.left_iteration_length_, img_conf_.first_fragment_max_dist_);
 	POINT lowerRight = road_builder_->last_start() + POINT(img_conf_.right_iteration_length_, 0);
-	cv::rectangle(*colorCopy,upperLeft , lowerRight,cv::Scalar(255,0,255));
+	cv::rectangle(colorCopy,upperLeft , lowerRight,cv::Scalar(255,0,255));
 	//linef(road_builder_->last_start, road_builder_->last_start + POINT(8, -20)).draw(colorCopy, cv::Scalar(0, 255, 255), 1);
 
 	/* DRAW YELLOW VERTICAL LINE DISPLAYING DISTANCE TO ROAD AND AQUA TARGETED DISTANCE TO ROAD*/
 	POINT offsetX = POINT(target_road_distance_, 0); //target_road_distance_ initialised to average distance from a roadline point to center_x from past 5 points
-	POINT bottom_center = POINT(centerX, colorCopy->size().height);
+	POINT bottom_center = POINT(centerX, colorCopy.size().height);
 	//! draw the average x coordinate of the line as a yellow vertical line from bottom to top
-	linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(*colorCopy, cv::Scalar(0,255,255));
+	linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(0,255,255));
 	//! Draw the same line as above, but recalculate offsetX.x as average of past 5 points offset
 	offsetX.x = road_line_->get_mean_start_distance(5);
 	if (int(offsetX.x) != 0)
-		linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(*colorCopy, cv::Scalar(255, 255, 0));
+		linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(255, 255, 0));
 }
 
 

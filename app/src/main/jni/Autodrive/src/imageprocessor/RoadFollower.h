@@ -54,7 +54,7 @@ namespace Autodrive {
 	private:
 		int find_car_end(const cv::Mat& cannied);
 		POINT find_line_start(const cv::Mat& cannied, float direction);
-		void draw(const cv::Mat& cannied, const cv::Mat& colorCopy);
+		void draw(const cv::Mat& cannied, cv::Mat& colorCopy);
 
 		int car_y_; //! TODO: why is car_y_ declared here and in RoadLineBuilder???
 		int center_x_;
