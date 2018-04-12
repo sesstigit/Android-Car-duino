@@ -20,12 +20,14 @@
 
 using namespace Autodrive;
 
-//max_dist_from_start_ was 22
-//step_distance was 4
+//! These parameters should be configurable from the Android App.
+//!max_dist_from_start_ was 22
+//!step_distance was 4
+//!max_upwards_iterations was 100
 RoadLineBuilder::RoadLineBuilder(POINT start_point, float center_x, int car_y, const ImageConfig& img_conf) :
     first_start_(start_point), last_start_(start_point), center_x_(center_x),
-	car_y_(car_y), img_conf_(img_conf), step_dist_(2), 
-	max_dist_from_start_(50), max_upwards_iterations_(100), total_gap_(0) {
+	car_y_(car_y), img_conf_(img_conf), step_dist_(1), 
+	max_dist_from_start_(50), max_upwards_iterations_(20), total_gap_(0) {
 }
 
 //! Called by LineFollower->update() on each line of the road.
