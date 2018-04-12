@@ -23,7 +23,7 @@
 #include <opencv2/core/mat.hpp>
 #include <memory>
 
-#include "ImageConfig.h"
+#include "imageprocessor/ImageConfig.h"
 #include "CarSensor.h"
 
 
@@ -111,11 +111,11 @@ namespace Autodrive {
 		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).  Memory managed by caller.
 		
 		std::unique_ptr<ImageProcessor> img_proc_;
+		std::unique_ptr<ParkingManeuver> parking_; //pointer to object with methods for car parking
 	private:
 	    // private members (params)
 		ImageConfig img_conf_;
 		
-		std::unique_ptr<ParkingManeuver> parking_; //object with methods for car parking
 		std::unique_ptr<Overtaking> overtaking_;  //object with methods for car overtaking
 		bool changed_speed_;  // flag whether Autodrive has changed speed this frame
 		bool changed_angle_;  // same, but for angle.

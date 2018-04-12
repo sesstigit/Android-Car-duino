@@ -41,13 +41,12 @@ Car::Car() :
 }
 
 Car::~Car() {
-	//delete img_proc_;
-    //delete parking_;
-    //delete overtaking_;
-	//Do not delete the input image as that memory is managed by the caller.
-	//if (image_ != nullptr) {
-	//	delete image_;
-	//}
+  //smart pointers will clean up memory themselves
+  //delete img_proc_;
+  //Do not delete the input image as that memory is managed by the caller.
+  //if (image_ != nullptr) {
+  //	delete image_;
+  //}
 }
 
 void Car::reset_mode() {
