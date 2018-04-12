@@ -356,7 +356,7 @@ void BirdseyeThreshold() {
 void init_road_follower() {
 	// birdseyeTransform
 	cv::warpPerspective(frame, imFrameWarped, birdseye_matrix, frame.size(), cv::INTER_LINEAR);
-	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
+	car.img_proc_->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
 	cv::Mat imFrameWarpedCannied;
 	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
 	//! the center is the x coordinate of the middle of the road found during initialisation
@@ -371,7 +371,7 @@ void continue_road_follower()
 {
 	imshow(window_name_frame, frame);
 	cv::warpPerspective(frame, imFrameWarped, birdseye_matrix, frame.size(), cv::INTER_LINEAR);
-	car.img_proc()->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
+	car.img_proc_->normalize_lighting(&imFrameWarped);  //blur and intensity no longer used
 	//draw the border of the warped image (to check it is calculated correctly)
 	left_image_border_.draw(imFrameWarped, cv::Scalar(0, 0, 255), 2);  //red image border
 	right_image_border_.draw(imFrameWarped, cv::Scalar(0, 0, 255), 2);
@@ -381,8 +381,8 @@ void continue_road_follower()
 	cv::Canny(imFrameWarped, imFrameWarpedCannied, lowThresh, lowThresh*hi_lo_ratio, kernel_size);
 	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
 	//cout << "center_diff_ is" << center_diff_ << endl;
-	left_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf()->transform_line_removal_threshold_);
-	right_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf()->transform_line_removal_threshold_);
+	left_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf().transform_line_removal_threshold_);
+	right_image_border_.draw(imFrameWarpedCannied, cv::Scalar(0, 0, 0), car.img_conf().transform_line_removal_threshold_);
 	imshow(window_name_canny, imFrameWarpedCannied);
 
 	//! Key step is to call update on the road_follower
@@ -486,7 +486,7 @@ int main(int argc, char** argv) {
       case 'r':
         {
 		  char dummych[1];
-          
+          //TODO: setting the video resolution not yet implemented
           resolution = new cv::Size();
 #ifdef __linux__
           if (sscanf(optarg, "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
@@ -509,7 +509,7 @@ int main(int argc, char** argv) {
     string filename = "testreal_small.mp4";
     cv::VideoCapture capture(filename);
     if (!capture.isOpened()) {
-        throw "Error when opening test4.avi";
+        throw "Error when opening input video:" + filename;
     }
     
     
