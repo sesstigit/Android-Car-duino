@@ -127,9 +127,9 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		float dirr = one_hough_line.direction_fixed_half();
 		float dir_diff = dirr - Autodrive::Direction::FORWARD;
 
-        //! Ignore line if it differs from Direction::FORWARD by 1 radian (90 degrees about 1.6 radian)
+        //! Ignore line if it differs from Direction::FORWARD by x radian (90 degrees about 1.6 radian)
         // Since this function is only used during initialisation, can be quite stringent
-		if (abs(dir_diff) > 1.0f)
+		if (abs(dir_diff) > 0.9f)
 			continue;
         //! Draw all remaining candidate lines: image, colour(BGR), thickness
 		one_hough_line.draw(*drawMat, cv::Scalar(0, 255, 255), 1);
@@ -138,7 +138,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		if (startx > center + 5) {
 		    //!line starting on RHS, and sloping down further right
 			//! check line starts on RHS of center, and sloping down further right, and is long enough
-	        if (endx > startx && endy > starty && one_hough_line.length() > 50) {  		
+	        if (endx > startx && endy > starty && one_hough_line.length() > (canniedMat.size().height / 2)) {
 				if (!foundRight) {
 					rightMostLine = one_hough_line;
 					foundRight = true;
@@ -150,7 +150,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 			}
 		}
 		if (endx < center - 5) { // line ends LHS of center (left line slopes forward with start at bottom, end at top)
-			if (startx < endx && starty > endy && one_hough_line.length() > 50) {  //ensure line slopes forward, and is 50 pixels long
+			if (startx < endx && starty > endy && one_hough_line.length() >(canniedMat.size().height / 2)) {  //ensure line slopes forward, and is long enough
 				if (!foundLeft) {
 					leftMostLine = one_hough_line;
 					foundLeft = true;
@@ -167,12 +167,15 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		leftMostLine.draw(*drawMat,cv::Scalar(0,0,255),2);
 		rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),2);
 		//! As lines get more vertical, slope becomes a large number.  Hence getting two lines with the same slope +-1 is unlikely.
-		//! Instead, use radians.  Compare the absolute direction of the two lines versus FORWARD.  They should be similar.  Threshold is PI/6, approx 50 degrees.
+		//! Instead, use radians.  Compare the absolute direction of the two lines versus FORWARD.  Each should be between 10 and 30 degrees. 
 		float dir_diff_left = leftMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. PI/4 - PI/2 = -PI/4
+		cout << "leftMost line direction =" << leftMostLine.direction_fixed_half() << endl;
+		cout << "rightMost line direction =" << rightMostLine.direction_fixed_half() << endl;
 		float dir_diff_right = rightMostLine.direction_fixed_half() - Autodrive::Direction::FORWARD; //e.g. 3PI/4 - PI/2 = PI/4
-		cout << "rightMostLine radian direction from FORWARD = " << dir_diff_left << endl;
-		cout << "leftMostLine radian direction from FORWARD = " << dir_diff_right << ", requires difference < " << CV_PI / 6 << endl;
-		if (abs((dir_diff_left + dir_diff_right)) < (CV_PI / 6)) {
+		cout << "rightMostLine radian direction from FORWARD = " << dir_diff_right << endl;
+		cout << "leftMostLine radian direction from FORWARD = " << dir_diff_left << ", requires " << CV_PI / 4 << " < diff < " << CV_PI/18 << endl;
+		if (abs(dir_diff_left) < (CV_PI / 4) && abs(dir_diff_left) > (CV_PI / 18) &&
+			abs(dir_diff_right) < (CV_PI / 4) && abs(dir_diff_right) > (CV_PI / 18)) {  //between 10 and 30 degrees
 			rightMostLine.stretchY(0.f, (float)(*drawMat).size().height);
 			leftMostLine.stretchY(0.f, (float)(*drawMat).size().height);
 			//! Draw the final chosen lane lines (BGR)
