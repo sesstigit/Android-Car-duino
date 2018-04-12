@@ -34,9 +34,18 @@ using namespace cv;
 using namespace std;
 using namespace Autodrive;
 
+void resize_frame(Mat& in, Mat& out) {
+	cv::Size inSize = in.size();
+	cv::Size* outSize = new Size(240, 135);
+	if (inSize != *outSize) {
+		cv::resize(in, out, *outSize, 0, 0, cv::INTER_NEAREST);
+	}
+}
+
 int main()
 {
     cv::Mat frame;
+	cv::Mat resized_frame;
     cout << "Entering test_drive main()" << endl;
     string filename = "testreal_small.mp4";
     //string filename = "vid1.mp4";
@@ -50,27 +59,28 @@ int main()
     namedWindow(drive_window, WINDOW_AUTOSIZE);
 
     capture >> frame;
+	resize_frame(frame, resized_frame);
+	
     cout << "calling init_processing()" << endl;
-    while (!Autodrive::car.img_proc_->init_processing(&frame)){
-        Autodrive::show_image(frame, 3, drive_window);
-        //cv::imshow(drive_window, frame);
+    while (!Autodrive::car.img_proc_->init_processing(&resized_frame)) {
+        show_image(resized_frame, 3, drive_window); //cv::imshow(drive_window, frame);
         waitKey(); // waits to display frame
         capture >> frame;
-    }
-    Autodrive::show_image(frame, 3, drive_window);
-    waitKey(); // waits to display frame
+		resize_frame(frame, resized_frame);
+    }   
     for (;;)
     {
         capture >> frame;
-        if (frame.empty()){
+        if (frame.empty()) {
             capture.open(filename);
             continue;
         }
-
-        Autodrive::car.img_proc_->continue_processing(frame);
-        Autodrive::show_image(frame, 3, drive_window);
-        //cv::imshow(drive_window, frame);
-        waitKey(10); // waits to display frame
+		resize_frame(frame, resized_frame);
+        Autodrive::car.img_proc_->continue_processing(resized_frame);
+        
+		show_image(resized_frame, 3, drive_window);  //cv::imshow(drive_window, resized_frame);
+		waitKey();
+        //waitKey(10); // waits to display frame
     }
     return 0;
 }
