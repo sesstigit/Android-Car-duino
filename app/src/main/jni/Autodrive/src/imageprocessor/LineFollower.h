@@ -26,6 +26,8 @@
 #include "ImageConfig.h"
 
 #include <chrono>
+#include <math.h>
+
 namespace Autodrive {
 
 	class RoadLineBuilder;  //forward declaration
@@ -57,8 +59,11 @@ namespace Autodrive {
 		std::unique_ptr<RoadLineBuilder> road_builder_;
 		int road_size_; //!< This is how much of the road is built in each frame image.
 		bool is_found_; //!< Only set to true if the road_builder returned a suitable line
-		float target_road_distance_;  //!< average distance to the line from center_x
-
+		float beta_; //!< parameter used for ewma
+		float ewma_bias_counter;  //!< for emwa bias correction at startup
+		float ewma_target_road_distance_;  //!< exponentially weighted moving average of "average distance to the line from center_x"
+		float ewma_corr_target_road_distance_;  //!< corrected version for startup bias
+		int car_y_; //input param to constructor, saved for use in printing car_y_ line
 		// Private methods
 		//! Returns signed distance from this line to the center of the lane minus the original target distance
 		//! Assumes the lane was initially found when driving in middle of lane.  A positive deviation 
