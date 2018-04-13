@@ -21,12 +21,15 @@ using namespace Autodrive;
 
 LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, const ImageConfig& img_conf) :
 	img_conf_(img_conf),
+	car_y_(carY),
 	road_size_(40), //!< Note hardcoded roadsize of 40. This is how much of the road is built at a time.
-	is_found_(false)
+	is_found_(false),
+	beta_(0.999),
+	ewma_bias_counter(0)
 	{
 	road_builder_ = make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY, img_conf);
 	road_line_ = road_builder_->build(cannied, road_size_);
-	target_road_distance_ = road_line_->get_mean_start_distance(5);
+	ewma_corr_target_road_distance_ = road_line_->get_mean_start_distance(5);
 }
 
 void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
@@ -40,7 +43,7 @@ void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	//linef(road_builder_->last_start, road_builder_->last_start + POINT(8, -20)).draw(colorCopy, cv::Scalar(0, 255, 255), 1);
 
 	/* DRAW YELLOW VERTICAL LINE DISPLAYING TARGET DISTANCE TO ROAD CENTER AND AQUA ACTUAL DISTANCE TO ROAD CENTER*/
-	POINT offsetX = POINT(target_road_distance_, 0); //target_road_distance_ initialised to average distance from a roadline point to center_x from past 5 points
+	POINT offsetX = POINT(ewma_corr_target_road_distance_, 0); //ewma_corr_target_road_distance_ initialised to average distance from a roadline point to center_x from past 5 points
 	POINT bottom_center = POINT(centerX, colorCopy.size().height);
 	//! draw the average x coordinate of the line as a yellow vertical line from bottom to top
 	if (colorCopy.type() == CV_8UC4) {
@@ -53,10 +56,15 @@ void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	if (int(offsetX.x) != 0) {
 	    if (colorCopy.type() == CV_8UC4) {
 		    linef(bottom_center + offsetX, POINT(centerX, colorCopy.size().height -5) + offsetX).draw(colorCopy, cv::Scalar(0, 255, 255),3); //RGBA
+			//! Also draw a line showing the top of the car bonnet, car_y_
+			linef(POINT(0, car_y_), POINT(colorCopy.size().width, car_y_)).draw(colorCopy, cv::Scalar(0, 255, 255), 1); //RGBA
 	    } else {
 		    linef(bottom_center + offsetX, POINT(centerX, colorCopy.size().height -5) + offsetX).draw(colorCopy, cv::Scalar(255, 255, 0),3);  //BGR
+			//! Also draw a line showing the top of the car bonnet, car_y_
+			linef(POINT(0, car_y_), POINT(colorCopy.size().width, car_y_)).draw(colorCopy, cv::Scalar(255, 255, 0), 1); //BGR
 	    }
 	}
+
 }
 
 
@@ -68,7 +76,7 @@ float LineFollower::distance_deviation() {
 	if(!is_found())
 		return 0.f;
 	float startDistance = road_line_->get_mean_start_distance(4);
-	return (startDistance - target_road_distance_) * 1.0f;
+	return (startDistance - ewma_corr_target_road_distance_) * 1.0f;
 }
 
 int LineFollower::total_gap() {
@@ -100,4 +108,20 @@ optional<float> LineFollower::get_prefered_angle() {
 void LineFollower::update(cv::Mat& cannied) {
 	road_line_ = road_builder_->build(cannied, road_size_);  //!< road_size_ used by RoadLineBuilder as the max number of points to build
 	is_found_ = (road_line_->num_points() > 5 && fabs(road_line_->get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);
+	//! New road_line_, so update EMWA
+	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t
+	//! Correcting for startup bias: v_corr = v_t/(1-beta^t)
+	//! where v_t is average of 1/(1-beta) observations, and theta_t is the current observation
+	//! 1000 observations means beta is 0.999 since 1/(1-0.999) = 1/0.001 = 1000
+	float target_road_distance = road_line_->get_mean_start_distance(5);
+	if (target_road_distance != 0) {
+		// only update the EMWA if a valid result is returned
+		ewma_target_road_distance_ = (beta_ * ewma_target_road_distance_) + ((1 - beta_) * target_road_distance);
+		if (ewma_bias_counter < 10000) {  //only correct for startup bias for a finite number of observations
+			ewma_bias_counter++;
+			ewma_corr_target_road_distance_ = ewma_target_road_distance_ / (1 - std::pow(beta_, float(ewma_bias_counter)));
+		} else {
+			ewma_corr_target_road_distance_ = ewma_target_road_distance_;
+		}
+	}
 }
