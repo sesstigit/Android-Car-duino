@@ -15,10 +15,10 @@
 *    along with Autodrive.  If not, see <http://www.gnu.org/licenses/>.
 **/
 #include <iostream>
-
 #include "BirdseyeTransformer.h"
 using namespace Autodrive;
 using namespace std;
+
 
 void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_matrix)
 {
@@ -26,10 +26,6 @@ void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_mat
 	cv::warpPerspective(*mat, *mat, birdseye_matrix, mat->size(), cv::INTER_LINEAR);
 }
 
-//! Canny the input image
-//! get_lane_markings for leftLine and rightLine
-//! stretch the lines
-//! Then get birdseye perspective
 optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, double thresh2) {
 	optional<cv::Mat> birdseye_matrix;
 	//Might be needed on track
@@ -94,9 +90,7 @@ optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double t
     Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.begin.x, im_height), Autodrive::POINT(b_lines.right.begin.x, im_height) };
 
     birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-    // This border is the edge of the original image in the warped space (should only plot it in the warped image)
-    // The border is always detected by Canny as a line, so we need to know where it is so we can blank the Cannied lines there.
-    // The calculation here isnt perfect for some reason, but it is good enough. Have fudged +5 to each x value.  FIX.
+    // TODO The calculation here isnt perfect for some reason, but it is good enough. Have fudged +5 to each x value.  FIX.
     left_image_border_ = linef(Autodrive::POINT(b_lines.left.begin.x - b_lines.left.end.x / 2 +5, b_lines.left.end.y), Autodrive::POINT(0, b_lines.left.begin.y));
     right_image_border_ = linef(Autodrive::POINT(b_lines.right.begin.x - (b_lines.right.end.x - im_width) / 2 +5, b_lines.right.end.y), Autodrive::POINT(im_width, b_lines.right.begin.y));
 
@@ -107,7 +101,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	std::vector<cv::Vec4i> lines;
 	linef leftMostLine;
 	linef rightMostLine;
-	// This transform detects straight "lines" by their endpoints (x0,y0, x1,y1) in image "canniedMat"
+	// The Hough transform detects straight "lines" by their endpoints (x0,y0, x1,y1) in image "canniedMat"
 	// rho=1 pixel; theta=1 degree; threshold=20, minLinLength=10, maxLineGap=50
 	// source image must be 8-bit, single-channel 
 	//! Each Hough Line starts from min x val and ends at max x val (left lane line slopes forward so start is at bottom, right line is opposite)
@@ -115,7 +109,9 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	bool foundLeft = false;
 	bool foundRight = false;
 	int center = canniedMat.size().width / 2;
-	cv::imshow("mytestcannied", canniedMat);
+#ifdef _DEBUG
+    cv::imshow("mytestcannied", canniedMat);
+#endif
 
 	for(cv::Vec4i one_line : lines) {
 		int startx = one_line[0];
@@ -184,5 +180,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 			std::cout << "lane markings found" << std::endl;
 		}
 	}
+#ifdef _DEBUG
 	cv::imshow("mytest", *drawMat);
+#endif
 }
