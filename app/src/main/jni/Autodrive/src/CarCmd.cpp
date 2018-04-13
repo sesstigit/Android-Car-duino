@@ -22,6 +22,6 @@ using namespace Autodrive;
 CarCmd::CarCmd() :
 	changed_angle_(false),
 	changed_speed_(false),
-	angle_(0),
+	angle_(Direction::FORWARD),  //PI/2 radians
 	speed_(0) {
 }
