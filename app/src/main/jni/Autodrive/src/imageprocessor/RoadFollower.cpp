@@ -58,9 +58,9 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	} else if (rightTargetAngle)
 	{
 		targetAngle = *rightTargetAngle;
-	}else if(unfound_counter_++ > 5)
+	} else if(unfound_counter_++ > 5)
 	{
-		 cmd.set_angle(0);
+		 //cmd.set_angle(Mathf::PI_2);  //not required as default angle anyway
 		 cmd.set_speed(0);  //FIX: should be slow speed
 	}
 	
@@ -77,7 +77,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 			// Calculate average of all previous angles in past "smoothening" targetAngles, e.g. average of past 5 frames.
 			float sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
 			float newAngle = sum / float(prev_dirs_.size() + 1);
-			prev_dirs_.push_back(newAngle);
+			prev_dirs_.push_back(*targetAngle);
 			if (prev_dirs_.size() > img_conf_.smoothening_)
 				prev_dirs_.erase(prev_dirs_.begin());
 			
@@ -108,7 +108,7 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 POINT RoadFollower::find_line_start(const cv::Mat& cannied, float direction)
 {
 	//! Starting point is the center of the image at the top of the car bonnet
-	POINT iter(center_x_, car_y_);
+	POINT iter(center_x_, car_y_+1);
 	SearchResult searchRes;
 	//! SEARCH UPWARDS UNTIL HIT ON THE RIGHT or LEFT (dependant on direction value).  Hit is a Canny edge represented as a white line
 	while (!searchRes.found && (iter.y >= 0))
