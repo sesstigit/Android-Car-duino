@@ -21,7 +21,7 @@ package pegasus.bluetootharduino;
 public enum carConfiguration {
     INSTANCE;
 
-    static int maxAngle = 25;
+    static int maxAngle = 40;
     static int maxSpeed = 400;
 
     //static int minSpeed = -400;
