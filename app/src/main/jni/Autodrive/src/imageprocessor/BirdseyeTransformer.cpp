@@ -169,7 +169,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	}
 	if (foundRight && foundLeft) {
         // Draw the likely the lane markers, red for left lane, green for right
-        if (drawMat>type() == CV_8UC4) {
+        if (drawMat->type() == CV_8UC4) {
             leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);  //Android RGBA
             rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),2);
         } else {
@@ -189,7 +189,7 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 			rightMostLine.stretchY(0.f, (float)(*drawMat).size().height);
 			leftMostLine.stretchY(0.f, (float)(*drawMat).size().height);
 			//! Draw the final chosen lane lines in thick red for left, green for right
-			if (drawMat>type() == CV_8UC4) {
+			if (drawMat->type() == CV_8UC4) {
                 leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),5);  //Android RGBA
                 rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),5);
             } else {
