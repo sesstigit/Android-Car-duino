@@ -24,14 +24,11 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 	img_conf_(img_conf),
 	road_follower_(nullptr),
 	birdseye_(nullptr) {
+    //Note: did not initialise the following class members
+    //perspective_(nullptr),  
+    //start_center_(POINT(0.f, 0.f))
 }
-//Note: did not initialise the following class members
-//perspective_(nullptr),  
-//start_center_(POINT(0.f, 0.f))
 
-//TODO: why is mat a pointer here, but a reference in next function?
-//! init_processing is the first function called by Autodrive.
-//! If it cannot find lanes, it prints a blue message to screen.
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
 	auto found_pespective = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
@@ -68,7 +65,8 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	cv::Mat cannied_mat;
 	cv::Canny(mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);
 
-	// PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
+	//! PAINT OVER BORDER ARTEFACTS FROM TRANSFORM in black (since canny always detects the border as a line)
+	//! BGR or RGBA does not matter here
 	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
 	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
 	//TEST birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(255), 10);
@@ -87,6 +85,7 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 
 	POINT center(mat.size().width / 2.f, (float) mat.size().height);
 	//! Draw a short green line from center bottom in direction of the changed angle (line starts at car bonnet)
+	//! BGR or RGBA does not matter here
 	linef(center, center + POINT(std::cos(angle) * 100, -sin(angle) * 100)).draw(mat, CV_RGB(0, 125, 0));
 	return cmnd;
 }
@@ -101,10 +100,7 @@ bool ImageProcessor::right_line_found()
 	return road_follower_->right_line_found();
 }
 
-/*
-	Returns wether the car is on the left lane
-	Currently only works if both roadlines are found by comparing their gaps
-*/
+
 bool ImageProcessor::is_left_lane()
 {
 	if (! left_line_found() || ! right_line_found())
@@ -113,9 +109,8 @@ bool ImageProcessor::is_left_lane()
 		return road_follower_->is_left_lane();
 }
 
-/*
-Returns wether the car is on the right lane
-*/
+
+//! Returns wether the car is on the right lane
 bool ImageProcessor::is_right_lane()
 {
 	if (! left_line_found() || ! right_line_found())
@@ -128,31 +123,7 @@ int ImageProcessor::dashed_line_gaps() {
 	return road_follower_->dashed_line_gaps();
 }
 
-/*  Removed this version of normalize which requires two parameters.
-void ImageProcessor::normalize_lighting(cv::Mat* bgr_image, int blur, float intensity)
-{
-	cv::Mat light_mat;
-	cv::blur(*bgr_image, light_mat, cv::Size(blur, blur));
-	cv::cvtColor(light_mat, light_mat, CV_BGR2GRAY);
 
-	//cv::Mat lab_image;  //bgr_image is modified in place, so don't need this.
-	cv::cvtColor(*bgr_image, *bgr_image, CV_BGR2Lab);
-
-	// Extract the L channel
-	std::vector<cv::Mat> lab_planes(3);
-	cv::split(*bgr_image, lab_planes);  // now we have the L image in lab_planes[0]
-
-	lab_planes[0] = lab_planes[0] - light_mat*intensity;
-
-	// Merge the the color planes back into an Lab image
-	cv::merge(lab_planes, *bgr_image);
-
-	// convert back to RGB
-	cv::cvtColor(*bgr_image, *bgr_image, CV_Lab2BGR);
-}
-*/
-
-//! Normalize lighting with the CLAHE algorithm
 void ImageProcessor::normalize_lighting(cv::Mat* bgr_image)
 {
 	// convert bgr_image to Lab

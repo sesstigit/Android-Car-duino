@@ -34,29 +34,36 @@ namespace Autodrive {
 
 	class RoadFollower; //forward declaraion.
 
-	//TODO: what was this used for?  It is also a variable used in opencv.
-	//int intersection_protect = 0;
-
-#define _AUTODRIVE_DILATE
-
 	class ImageProcessor {
 	public:
 		ImageProcessor(const ImageConfig& img_conf);
-		bool init_processing(cv::Mat* mat);
+		//! init_processing is the first function called by Autodrive to locate the lanes
+        //! and apply a birdseye transform to the input camera image.
+        //! If it cannot find the lanes, it prints a message to screen.
+        bool init_processing(cv::Mat* mat);
+        //! After successful initialisation, continue_processing is called for each frame from the camera.
+        //! It tracks the lane lines in the input frame, and calculates driving commands
+        //! to steer the car along the lane.
 		CarCmd continue_processing(cv::Mat& mat);
-		//void normalize_lighting(cv::Mat* bgr_image, int blur = 20, float intensity = 0.5f);
+		//! Normalize lighting in the input frame with the CLAHE algorithm
 		void normalize_lighting(cv::Mat* bgr_image);
 	private:
 		bool left_line_found();
 		bool right_line_found();
-		bool is_left_lane();
+		//! Returns wether the car is on the left lane
+        //! Currently only works if both roadlines are found by comparing their gaps
+        //! because the line down the middle of the road is dashed
+        bool is_left_lane();
 		bool is_right_lane();
 		int dashed_line_gaps();
 		
-
+        //! Keep a reference to the image processing configuration parameters
 		const ImageConfig& img_conf_;
 		std::unique_ptr<BirdseyeTransformer> birdseye_;
 		std::unique_ptr<RoadFollower> road_follower_;
+		//! The perspective was calculated during initialisation by BirdseyeTransform class.
+		//! Each input frame is warped according to the perspective transform
+		//! Hence if it is wrong, then this program will not work well
 		cv::Mat perspective_;
 
 		POINT start_center_;

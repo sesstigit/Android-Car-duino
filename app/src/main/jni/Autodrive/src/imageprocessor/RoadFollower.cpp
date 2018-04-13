@@ -34,11 +34,6 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, const ImageConf
 	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
 }
 
-// This is the main method called for each camera image in Autodrive mode.
-// - It calls update on the two line followers (left line and right line)
-// - gets the preferred angle for each of those lines
-// - returns an angle which weights the left line higher, and with smoothing applied.
-// - TODO: work out which angles are radians and which are degrees
 CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	CarCmd cmd;
 	
@@ -98,10 +93,6 @@ int RoadFollower::find_car_end(const cv::Mat& cannied)
 {
 	POINT center_bottom(center_x_, cannied.size().height - 8);
 	//!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 10
-	//! Starting at the bottom center of the image we expect to see the car bonnet.
-	//! Canny line detection finds patterns on the bonnet.
-	//! Hence search upwards until all black +-10 pixels to left and right.
-	//! That should be the middle of the road lane where there should be no lines detected.
 	bool hit = true;
 	while (hit && (center_bottom.y >= 0))
 	{
@@ -137,7 +128,7 @@ void RoadFollower::draw(const cv::Mat& cannied, cv::Mat& colorCopy)
 	cv::Mat tempColorCopy;
 	//! Convert input GRAY image onto output color image so we can draw extra colour lines on the image to represent the detected road
 	//! Make sure we encode the image the same as colorCopy (since that is the encoding of the input image, and for Android we want to display it on the screen in place of the camera image).
-	//! TODO: assumes we only have CV_8UC4 or CV_8UC3 input image types.  Otherwise this will crash.
+	//! Note: assumes we only have CV_8UC4 or CV_8UC3 input image types.  Otherwise this will crash.
 	if (colorCopy.type() == CV_8UC4) {
 		cv::cvtColor(cannied, tempColorCopy, CV_GRAY2RGBA);  //android input image appears to be RGBA
 	} else {

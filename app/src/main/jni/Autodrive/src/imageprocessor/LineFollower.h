@@ -34,25 +34,33 @@ namespace Autodrive {
 	{
 	public:
 		LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, const ImageConfig& img_conf);
+		//! RoadFollower->update() calls this method for both the left and right lines of the road.
+		//! Update is required for every frame image.
 		void update(cv::Mat& cannied);
+		//! Return preferred angle in degrees, based on the mean angle of the road_line_
 		optional<int> get_prefered_angle();
+		//! Draw lines on the screen to show how the LineFollower is working, 
+		//! e.g. a purple rectangle showing the search area for relocating the line in the next image,
+		//! and a vertical yellow line showing average x coordinate of the line
         //! centerX is the x coordinate of the middle of the road found during initialisation
 		void draw(cv::Mat& colorCopy, int centerX);
+		//! Prerequisite for whether a road is found or not
 		bool is_found();
+		//! Return amount of gap in the road as a proportion of the road length
 		int total_gap();
 
 	private:
 		// params
+		//! Keep a reference to the image processing configuration parameters
 		const ImageConfig& img_conf_;
 		std::unique_ptr<RoadLine> road_line_;
 		std::unique_ptr<RoadLineBuilder> road_builder_;
-		int road_size_;
-		bool is_found_;
-		float target_road_distance_;
+		int road_size_; //!< This is how much of the road is built in each frame image.
+		bool is_found_; //!< Only set to true if the road_builder returned a suitable line
+		float target_road_distance_;  //!< average distance to the line from center_x
 
 		// Private methods
 		float distance_deviation();
-
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_LINEFOLLOWER_H_

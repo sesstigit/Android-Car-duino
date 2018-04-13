@@ -45,18 +45,28 @@ namespace Autodrive {
 		RoadFollower(const cv::Mat& cannied, int center_x, const ImageConfig& img_conf);
 		bool left_line_found();
 		bool right_line_found();
-		//! Determine lane by finding which line has more gaps, i.e. dotted line
+		//! Determine lane by finding which line has more gaps, i.e. which line is dotted
 		bool is_left_lane();
 		bool is_right_lane();
 		int dashed_line_gaps();
+		//! update() the main method called for each camera image in Autodrive mode.
+        //! - It calls update on the two line followers (left line and right line)
+        //! - gets the preferred angle for each of those lines
+        //! - Calculates a turn angle which weights the left line higher, and with smoothing applied.
 		CarCmd update(cv::Mat& cannied, cv::Mat& drawOut);
 
 	private:
+    	//! Find the top of the car bonnet and save to car_y_. Start at the bottom center,
+        //! expect to see the car bonnet with various edges detected by Canny.
+        //! Hence search upwards until all black +-10 pixels to left and right.
+        //! That should be where the road starts (assuming no edges detected in middle of lane).
 		int find_car_end(const cv::Mat& cannied);
+		//! Search in the provided direction (e.g. left of right) from point(center_x_, car_y_) for a non-black point (assumed to be the line)
 		POINT find_line_start(const cv::Mat& cannied, float direction);
+		//! Call LineFollower::draw() for each line to display lane lines on screen
 		void draw(const cv::Mat& cannied, cv::Mat& colorCopy);
 
-		int car_y_; //! TODO: why is car_y_ declared here and in RoadLineBuilder???
+		int car_y_; //!< TODO: why is car_y_ declared here and in RoadLineBuilder???
 		int center_x_;
 		std::unique_ptr<LineFollower> left_line_follower_;
 		std::unique_ptr<LineFollower> right_line_follower_;

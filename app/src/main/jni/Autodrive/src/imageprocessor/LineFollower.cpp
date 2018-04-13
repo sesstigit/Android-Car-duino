@@ -35,6 +35,7 @@ void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	/* DRAW PURPLE RECTANGLE FOR AREA OF POSSIBLE FIRST HITS*/
 	POINT upperLeft = road_builder_->last_start() - POINT(img_conf_.left_iteration_length_, img_conf_.first_fragment_max_dist_);
 	POINT lowerRight = road_builder_->last_start() + POINT(img_conf_.right_iteration_length_, 0);
+	//! RGBA or BGR does not matter here (since values are identical)
 	cv::rectangle(colorCopy,upperLeft , lowerRight,cv::Scalar(255,0,255));
 	//linef(road_builder_->last_start, road_builder_->last_start + POINT(8, -20)).draw(colorCopy, cv::Scalar(0, 255, 255), 1);
 
@@ -42,15 +43,23 @@ void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	POINT offsetX = POINT(target_road_distance_, 0); //target_road_distance_ initialised to average distance from a roadline point to center_x from past 5 points
 	POINT bottom_center = POINT(centerX, colorCopy.size().height);
 	//! draw the average x coordinate of the line as a yellow vertical line from bottom to top
-	linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(0,255,255));
-	//! Draw the same line as above, but recalculate offsetX.x as average of past 5 points offset
+	if (colorCopy.type() == CV_8UC4) {
+	    linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(255,255,0),1); //RGBA
+	} else {
+	    linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(0,255,255),1); //BGR
+	}
+	//! Draw a short line in aqua, with recalculate offsetX.x as average of past 5 points offset
 	offsetX.x = road_line_->get_mean_start_distance(5);
-	if (int(offsetX.x) != 0)
-		linef(bottom_center + offsetX, POINT(centerX, 0) + offsetX).draw(colorCopy, cv::Scalar(255, 255, 0));
+	if (int(offsetX.x) != 0) {
+	    if (colorCopy.type() == CV_8UC4) {
+		    linef(bottom_center + offsetX, POINT(centerX, colorCopy.size().height -5) + offsetX).draw(colorCopy, cv::Scalar(0, 255, 255),3); //RGBA
+	    } else {
+		    linef(bottom_center + offsetX, POINT(centerX, colorCopy.size().height -5) + offsetX).draw(colorCopy, cv::Scalar(255, 255, 0),3);  //BGR
+	    }
+	}
 }
 
 
-// Prerequisite for whether a road is found or not
 bool LineFollower::is_found() {
 	return is_found_;
 }
@@ -66,7 +75,6 @@ int LineFollower::total_gap() {
 	return road_line_->total_gap() / road_line_->num_points();
 }
 
-//! Return preferred angle in degrees
 optional<int> LineFollower::get_prefered_angle() {
 	if (is_found())
 	{
@@ -84,7 +92,6 @@ optional<int> LineFollower::get_prefered_angle() {
 	return nullptr;
 }
 
-//! RoadFollower->update() calls this method for both the left and right lines of the road.
 void LineFollower::update(cv::Mat& cannied) {
 	road_line_ = road_builder_->build(cannied, road_size_);  //!< road_size_ used by RoadLineBuilder as the max number of points to build
 	is_found_ = (road_line_->num_points() > 5 && fabs(road_line_->get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);

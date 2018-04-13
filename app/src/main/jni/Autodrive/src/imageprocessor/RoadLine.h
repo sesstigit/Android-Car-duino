@@ -30,12 +30,13 @@
 
 namespace Autodrive {
 
+    //! RoadLine class tracks all information about a line, including every point in the line.
 	class RoadLine
 	{
 	public:
 		RoadLine(int center_x, POINT start_point, const ImageConfig& img_conf);
 		RoadLine(const ImageConfig& img_conf);
-		//! Draw a thick blue line between each point in the line
+		//! Draw a thick blue line between each point in the line and display on screen
 		void draw(cv::Mat& draw_mat);
 		//! Adds point to RoadLine, unless angle to point does not match line.
 		//! @param p The point to add
@@ -44,18 +45,27 @@ namespace Autodrive {
 		int total_gap() { return total_gap_; };  //getter
 		int num_points() { return static_cast<int>(points_.size()); };
 		POINT back_points() { return points_.back(); };
+		//! Calculate mean angle from last "last_size" points.
 		float get_mean_angle(unsigned int last_size = 0);
+		//! Calculate mean angle_diffs from last "last_size" points.
 		float get_mean_angle_diffs(unsigned int last_size = 0);
+		//! return the most recent angle, and add the average angle_diffs.
 		float get_estimated_angle(int n = 20);
+		//! return average distance to center_x for points in the line
 		float get_mean_start_distance(unsigned int n_distances_from_begin);
 		void set_total_gap(int calc_gap) { total_gap_ = calc_gap; };
 	private:
+	    //! Store every point in line
 		std::vector<POINT> points_;
+		//! Store distance from point.x to center_x.  I.e. distance to center of lane.
 		std::vector<int> distances_;
+		//! Store angle from each point to its previous point
 		std::vector<float> angles_;
+		//! Store difference betweeen angle for this point compared to previous point
 		std::vector<float> angle_diffs_;
 		int total_gap_ = 0;
 		int center_x_;
+		//! Keep a reference to the image processing configuration parameters
 		const ImageConfig& img_conf_;
 	};
 }

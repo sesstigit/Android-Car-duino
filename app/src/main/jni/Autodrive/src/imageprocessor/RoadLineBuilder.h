@@ -31,6 +31,7 @@ namespace Autodrive {
 	class RoadLineBuilder
 	{
 	public:
+	    //! Constructor - sets important parameters such as max_upwards_iterations
 		RoadLineBuilder(POINT start_point, float center_x, int car_y, const ImageConfig& img_conf);
 		//! Build a road up to maxsize
 		//! @param cannied Input image after canny function, i.e. line detection
@@ -45,18 +46,19 @@ namespace Autodrive {
 		const int max_upwards_iterations_;  //!< used in get_next_point to limit how far to search before finding next point in line.  Useful when line is patchy, e.g. center line
 		int total_gap_; //!< measure how many pixels are gaps (black points) in the line
 		int car_y_; //!<used in get_first_point to ensure the search downwards does not reach the car bonnet in the image
-		POINT first_start_; //!< used in get_first_point to mark where the search starts
-		POINT last_start_; //!!< used in get_first_point to mark last point in the search, assuming it was < max_dist_from_start 
+		POINT first_start_; //!< Must search for the line again in each new image. get_first_point marks where the search starts
+		POINT last_start_; //!!< used in get_first_point to mark last point in the search, and keeps this state to help find the line in the next image
 		float center_x_;
+		//! Keep a reference to the image processing configuration parameters
 		const ImageConfig& img_conf_;
-		//find_point was previously declated static
+		//! find_point was previously declated static
 		//! find_point searches from "start" along leftAngle and rightAngle (normally just left and right) looking for a white point (the road white line). 
 		//! The SearchResult from the leftAngle is preferred over rightAngle, unless the latter point is much closer.
 		SearchResult find_point(const cv::Mat& cannied, POINT start, float left_angle, float fight_angle, float iteration_reduction = 0);
 		//! Search for the first point of a RoadLine, using find_point to find a white point
 		//! in left and right directions from an input cannied image
 		POINT get_first_point(const cv::Mat& cannied);
-		//! Search for the next point in a RoadLine moving up the image by step_dist=2 points at a time
+		//! Search for the next point in a RoadLine moving up the image by step_dist points at a time
 		optional<POINT> get_next_point(const cv::Mat& cannied, float est_angle, const POINT& prev_point, int step_dist);
 
 	};
