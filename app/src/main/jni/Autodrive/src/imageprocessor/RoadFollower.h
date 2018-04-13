@@ -66,7 +66,7 @@ namespace Autodrive {
 		//! Call LineFollower::draw() for each line to display lane lines on screen
 		void draw(const cv::Mat& cannied, cv::Mat& colorCopy);
 
-		int car_y_; //!< TODO: why is car_y_ declared here and in RoadLineBuilder???
+		int car_y_; //!< car_y_ is calculated here, and passed to RoadLineBuilder
 		int center_x_;
 		std::unique_ptr<LineFollower> left_line_follower_;
 		std::unique_ptr<LineFollower> right_line_follower_;
