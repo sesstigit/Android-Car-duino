@@ -38,7 +38,7 @@ namespace Autodrive {
 		//! Update is required for every frame image.
 		void update(cv::Mat& cannied);
 		//! Return preferred angle in degrees, based on the mean angle of the road_line_
-		optional<int> get_prefered_angle();
+		optional<float> get_prefered_angle();
 		//! Draw lines on the screen to show how the LineFollower is working, 
 		//! e.g. a purple rectangle showing the search area for relocating the line in the next image,
 		//! and a vertical yellow line showing average x coordinate of the line
@@ -60,6 +60,9 @@ namespace Autodrive {
 		float target_road_distance_;  //!< average distance to the line from center_x
 
 		// Private methods
+		//! Returns signed distance from this line to the center of the lane minus the original target distance
+		//! Assumes the lane was initially found when driving in middle of lane.  A positive deviation 
+		//! means we are driving too far to RHS, and a negative deviation means we are too far to LHS.
 		float distance_deviation();
 	};
 }

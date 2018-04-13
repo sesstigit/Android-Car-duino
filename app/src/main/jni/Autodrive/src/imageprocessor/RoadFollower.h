@@ -71,7 +71,7 @@ namespace Autodrive {
 		std::unique_ptr<LineFollower> left_line_follower_;
 		std::unique_ptr<LineFollower> right_line_follower_;
 
-		std::vector<int> prev_dirs_;
+		std::vector<float> prev_dirs_;  //!< keep history of previous targetAngles up to count "smoothening" so average can be used
 		int unfound_counter_;
 		const ImageConfig& img_conf_;
 	};

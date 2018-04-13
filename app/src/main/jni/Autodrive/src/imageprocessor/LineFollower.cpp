@@ -39,7 +39,7 @@ void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
 	cv::rectangle(colorCopy,upperLeft , lowerRight,cv::Scalar(255,0,255));
 	//linef(road_builder_->last_start, road_builder_->last_start + POINT(8, -20)).draw(colorCopy, cv::Scalar(0, 255, 255), 1);
 
-	/* DRAW YELLOW VERTICAL LINE DISPLAYING DISTANCE TO ROAD AND AQUA TARGETED DISTANCE TO ROAD*/
+	/* DRAW YELLOW VERTICAL LINE DISPLAYING TARGET DISTANCE TO ROAD CENTER AND AQUA ACTUAL DISTANCE TO ROAD CENTER*/
 	POINT offsetX = POINT(target_road_distance_, 0); //target_road_distance_ initialised to average distance from a roadline point to center_x from past 5 points
 	POINT bottom_center = POINT(centerX, colorCopy.size().height);
 	//! draw the average x coordinate of the line as a yellow vertical line from bottom to top
@@ -66,28 +66,33 @@ bool LineFollower::is_found() {
 
 float LineFollower::distance_deviation() {
 	if(!is_found())
-		return target_road_distance_;
+		return 0.f;
 	float startDistance = road_line_->get_mean_start_distance(4);
-	return (startDistance - target_road_distance_) * 1.1f;
+	return (startDistance - target_road_distance_) * 1.0f;
 }
 
 int LineFollower::total_gap() {
 	return road_line_->total_gap() / road_line_->num_points();
 }
 
-optional<int> LineFollower::get_prefered_angle() {
+optional<float> LineFollower::get_prefered_angle() {
 	if (is_found())
 	{
-		/* Start by setting the target angle to the mean road angle*/
-		int degrees = Mathf::toDegrees(road_line_->get_mean_angle(4)) - 90;  // minus 90 degrees since 90 is forward direction
-		degrees = int((degrees / 65.f) * 25);
-		degrees *= -1;
-		
-		degrees += distance_deviation();
-		
-		degrees = std::min(degrees, 25);
-		degrees = std::max(degrees, -25);
-		return degrees;
+		// Start by setting the target angle to the mean road angle
+		float rads = road_line_->get_mean_angle(4);
+		//! For positive distance devation: we are currently too far to RHS.  Hence need to steer left, so add a bi to the angle.
+		//! For negative distance devation: we are currently too far to LHS.  Hence need to steer right, so minus a bit from the angle.
+		//! Distance_deviation measured in pixels.  Choose (aribtrarily) to steer extra 1 degree for each pixel deviation
+		int deviation = min(int(distance_deviation()), 25);
+		rads += Mathf::toRadians(deviation); // steer 1 degree for each distance deviation, up to max of 25 degrees
+		if (rads < 0) {
+		    cerr << "WARNING: get_preferred_angle() less than zero.  rads=" << rads << endl;
+		    rads = 0.f;
+		} else if (rads > Mathf::PI) {
+		    cerr << "WARNING: get_preferred_angle() greter than PI. rads=" << rads << endl;
+		    rads = Mathf::PI;
+		}
+		return rads;
 	}
 	return nullptr;
 }

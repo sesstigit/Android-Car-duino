@@ -51,13 +51,13 @@ namespace Autodrive {
 		float get_mean_angle_diffs(unsigned int last_size = 0);
 		//! return the most recent angle, and add the average angle_diffs.
 		float get_estimated_angle(int n = 20);
-		//! return average distance to center_x for points in the line
+		//! return average distance to center_x for points in the line. For right line, distance is positive.  For left line, distance is negative.
 		float get_mean_start_distance(unsigned int n_distances_from_begin);
 		void set_total_gap(int calc_gap) { total_gap_ = calc_gap; };
 	private:
 	    //! Store every point in line
 		std::vector<POINT> points_;
-		//! Store distance from point.x to center_x.  I.e. distance to center of lane.
+		//! Store distance as point.x - center_x.  I.e. signed distance to center of lane.
 		std::vector<int> distances_;
 		//! Store angle from each point to its previous point
 		std::vector<float> angles_;

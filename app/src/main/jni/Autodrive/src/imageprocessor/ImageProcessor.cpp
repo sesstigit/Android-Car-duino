@@ -75,18 +75,18 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 
 	//! Key step is to call update on the road_follower
 	cmnd = road_follower_->update(cannied_mat, mat);
-	float angle =  Direction::FORWARD;
-
-	if (cmnd.changed_angle())
-	{
-		//TODO: *15 really needed.  Mathf was prepended by Autodrive::
-		angle = static_cast<float>(((90.0 - cmnd.angle()*15.0)* Mathf::PI) / 180.f);
-	}
-
-	POINT center(mat.size().width / 2.f, (float) mat.size().height);
-	//! Draw a short green line from center bottom in direction of the changed angle (line starts at car bonnet)
+	float angle;
+	//float angle =  Direction::FORWARD;  //measured in radians = PI/2
+    // Cmnd has angle in absolute radians
+	//if (cmnd.changed_angle())
+	//{
+		angle = cmnd.angle();
+	//}
+	//! Draw a short green line from center bottom in direction of the road_follower_ angle
 	//! BGR or RGBA does not matter here
-	linef(center, center + POINT(std::cos(angle) * 100, -sin(angle) * 100)).draw(mat, CV_RGB(0, 125, 0));
+	int drawlen = 100;
+	POINT center(mat.size().width / 2.f, (float) mat.size().height);
+	linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
 	return cmnd;
 }
 
