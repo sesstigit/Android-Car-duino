@@ -39,8 +39,10 @@ namespace Autodrive {
 		static const float PI;
 		static const float PI_2;
 		static int toDegrees(float radians) { return int(radians * 180.f / PI); }
+		static float toRadians(int degrees) { return static_cast<float>(float(degrees) * PI / 180.f); }
 	};
 
+    //! Direction is measured in radians
 	struct Direction
 	{
 		static const float RIGHT;
