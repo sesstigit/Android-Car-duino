@@ -23,6 +23,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "imageprocessor/Util.h"
+
 namespace Autodrive {
 
 	class CarCmd {
@@ -35,16 +37,17 @@ namespace Autodrive {
 		bool changed_speed() { return changed_speed_; };
 
 		//setters
+		//! Speed is a proportion of max_speed
 		inline void set_speed(double new_speed)
 		{
 			assert(new_speed >= -1.0 && new_speed <= 1.0);
 			changed_speed_ = true;
 			speed_ = new_speed;
 		}
-
+        //! Angle in absolute radians
 		inline void set_angle(double new_angle)
 		{
-			assert(new_angle >= -1.0 && new_angle <= 1.0);
+			assert(new_angle >= 0.0 && new_angle <= Mathf::PI);
 			changed_angle_ = true;  //only needed in ImageProcessor.cpp to draw lines on screen when angle changed.
 			angle_ = new_angle;
 		}
