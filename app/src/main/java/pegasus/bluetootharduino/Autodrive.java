@@ -131,7 +131,10 @@ public class Autodrive
     }
 
     public static int getConvertedAngle(){
-        return (int)(getTargetAngle() * carConfiguration.maxAngle * -1);  //TODO FIX hack.  I reversed steering using -1
+        double rads = getTargetAngle();  //angle in radians from Autodrive image processing
+        int degs = (int)(rads * 180 / Math.PI); //convert angle to degrees
+        int converted_degs = 90 - degs;  //forward direction is 90 degrees.  So calculate offset angle from forward.  e.g. degs=30 -> converted_degs=60; or degs=100 -> converted_degs=-10
+        return (int)(converted_degs);
     }
 
 /*---- SETTINGS -----*/
