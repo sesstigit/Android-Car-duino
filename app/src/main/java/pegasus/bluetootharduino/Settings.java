@@ -20,5 +20,5 @@ package pegasus.bluetootharduino;
 public enum Settings {
     INSTANCE;
     static final boolean DisplayDebug = true;
-    static final boolean LogDebug = true;
+    static final boolean LogDebug = false;
 }
