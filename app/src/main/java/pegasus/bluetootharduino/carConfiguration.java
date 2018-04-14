@@ -21,7 +21,10 @@ package pegasus.bluetootharduino;
 public enum carConfiguration {
     INSTANCE;
 
-    static int maxAngle = 40;
+    // scaleAngle is used to scale the calculated angle.  While the calculated angle may be correct,
+    // it may not translate to the car turning at that angle.  Hence configure scaling for each car.
+    static int scaleSteering = 100;  //percentage scaling.
+    // maxAngle is used to scale the calculated speed.
     static int maxSpeed = 400;
 
     //static int minSpeed = -400;
