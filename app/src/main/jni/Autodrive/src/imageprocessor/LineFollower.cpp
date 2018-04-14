@@ -90,9 +90,9 @@ optional<float> LineFollower::get_prefered_angle() {
 		float rads = road_line_->get_mean_angle(4);
 		//! For positive distance devation: we are currently too far to RHS.  Hence need to steer left, so add a bi to the angle.
 		//! For negative distance devation: we are currently too far to LHS.  Hence need to steer right, so minus a bit from the angle.
-		//! Distance_deviation measured in pixels.  Choose (aribtrarily) to steer extra 1 degree for each pixel deviation
+		//! Distance_deviation measured in pixels.  Choose (aribtrarily) to steer extra 1 degree for each 5 pixel deviation
 		int deviation = min(int(distance_deviation()), 25);
-		rads += Mathf::toRadians(deviation); // steer 1 degree for each distance deviation, up to max of 25 degrees
+		rads -= Mathf::toRadians(deviation); // steer 1 degree for each distance deviation, up to max of 25 degrees
 		if (rads < 0) {
 		    cerr << "WARNING: get_preferred_angle() less than zero.  rads=" << rads << endl;
 		    rads = 0.f;
@@ -100,6 +100,7 @@ optional<float> LineFollower::get_prefered_angle() {
 		    cerr << "WARNING: get_preferred_angle() greter than PI. rads=" << rads << endl;
 		    rads = Mathf::PI;
 		}
+		//cerr << "preferred angle for line is " << rads << endl;
 		return rads;
 	}
 	return nullptr;
