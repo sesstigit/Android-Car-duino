@@ -46,31 +46,30 @@
             android:textSize="12sp" />
 
         <SeekBar
+            android:id="@+id/carMaxSpeed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/carMaxSpeed"
-            android:indeterminate="false"
-            android:paddingTop="2dp"
+            android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+            android:indeterminate="false"
+            android:paddingTop="2dp" />
 
         <TextView
             android:id="@+id/progress3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/carMaxAngle"
+            android:layout_above="@+id/carScaleSteering"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:gravity="center"
-            android:text="car max angle"
+            android:text="car scale steering"
             android:textColor="@color/white"
             android:textSize="12sp" />
 
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/carMaxAngle"
+            android:id="@+id/carScaleSteering"
             android:indeterminate="false"
             android:paddingTop="2dp"
             android:layout_alignParentBottom="true"
