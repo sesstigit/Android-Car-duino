@@ -82,11 +82,13 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	//{
 		angle = cmnd.angle();
 	//}
-	//! Draw a short green line from center bottom in direction of the road_follower_ angle
-	//! BGR or RGBA does not matter here
-	int drawlen = 100;
-	POINT center(mat.size().width / 2.f, (float) mat.size().height);
-	linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
+	if (img_conf_.display_debug_ == true) {
+		//! Draw a short green line from center bottom in direction of the road_follower_ angle
+		//! BGR or RGBA does not matter here
+		int drawlen = 100;
+		POINT center(mat.size().width / 2.f, (float)mat.size().height);
+		linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
+	}
 	return cmnd;
 }
 
