@@ -29,7 +29,7 @@ import android.widget.TextView;
 //! This class handles the advanced settings GUI screen.  It changes Autodrive settings to configure the car for different driving conditions.
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
 
-    SeekBar cannyThresh, carMaxSpeed, carMaxAngle, smoothening, fragment, leftIteration, rightIteration, angle;
+    SeekBar cannyThresh, carMaxSpeed, carScaleSteering, smoothening, fragment, leftIteration, rightIteration, angle;
     GestureDetector detector;
     SharedPreferences shared;
     float progressValue;
@@ -56,11 +56,11 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
         carMaxSpeed.setProgress((int) (shared.getFloat("carMaxSpeed", progressValue) ));
         carMaxSpeed.setOnSeekBarChangeListener(this);
 
-        carMaxAngle = (SeekBar)findViewById(R.id.carMaxAngle);
-        carMaxAngle.setMax(40);
-        ((TextView)findViewById(R.id.progress3)).setText("carMaxAngle value set to " + shared.getFloat("carMaxAngle", progressValue));
-        carMaxAngle.setProgress((int) (shared.getFloat("carMaxAngle", progressValue) ));
-        carMaxAngle.setOnSeekBarChangeListener(this);
+        carScaleSteering = (SeekBar)findViewById(R.id.carScaleSteering);
+        carScaleSteering.setMax(400);  //want -200 to 200
+        ((TextView)findViewById(R.id.progress3)).setText("carScaleSteering value set to " + shared.getFloat("carScaleSteering", progressValue));
+        carScaleSteering.setProgress((int) (shared.getFloat("carScaleSteering", progressValue) + 200 ));
+        carScaleSteering.setOnSeekBarChangeListener(this);
 
         smoothening = (SeekBar)findViewById(R.id.smoothening);
         smoothening.setMax(8); // values 0-8
@@ -119,15 +119,15 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     carConfiguration.maxSpeed = progress;
                 }
                 break;
-            case R.id.carMaxAngle:
+            case R.id.carScaleSteering:
                 if(fromUser) {
-                    progressValue = progress;
-                    ((TextView)findViewById(R.id.progress3)).setText("carMaxAngle value set to " + progressValue);
+                    progressValue = progress - 200;
+                    ((TextView)findViewById(R.id.progress3)).setText("carScaleSteering value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
-                    sharedEditor.putFloat("carMaxAngle", progressValue);
+                    sharedEditor.putFloat("carScaleSteering", progressValue);
                     sharedEditor.apply();
                     //Autodrive.setCarMaxAngle(progressValue);
-                    carConfiguration.maxAngle = progress;
+                    carConfiguration.scaleSteering = (int) progressValue;
                 }
                 break;
             case R.id.smoothening:
