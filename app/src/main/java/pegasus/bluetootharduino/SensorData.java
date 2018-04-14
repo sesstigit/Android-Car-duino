@@ -108,8 +108,8 @@ public class SensorData {
             lineRightFound();
         }
 
-        if Settings.DisplayDebug {
-	  CameraActivity.updateDebuggingConsole();
-	}
+        //if (Settings.DisplayDebug) {
+	    //    CameraActivity.updateDebuggingConsole();
+	    //}
     }
 }
