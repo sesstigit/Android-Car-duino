@@ -112,9 +112,9 @@ namespace Autodrive {
 		
 		std::unique_ptr<ImageProcessor> img_proc_;
 		std::unique_ptr<ParkingManeuver> parking_; //pointer to object with methods for car parking
+		ImageConfig img_conf_;
 	private:
 	    // private members (params)
-		ImageConfig img_conf_;
 		
 		std::unique_ptr<Overtaking> overtaking_;  //object with methods for car overtaking
 		bool changed_speed_;  // flag whether Autodrive has changed speed this frame
