@@ -81,7 +81,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     }
 
     static public void updateDebuggingConsole() {
-	StringBuilder sb = new StringBuilder();
+	    StringBuilder sb = new StringBuilder();
 
         sb.append("SENSORS:\n");
         sb.append("US F,FR,RL: " + String.valueOf(Autodrive.usFront()) + "," + String.valueOf(Autodrive.usFrontRight()) + "," + String.valueOf(Autodrive.usRear()) + "\n");
