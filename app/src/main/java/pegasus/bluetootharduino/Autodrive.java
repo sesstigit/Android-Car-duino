@@ -123,7 +123,7 @@ public class Autodrive
     private static native double getTargetAngle();
 
     public static int getConvertedSpeed(){
-        double targetSpeed = getTargetSpeed();
+        double targetSpeed = getTargetSpeed();  // -1.0<=targetSpeed<=1.0
         if(targetSpeed <= 0.0)
             return (int)(targetSpeed * carConfiguration.maxSpeed * 2.0);
         else
@@ -133,7 +133,10 @@ public class Autodrive
     public static int getConvertedAngle(){
         double rads = getTargetAngle();  //angle in radians from Autodrive image processing
         int degs = (int)(rads * 180 / Math.PI); //convert angle to degrees
-        int converted_degs = 90 - degs;  //forward direction is 90 degrees.  So calculate offset angle from forward.  e.g. degs=30 -> converted_degs=60; or degs=100 -> converted_degs=-10
+        int converted_degs = degs - 90;  //forward direction is 90 degrees.  So calculate offset angle from forward.  e.g. degs=30 -> converted_degs=-60 (turn right); or degs=100 -> converted_degs=10 (turn left)
+        //scale the angle with maxAngle to make the car always turn sharper or slower
+        converted_degs  =  converted_degs * carConfiguration.scaleSteering / 100;  //e.g. -60 with scaleAngle=50 becomes -30 degrees.
+
         return (int)(converted_degs);
     }
 
