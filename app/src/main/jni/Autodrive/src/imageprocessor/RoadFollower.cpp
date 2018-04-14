@@ -41,17 +41,22 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	right_line_follower_->update(cannied);
 
     //! Method calls RoadFollower::draw which returns a color copy of cannied, and also calls draw for each LineFollower object
-	RoadFollower::draw(cannied, drawInOut);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
+	if (img_conf_.display_debug_ == true) {
+		RoadFollower::draw(cannied, drawInOut);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
+	}
 
 	optional<float> leftTargetAngle = left_line_follower_->get_prefered_angle();
 	optional<float> rightTargetAngle = right_line_follower_->get_prefered_angle();
 	optional<float> targetAngle = nullptr;
 	
+	//cerr << "leftTargetAngle=" << *leftTargetAngle << endl;
+	//cerr << "rightTargetAngle=" << *rightTargetAngle << endl;
+
 	//! Choose preferred angle to move, based on the preferred angle for both the left and right lines
 	if (leftTargetAngle && rightTargetAngle && img_conf_.use_left_line_)
 	{
-		// Give the right line just a bit more priority since it seems more reliable
-		targetAngle = weighted_average(*rightTargetAngle, *leftTargetAngle, 3.0f);
+		// Can choose to give the right line more priority if it seems more reliable
+		targetAngle = weighted_average(*rightTargetAngle, *leftTargetAngle, 1.0f);
 	} else if (leftTargetAngle && img_conf_.use_left_line_)
 	{
 		targetAngle = *leftTargetAngle;
@@ -64,6 +69,7 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 		 cmd.set_speed(0);  //FIX: should be slow speed
 	}
 	
+	//cerr << "targetAngle=" << *targetAngle << endl;
 	if (targetAngle)
 	{
 		unfound_counter_ = 0;
@@ -75,12 +81,17 @@ CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 		else
 		{
 			// Calculate average of all previous angles in past "smoothening" targetAngles, e.g. average of past 5 frames.
-			float sum = (std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0) + *targetAngle);
-			float newAngle = sum / float(prev_dirs_.size() + 1);
+			//Note: need 0.0 as third parameter. If 0, then it will sum as ints rather than floats!
+			float sum = std::accumulate(prev_dirs_.begin(), prev_dirs_.end(), 0.0) + *targetAngle;
+			float newAngle = sum / (float(prev_dirs_.size() + 1));
 			prev_dirs_.push_back(*targetAngle);
+			//cerr << "prev_dirs_=" << endl;
+			//for (float f : prev_dirs_) {
+			//	cerr << "," << f << endl;
+			//}
 			if (prev_dirs_.size() > img_conf_.smoothening_)
 				prev_dirs_.erase(prev_dirs_.begin());
-			
+			//cerr << "newAngle=" << newAngle << endl;
 			cmd.set_angle(newAngle);
 			cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 		}
