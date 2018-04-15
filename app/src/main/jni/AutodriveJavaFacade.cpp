@@ -47,11 +47,6 @@ extern "C"
         Autodrive::car.parking_->reset();
     }
 
-    TYPE(void) NAME(setLeftLane) PARAMS(bool boolean)
-    {
-        //Autodrive::car.img_conf_.use_left_line_ = boolean;
-    }
-    
     TYPE(void) NAME(setCarLength) PARAMS(int _carLength)
     {
         Autodrive::car.car_length_ = _carLength;
@@ -70,6 +65,21 @@ extern "C"
     TYPE(jint) NAME(getCarLength)()
     {
         return Autodrive::car.car_length_;
+    }
+
+    TYPE(void) NAME(setPerspective) PARAMS(long p)
+    {
+	Autodrive::car.img_proc_->set_perspective((cv::Mat*)p);
+    }
+
+    TYPE(void) NAME(deletePerspective)()
+    {
+	Autodrive::car.img_proc->delete_perspective();
+    }
+
+    TYPE(long) NAME(getPerspective)()
+    {
+	return (long)Autodrive::car.img_proc->get_perspective();
     }
 
    /*----- DEBUGDATA -----*/
@@ -266,7 +276,6 @@ extern "C"
         Autodrive::car.img_conf_.normalize_lighting_ = on;
     }
     
-	//Note: interpreted the same as setLeftLane (same meaning???)
     TYPE(void) NAME(setSettingUseLeftLine) PARAMS(bool on)
     {
         Autodrive::car.img_conf_.use_left_line_ = on;
@@ -300,6 +309,11 @@ extern "C"
     TYPE(void) NAME(setCannyThresh) PARAMS(int value)
     {
         Autodrive::car.img_conf_.canny_thresh_ = value;
+    }
+    
+    TYPE(void) NAME(setCarScaleDriftFix) PARAMS(float value)
+    {
+        Autodrive::car.img_conf_.car_scale_drift_fix = value;
     }
 }
 
