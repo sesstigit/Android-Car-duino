@@ -35,8 +35,12 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
 
+import java.io.File;
 import java.io.IOException;
+
+import static pegasus.bluetootharduino.Autodrive.getPerspective;
 
 //! This class is activated when the user clicks Auto driving mode.
 //! Each camera frame is processed for navigation with line:
@@ -200,12 +204,13 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     /** Changes the behaviour of the back button */
     public void onBackPressed() {
         // save the perspective matrix to disk so it can be reused next time
-        cv::Mat* p;
-        p = (cv::Mat*)getPerspective();
-        if (p) {
-            String filename = "perspective.mat"
-            File file = new File(context.getFilesDir(), filename);
-            Imgcodecs.imwrite(file, *p);
+        Mat m = new Mat();
+        getPerspective(m.getNativeObjAddr());
+
+        if (!m.empty()) {
+            String filename = "perspective.bmp";
+            //File file = new File(context.getFilesDir(), filename);
+            Imgcodecs.imwrite(filename, m);
         }
         // disconnect safely
         if(bt.socket.isConnected()) {
