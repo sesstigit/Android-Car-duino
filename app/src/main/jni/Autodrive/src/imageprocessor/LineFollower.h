@@ -60,7 +60,7 @@ namespace Autodrive {
 		int road_size_; //!< This is how much of the road is built in each frame image.
 		bool is_found_; //!< Only set to true if the road_builder returned a suitable line
 		float beta_; //!< parameter used for ewma
-		float ewma_bias_counter;  //!< for emwa bias correction at startup
+		float ewma_bias_counter;  //!< for ewma bias correction at startup
 		float ewma_target_road_distance_;  //!< exponentially weighted moving average of "average distance to the line from center_x"
 		float ewma_corr_target_road_distance_;  //!< corrected version for startup bias
 		int car_y_; //input param to constructor, saved for use in printing car_y_ line
