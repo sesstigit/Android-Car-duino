@@ -77,6 +77,29 @@
             android:layout_alignParentStart="true"
             android:layout_marginBottom="49dp" />
 
+        <TextView
+            android:id="@+id/progress9"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/carScaleDriftFix"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="car scale drift fix"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
+        
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/carScaleDriftFix"
+            android:indeterminate="false"
+            android:paddingTop="2dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginBottom="49dp" />
+
     </RelativeLayout>
 
     <RelativeLayout
