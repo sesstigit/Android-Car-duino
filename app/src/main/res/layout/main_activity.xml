@@ -44,7 +44,7 @@
                 android:textColor="@color/white"
                 android:id="@+id/LightNormalizationSwitch"
                 android:checked="false"
-                android:layout_above="@+id/LeftLaneSwitch"
+                android:layout_above="@+id/ReinitializeWarpSwitch"
                 android:layout_alignParentRight="true"
                 android:layout_alignParentEnd="true"
                 android:layout_marginBottom="1dp" />
@@ -77,17 +77,17 @@
                 android:layout_toLeftOf="@+id/bluetooth"
                 android:layout_toStartOf="@+id/bluetooth" />
 
-            <Switch
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Left Lane"
-                android:textColor="@color/white"
-                android:id="@+id/LeftLaneSwitch"
-                android:checked="false"
-                android:layout_above="@+id/LeftLineSwitch"
-                android:layout_alignParentRight="true"
-                android:layout_alignParentEnd="true"
-                android:layout_marginBottom="1dp" />
+    <Switch
+        android:id="@+id/ReinitializeWarpSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/LeftLineSwitch"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="1dp"
+        android:checked="false"
+        android:text="Reinitialize Warp"
+        android:textColor="@color/white" />
 
             <Switch
                 android:layout_width="match_parent"
