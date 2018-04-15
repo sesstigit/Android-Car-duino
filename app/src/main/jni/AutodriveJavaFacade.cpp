@@ -74,12 +74,19 @@ extern "C"
 
     TYPE(void) NAME(deletePerspective)()
     {
-	Autodrive::car.img_proc->delete_perspective();
+	Autodrive::car.img_proc_->delete_perspective();
     }
 
-    TYPE(long) NAME(getPerspective)()
+	//TYPE(void) NAME(setImage) PARAMS(long newMat) {
+	//	Autodrive::car.image_ = (cv::Mat*)newMat;
+    TYPE(void) NAME(getPerspective) PARAMS(long retMat)
     {
-	return (long)Autodrive::car.img_proc->get_perspective();
+		cv::Mat& tempMat = *(cv::Mat*)Autodrive::car.img_proc_->get_perspective();
+
+		tempMat.copyTo(*(cv::Mat*)retMat);	
+		//Mat& mat = *(Mat*)addrMat;
+		//Mat& newMat = *(Mat*)addrNewMat;
+		//mat.copyTo(newMat);
     }
 
    /*----- DEBUGDATA -----*/
@@ -313,7 +320,7 @@ extern "C"
     
     TYPE(void) NAME(setCarScaleDriftFix) PARAMS(float value)
     {
-        Autodrive::car.img_conf_.car_scale_drift_fix = value;
+        Autodrive::car.img_conf_.car_scale_drift_fix_ = value;
     }
 }
 
