@@ -76,7 +76,7 @@ float LineFollower::distance_deviation() {
 	if(!is_found())
 		return 0.f;
 	float startDistance = road_line_->get_mean_start_distance(4);
-	return (startDistance - ewma_corr_target_road_distance_) * 1.0f;
+	return (startDistance - ewma_corr_target_road_distance_) * img_conf_.car_scale_drift_fix_;  //scale the deviation to make it more/less sensitive
 }
 
 int LineFollower::total_gap() {
@@ -90,9 +90,9 @@ optional<float> LineFollower::get_prefered_angle() {
 		float rads = road_line_->get_mean_angle(4);
 		//! For positive distance devation: we are currently too far to RHS.  Hence need to steer left, so add a bi to the angle.
 		//! For negative distance devation: we are currently too far to LHS.  Hence need to steer right, so minus a bit from the angle.
-		//! Distance_deviation measured in pixels.  Choose (aribtrarily) to steer extra 1 degree for each 5 pixel deviation
-		int deviation = min(int(distance_deviation()), 25);
-		rads -= Mathf::toRadians(deviation); // steer 1 degree for each distance deviation, up to max of 25 degrees
+		//! Distance_deviation measured in pixels.  Choose (aribtrarily) to steer extra 1 degree for each pixel deviation
+		int deviation = min(int(distance_deviation()), 45);
+		rads -= Mathf::toRadians(deviation); // steer 1 degree for each distance deviation, up to a max.  Remember the deviation has been scaled by car_scale_drift_fix_
 		if (rads < 0) {
 		    cerr << "WARNING: get_preferred_angle() less than zero.  rads=" << rads << endl;
 		    rads = 0.f;
