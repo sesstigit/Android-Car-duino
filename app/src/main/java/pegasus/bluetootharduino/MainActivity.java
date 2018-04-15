@@ -56,11 +56,14 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
 
         //DISPLAY DEBUG INFORMATION SWITCH
         ((Switch)findViewById(R.id.LeftLaneSwitch)).setOnCheckedChangeListener(this);
+        ((Switch)findViewById(R.id.LeftLaneSwitch)).setSwitch((boolean) (shared.getBoolean("LeftLaneSwitch", null) ));
         //USE LIGHT NORMALIZATION SWITCH
         ((Switch)findViewById(R.id.LightNormalizationSwitch)).setOnCheckedChangeListener(this);
+        ((Switch)findViewById(R.id.LightNormalizationSwitch)).setSwitch((boolean) (shared.getBoolean("LightNormalisationSwitch", null) ));
         //USE LEFT LINE SWITCH
         ((Switch)findViewById(R.id.LeftLineSwitch)).setOnCheckedChangeListener(this);
-
+        ((Switch)findViewById(R.id.LeftLineSwitch)).setSwitch((boolean) (shared.getBoolean("LeftLineSwitch", null) ));
+        
         /* TEXT INPUTS */
         TextView carLength = (TextView) findViewById(R.id.carLength);
         carLength.setText(String.valueOf(Autodrive.getCarLength()));
@@ -103,12 +106,33 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
         switch (buttonView.getId()) {
             case R.id.LightNormalizationSwitch:
                 Autodrive.setSettingLightNormalization(isChecked);
+                SharedPreferences.Editor sharedEditor = shared.edit();
+                sharedEditor.putBoolean("LightNormalizationSwitch", isChecked);
+                sharedEditor.apply();
+                Log.i("LightNormalizationSwitch:", isChecked);
                 break;
-            case R.id.LeftLaneSwitch:
-                Autodrive.setLeftLane(isChecked);
+            case R.id.reinitialize_warp:
+                if (isChecked) {
+                    Autodrive.deletePerspective();
+                } else {
+                    cv::Mat pMat;
+                    //read from disk
+                    String filename = "perspective.mat"
+                    File file = new File(context.getFilesDir(), filename);
+                    Imgcodecs.imread(file, pMat);
+                    Autodrive.setPerspective(pMat.getNativeObjAddr());
+                }
+                SharedPreferences.Editor sharedEditor = shared.edit();
+                sharedEditor.putBoolean("reinitialize_warp", isChecked);
+                sharedEditor.apply();
+                Log.i("reinitializeWarp:", isChecked);
                 break;
             case R.id.LeftLineSwitch:
                 Autodrive.setSettingUseLeftLine(isChecked);
+                SharedPreferences.Editor sharedEditor = shared.edit();
+                sharedEditor.putBoolean("LeftLineSwitch", isChecked);
+                sharedEditor.apply();
+                Log.i("LeftLineSwitch:", isChecked);
                 break;
         }
     }

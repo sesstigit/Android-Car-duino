@@ -29,7 +29,7 @@ import android.widget.TextView;
 //! This class handles the advanced settings GUI screen.  It changes Autodrive settings to configure the car for different driving conditions.
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
 
-    SeekBar cannyThresh, carMaxSpeed, carScaleSteering, smoothening, fragment, leftIteration, rightIteration, angle;
+    SeekBar cannyThresh, carMaxSpeed, carScaleSteering, carScaleDriftFix, smoothening, fragment, leftIteration, rightIteration, angle;
     GestureDetector detector;
     SharedPreferences shared;
     float progressValue;
@@ -46,51 +46,58 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
         //SEEK BARS
         cannyThresh = (SeekBar)findViewById(R.id.cannyThresh);
         cannyThresh.setMax(300);
+        cannyThresh.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress1)).setText("cannyThresh value set to " + shared.getFloat("cannyThresh", progressValue));
         cannyThresh.setProgress((int) (shared.getFloat("cannyThresh", progressValue) ));
-        cannyThresh.setOnSeekBarChangeListener(this);
-
+        
         carMaxSpeed = (SeekBar)findViewById(R.id.carMaxSpeed);
         carMaxSpeed.setMax(600);
+        carMaxSpeed.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress2)).setText("carMaxSpeed value set to " + shared.getFloat("carMaxSpeed", progressValue));
         carMaxSpeed.setProgress((int) (shared.getFloat("carMaxSpeed", progressValue) ));
-        carMaxSpeed.setOnSeekBarChangeListener(this);
-
+        
         carScaleSteering = (SeekBar)findViewById(R.id.carScaleSteering);
         carScaleSteering.setMax(400);  //want -200 to 200
+        carScaleSteering.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress3)).setText("carScaleSteering value set to " + shared.getFloat("carScaleSteering", progressValue));
         carScaleSteering.setProgress((int) (shared.getFloat("carScaleSteering", progressValue) + 200 ));
-        carScaleSteering.setOnSeekBarChangeListener(this);
-
+        
+        carScaleDriftFix = (SeekBar)findViewById(R.id.carScaleDriftFix);
+        carScaleDriftFix.setMax(100);  //want 0 to 10 float
+        carScaleDriftFix.setOnSeekBarChangeListener(this);
+        ((TextView)findViewById(R.id.progress9)).setText("carScaleDriftFix value set to " + shared.getFloat("carScaleDriftFix", progressValue));
+        carScaleDriftFix.setProgress((int) (shared.getFloat("carScaleDriftFix", progressValue) * 10 ));
+        
         smoothening = (SeekBar)findViewById(R.id.smoothening);
         smoothening.setMax(8); // values 0-8
+        smoothening.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress4)).setText("Smoothening value set to " + shared.getFloat("smoothening", progressValue));
         smoothening.setProgress((int) (shared.getFloat("smoothening", progressValue)));
-        smoothening.setOnSeekBarChangeListener(this);
-
+        
         fragment = (SeekBar)findViewById(R.id.fragment);
         fragment.setMax(60); // values 15-60
+        fragment.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress5)).setText("Fragment distance value set to " + shared.getFloat("fragment", progressValue));
         fragment.setProgress((int) (shared.getFloat("fragment", progressValue)));
-        fragment.setOnSeekBarChangeListener(this);
-
+        
         leftIteration = (SeekBar)findViewById(R.id.leftIteration);
         leftIteration.setMax(15); // values 1-15
+        leftIteration.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress6)).setText("Left Iteration value set to " + shared.getFloat("leftIteration", progressValue));
         leftIteration.setProgress((int) (shared.getFloat("leftIteration", progressValue)));
-        leftIteration.setOnSeekBarChangeListener(this);
-
+        
         rightIteration = (SeekBar)findViewById(R.id.rightIteration);
         rightIteration.setMax(15); // values 1-15
+        rightIteration.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress7)).setText("Right Iteration value set to " + shared.getFloat("rightIteration", progressValue));
         rightIteration.setProgress((int) (shared.getFloat("rightIteration", progressValue)));
-        rightIteration.setOnSeekBarChangeListener(this);
-
+        
         angle = (SeekBar)findViewById(R.id.angle);
         angle.setMax(14); // values 0.4-1.4
+        angle.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress8)).setText("Max angle value set to " + shared.getFloat("angle", progressValue));
         angle.setProgress((int) (shared.getFloat("angle", progressValue) *10));
-        angle.setOnSeekBarChangeListener(this);
+        
     }
 
     /* SEEK BAR */
@@ -106,6 +113,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("cannyThresh", progressValue);
                     sharedEditor.apply();
                     Autodrive.setCannyThresh(progress);
+                    Log.i("SetCannyThresh:", progress);
                 }
                 break;
             case R.id.carMaxSpeed:
@@ -117,6 +125,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.apply();
                     //Autodrive.setCarMaxSpeed(progressValue);
                     carConfiguration.maxSpeed = progress;
+                    Log.i("CarConfiguration.maxSpeed:", progress);
                 }
                 break;
             case R.id.carScaleSteering:
@@ -128,6 +137,18 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.apply();
                     //Autodrive.setCarMaxAngle(progressValue);
                     carConfiguration.scaleSteering = (int) progressValue;
+                    Log.i("carConfiguration.scaleSteering:", progressValue);
+                }
+                break;
+            case R.id.carScaleDriftFix:
+                if(fromUser) {
+                    progressValue = progress / 10;
+                    ((TextView)findViewById(R.id.progress9)).setText("carScaleDriftFix value set to " + progressValue);
+                    SharedPreferences.Editor sharedEditor = shared.edit();
+                    sharedEditor.putFloat("carScaleDriftFix", progressValue);
+                    sharedEditor.apply();
+                    Autodrive.setCarScaleDriftFix(progressValue);
+                    Log.i("setCarScaleDriftFix:", progressValue);
                 }
                 break;
             case R.id.smoothening:
@@ -138,6 +159,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("smoothening", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingSmoothening(progress);
+                    Log.i("setSettingSmoothening:", progress);
                 }
                 break;
             case R.id.fragment:
@@ -152,6 +174,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("fragment", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingFirstFragmentMaxDist(progress);
+                    Log.i("setSettingFirstFragmentMaxDist:", progress);
                 }
                 break;
             case R.id.leftIteration:
@@ -166,6 +189,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("leftIteration", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingLeftIterationLength(progress);
+                    Log.i("setSettingLeftIterationLength:", progress);
                 }
                 break;
             case R.id.rightIteration:
@@ -180,6 +204,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("rightIteration", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingRightIterationLength(progress);
+                    Log.i("setSettingRightIterationLength:", progress);
                 }
                 break;
             case R.id.angle:
@@ -197,6 +222,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("angle", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingMaxAngleDiff(progressValue);
+                    Log.i("setSettingMaxAngleDiff:", progress);
                 }
                 break;
         }

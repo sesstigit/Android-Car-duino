@@ -147,9 +147,9 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
 
     @Override
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        //Note: CvCameraViewFrame only supports rgba and gray cv::Mat images
         return driver.processImage(inputFrame.rgba());
     }
-
 
 
     /** Uses swipe to change to the main activity*/
@@ -199,7 +199,14 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
 
     /** Changes the behaviour of the back button */
     public void onBackPressed() {
-
+        // save the perspective matrix to disk so it can be reused next time
+        cv::Mat* p;
+        p = (cv::Mat*)getPerspective();
+        if (p) {
+            String filename = "perspective.mat"
+            File file = new File(context.getFilesDir(), filename);
+            Imgcodecs.imwrite(file, *p);
+        }
         // disconnect safely
         if(bt.socket.isConnected()) {
             bt.sendToManualMode("stop");

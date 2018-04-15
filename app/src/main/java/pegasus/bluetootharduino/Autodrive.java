@@ -43,6 +43,10 @@ public class Autodrive
     public static native int getCarLength();
     
     public static native void resetParking();
+
+    public static native void setPerspective(long mataddr);
+    public static native void deletePerspective();
+    public static native long getPerspective();  //get long address of cv::Mat
     
 /*----- DEBUGDATA -----*/
     public static native int gapLength();
@@ -163,4 +167,7 @@ public class Autodrive
     public static native void setSettingMaxAngleDiff(float value);
 
     public static native void setCannyThresh(int value);
+
+    public static native void setCarScaleDriftFix(float value);
+
 }
