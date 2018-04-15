@@ -49,7 +49,7 @@ namespace Autodrive {
         //! - get_lane_markings for leftLine and rightLine
         //! - stretch the lines to make them a standard length
         //! - Then get birdseye perspective transform
-		optional<cv::Mat> find_perspective(cv::Mat* matIn, double thresh1 = 80, double thresh2 = 240);
+		cv::Mat find_perspective(cv::Mat* matIn, double thresh1 = 80, double thresh2 = 240);
 		float center_diff() { return center_diff_; };  //getter
 		linef left_image_border() { return left_image_border_; }; //getter
 		linef right_image_border() { return right_image_border_; }; //getter
