@@ -31,11 +31,14 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
-	auto found_pespective = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
-	if (found_pespective)
-	{
-		perspective_ = *found_pespective;
-		birdseye_->birds_eye_transform(mat, perspective_);
+	if (!perspective_) {
+		//only recalculate the warp matrix if it does not exist
+		pespective_ = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+	}
+	
+	if (perspective_) {
+		//have found a perspective for birdseye transform to use
+		birdseye_->birds_eye_transform(mat, *perspective_);
 		if (img_conf_.normalize_lighting_) {
 			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 			normalize_lighting(mat);
@@ -56,7 +59,11 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 {
 	CarCmd cmnd;
 	
-	birdseye_->birds_eye_transform(&mat, perspective_);
+	if (!perspective_) {
+		cerr << "ERROR: continue_processing() is missing perspective for birdseye_transform" << endl;
+		return cmnd;
+	}
+	birdseye_->birds_eye_transform(&mat, *perspective_);
 	if (img_conf_.normalize_lighting_) {
 		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 		normalize_lighting(&mat);
@@ -90,6 +97,21 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 		linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
 	}
 	return cmnd;
+}
+
+void ImageProcessor::set_perspective(cv::Mat* p) {
+	//take a local copy of the perspective
+	if (p) {
+		p->copyTo(perspective_);
+	}
+}
+
+void ImageProcessor::delete_perspective() }
+	perspective_ = nullptr;
+}
+
+optional<cv::Mat> get_perspective() {
+	return perspective_
 }
 
 bool ImageProcessor::left_line_found()
