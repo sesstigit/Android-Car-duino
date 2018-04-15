@@ -64,6 +64,9 @@ namespace Autodrive {
 		// true-false, display debug lines on the screen such as detected Canny edges, line detection, and steering angle
 		bool display_debug_;
 
+		// 0-10, a scaling factor to fix lane drifting.  Higher value fixes lane drift quicker, but risks wobble.
+		float car_scale_drift_fix_;
+
 		//Other Autodrive settings handled elsewhere
 		// Car Length: Measured in cm.  Read only.  Used for obstacle avoidance and parking.  Ensures the car drives far enough around objects so the back does not hit.
 		// Left Lane: currently unused.  Should be used to instruct car to use Left Lane (in Aus) or Right Lane (in USA).
