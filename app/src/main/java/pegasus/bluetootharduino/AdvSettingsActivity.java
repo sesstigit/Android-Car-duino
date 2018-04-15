@@ -25,6 +25,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.util.Log;
 
 //! This class handles the advanced settings GUI screen.  It changes Autodrive settings to configure the car for different driving conditions.
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
@@ -113,7 +114,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("cannyThresh", progressValue);
                     sharedEditor.apply();
                     Autodrive.setCannyThresh(progress);
-                    Log.i("SetCannyThresh:", progress);
+                    Log.i("SetCannyThresh:", "value=" + progress);
                 }
                 break;
             case R.id.carMaxSpeed:
@@ -125,7 +126,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.apply();
                     //Autodrive.setCarMaxSpeed(progressValue);
                     carConfiguration.maxSpeed = progress;
-                    Log.i("CarConfiguration.maxSpeed:", progress);
+                    Log.i("CarConfiguration.maxSpeed:", "value=" + progress);
                 }
                 break;
             case R.id.carScaleSteering:
@@ -137,18 +138,18 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.apply();
                     //Autodrive.setCarMaxAngle(progressValue);
                     carConfiguration.scaleSteering = (int) progressValue;
-                    Log.i("carConfiguration.scaleSteering:", progressValue);
+                    Log.i("carConfiguration.scaleSteering:", "value=" + progressValue);
                 }
                 break;
             case R.id.carScaleDriftFix:
                 if(fromUser) {
-                    progressValue = progress / 10;
+                    progressValue = (float) (progress / 10.0);
                     ((TextView)findViewById(R.id.progress9)).setText("carScaleDriftFix value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
                     sharedEditor.putFloat("carScaleDriftFix", progressValue);
                     sharedEditor.apply();
                     Autodrive.setCarScaleDriftFix(progressValue);
-                    Log.i("setCarScaleDriftFix:", progressValue);
+                    Log.i("setCarScaleDriftFix:", "value=" + progressValue);
                 }
                 break;
             case R.id.smoothening:
@@ -159,7 +160,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("smoothening", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingSmoothening(progress);
-                    Log.i("setSettingSmoothening:", progress);
+                    Log.i("setSettingSmoothening:", "value=" + progress);
                 }
                 break;
             case R.id.fragment:
@@ -174,7 +175,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("fragment", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingFirstFragmentMaxDist(progress);
-                    Log.i("setSettingFirstFragmentMaxDist:", progress);
+                    Log.i("setSettingFirstFragmentMaxDist:", "value=" + progress);
                 }
                 break;
             case R.id.leftIteration:
@@ -189,7 +190,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("leftIteration", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingLeftIterationLength(progress);
-                    Log.i("setSettingLeftIterationLength:", progress);
+                    Log.i("setSettingLeftIterationLength:", "value=" + progress);
                 }
                 break;
             case R.id.rightIteration:
@@ -204,7 +205,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("rightIteration", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingRightIterationLength(progress);
-                    Log.i("setSettingRightIterationLength:", progress);
+                    Log.i("setSettingRightIterationLength:", "value=" + progress);
                 }
                 break;
             case R.id.angle:
@@ -222,7 +223,7 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.putFloat("angle", progressValue);
                     sharedEditor.apply();
                     Autodrive.setSettingMaxAngleDiff(progressValue);
-                    Log.i("setSettingMaxAngleDiff:", progress);
+                    Log.i("setSettingMaxAngleDiff:", "value=" + progress);
                 }
                 break;
         }
