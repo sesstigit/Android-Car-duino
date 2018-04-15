@@ -18,7 +18,9 @@
 package pegasus.bluetootharduino;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -30,6 +32,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import static android.content.ContentValues.TAG;
 
@@ -37,9 +41,14 @@ import static android.content.ContentValues.TAG;
 //! Bluetooth is used for all communication between the Android device and the App, so the phone must be paired with the car prior to use.  All data sent over bluetooth is encoded/decoded using the Netstrings class.
 public class MainActivity extends Activity implements OnClickListener, CompoundButton.OnCheckedChangeListener, TextWatcher {
 
+    SharedPreferences shared;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        shared = PreferenceManager.getDefaultSharedPreferences(this);
+
         if(!OpenCVLoader.initDebug()){
             Log.d(TAG, "OpenCV not loaded");
         } else {
@@ -54,15 +63,16 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
         findViewById(R.id.advanced).setOnClickListener(this);
         findViewById(R.id.bluetooth).setOnClickListener(this);
 
+        boolean switchState = false;  //default value for getBoolean
         //DISPLAY DEBUG INFORMATION SWITCH
-        ((Switch)findViewById(R.id.LeftLaneSwitch)).setOnCheckedChangeListener(this);
-        ((Switch)findViewById(R.id.LeftLaneSwitch)).setSwitch((boolean) (shared.getBoolean("LeftLaneSwitch", null) ));
+        ((Switch)findViewById(R.id.ReinitializeWarpSwitch)).setOnCheckedChangeListener(this);
+        ((Switch)findViewById(R.id.ReinitializeWarpSwitch)).setChecked((boolean) (shared.getBoolean("ReinitializeWarpSwitch", switchState) ));
         //USE LIGHT NORMALIZATION SWITCH
         ((Switch)findViewById(R.id.LightNormalizationSwitch)).setOnCheckedChangeListener(this);
-        ((Switch)findViewById(R.id.LightNormalizationSwitch)).setSwitch((boolean) (shared.getBoolean("LightNormalisationSwitch", null) ));
+        ((Switch)findViewById(R.id.LightNormalizationSwitch)).setChecked((boolean) (shared.getBoolean("LightNormalizationSwitch", switchState) ));
         //USE LEFT LINE SWITCH
         ((Switch)findViewById(R.id.LeftLineSwitch)).setOnCheckedChangeListener(this);
-        ((Switch)findViewById(R.id.LeftLineSwitch)).setSwitch((boolean) (shared.getBoolean("LeftLineSwitch", null) ));
+        ((Switch)findViewById(R.id.LeftLineSwitch)).setChecked((boolean) (shared.getBoolean("LeftLineSwitch", switchState) ));
         
         /* TEXT INPUTS */
         TextView carLength = (TextView) findViewById(R.id.carLength);
@@ -103,36 +113,37 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
     /* SWITCHES */
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        SharedPreferences.Editor sharedEditor;
         switch (buttonView.getId()) {
             case R.id.LightNormalizationSwitch:
                 Autodrive.setSettingLightNormalization(isChecked);
-                SharedPreferences.Editor sharedEditor = shared.edit();
+                sharedEditor = shared.edit();
                 sharedEditor.putBoolean("LightNormalizationSwitch", isChecked);
                 sharedEditor.apply();
-                Log.i("LightNormalizationSwitch:", isChecked);
+                Log.i("LightNormalizationSwitch:", "value=" + isChecked);
                 break;
-            case R.id.reinitialize_warp:
+            case R.id.ReinitializeWarpSwitch:
                 if (isChecked) {
                     Autodrive.deletePerspective();
                 } else {
-                    cv::Mat pMat;
+                    Mat pMat;
                     //read from disk
-                    String filename = "perspective.mat"
-                    File file = new File(context.getFilesDir(), filename);
-                    Imgcodecs.imread(file, pMat);
+                    String filename = "perspective.bmp";
+                    //File file = new File(context.getFilesDir(), filename);
+                    pMat = Imgcodecs.imread(filename);
                     Autodrive.setPerspective(pMat.getNativeObjAddr());
                 }
-                SharedPreferences.Editor sharedEditor = shared.edit();
-                sharedEditor.putBoolean("reinitialize_warp", isChecked);
+                sharedEditor = shared.edit();
+                sharedEditor.putBoolean("ReinitializeWarpSwitch", isChecked);
                 sharedEditor.apply();
-                Log.i("reinitializeWarp:", isChecked);
+                Log.i("ReinitializeWarpSwitch:", "value=" + isChecked);
                 break;
             case R.id.LeftLineSwitch:
                 Autodrive.setSettingUseLeftLine(isChecked);
-                SharedPreferences.Editor sharedEditor = shared.edit();
+                sharedEditor = shared.edit();
                 sharedEditor.putBoolean("LeftLineSwitch", isChecked);
                 sharedEditor.apply();
-                Log.i("LeftLineSwitch:", isChecked);
+                Log.i("LeftLineSwitch:", "value=" + isChecked);
                 break;
         }
     }
