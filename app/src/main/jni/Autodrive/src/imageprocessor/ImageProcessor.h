@@ -51,7 +51,7 @@ namespace Autodrive {
 		void set_perspective(cv::Mat* p);
 		//! Remove the perspective so we know to calculate a new one
 		void delete_perspective();
-		optional<cv::Mat> get_perspective();
+		cv::Mat* get_perspective();
 	private:
 		bool left_line_found();
 		bool right_line_found();
@@ -69,7 +69,7 @@ namespace Autodrive {
 		//! The perspective was calculated during initialisation by BirdseyeTransform class.
 		//! Each subsequent input frame is then warped according to the perspective transform
 		//! Hence if it is wrong, then this program will not work well
-		optional<cv::Mat> perspective_;
+		cv::Mat perspective_;
 
 		POINT start_center_;
 	};

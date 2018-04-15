@@ -31,14 +31,14 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 
 bool ImageProcessor::init_processing(cv::Mat* mat) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
-	if (!perspective_) {
+	if (perspective_.empty()) {
 		//only recalculate the warp matrix if it does not exist
-		pespective_ = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		perspective_ = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 	
-	if (perspective_) {
+	if (!(perspective_.empty())) {
 		//have found a perspective for birdseye transform to use
-		birdseye_->birds_eye_transform(mat, *perspective_);
+		birdseye_->birds_eye_transform(mat, perspective_);
 		if (img_conf_.normalize_lighting_) {
 			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
 			normalize_lighting(mat);
@@ -59,11 +59,11 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 {
 	CarCmd cmnd;
 	
-	if (!perspective_) {
+	if (perspective_.empty()) {
 		cerr << "ERROR: continue_processing() is missing perspective for birdseye_transform" << endl;
 		return cmnd;
 	}
-	birdseye_->birds_eye_transform(&mat, *perspective_);
+	birdseye_->birds_eye_transform(&mat, perspective_);
 	if (img_conf_.normalize_lighting_) {
 		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
 		normalize_lighting(&mat);
@@ -100,18 +100,20 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 }
 
 void ImageProcessor::set_perspective(cv::Mat* p) {
-	//take a local copy of the perspective
+	//take a copy of the supplied perspective
 	if (p) {
-		p->copyTo(perspective_);
+		perspective_.release();
+		perspective_ = p->clone();
 	}
 }
 
-void ImageProcessor::delete_perspective() }
-	perspective_ = nullptr;
+void ImageProcessor::delete_perspective() {
+	perspective_.release();  //release current memory for perspective
+	perspective_ = cv::Mat(); // now make perspective a new empty mat
 }
 
-optional<cv::Mat> get_perspective() {
-	return perspective_
+cv::Mat* ImageProcessor::get_perspective() {
+	return (&perspective_);
 }
 
 bool ImageProcessor::left_line_found()
