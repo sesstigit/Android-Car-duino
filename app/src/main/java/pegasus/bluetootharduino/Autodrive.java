@@ -46,7 +46,7 @@ public class Autodrive
 
     public static native void setPerspective(long mataddr);
     public static native void deletePerspective();
-    public static native long getPerspective();  //get long address of cv::Mat
+    public static native void getPerspective(long mataddr);  //overwrite Mat at address mataddr
     
 /*----- DEBUGDATA -----*/
     public static native int gapLength();
