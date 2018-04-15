@@ -26,15 +26,15 @@ void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_mat
 	cv::warpPerspective(*mat, *mat, birdseye_matrix, mat->size(), cv::INTER_LINEAR);
 }
 
-optional<cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, double thresh2) {
-	optional<cv::Mat> birdseye_matrix;
+cv::Mat BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, double thresh2) {
+	cv::Mat birdseye_matrix;
 	//Might be needed on track
 	//cv::erode(matCopy, matCopy, cv::Mat(), cv::Point(-1, -1), 1);
 	cv::Mat cannied;
 	cv::Canny(*matIn, cannied, thresh1, thresh2, 3);
 	calc_lane_markings(cannied, matIn);
 	if (lane_markings_.found == false)
-		return nullptr;
+		return birdseye_matrix;
 		
 	//take a copy of the current lanes, so we can stretch them without affecting the class member
     Autodrive::lanes b_lines = lane_markings_;
