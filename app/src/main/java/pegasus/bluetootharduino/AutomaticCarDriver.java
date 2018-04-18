@@ -17,6 +17,8 @@
  
 package pegasus.bluetootharduino;
 
+import android.util.Log;
+
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -29,11 +31,31 @@ import org.opencv.imgproc.Imgproc;
 //! motor speed or steering are sent via bluetooth.
 public class AutomaticCarDriver{
 
+    int frameCount;
+    long start;
+
     AutomaticCarDriver(){
+
         Autodrive.reset();
+        start = System.nanoTime();
+        frameCount = 0;
     }
 
+
+
+
     public Mat processImage(Mat image) {
+        long elapsedTime;
+        float frameRate;
+
+        frameCount++;
+        if ((frameCount % 100) == 0) {
+            // log the framerate
+            elapsedTime = System.nanoTime() - start;
+            frameRate = 100/(float)(elapsedTime/1000000000);
+            Log.i("Framerate=", "value=" + frameRate);
+            start = System.nanoTime();
+        }
         Mat resized = new Mat();
         Size prevSize = image.size();
         Size size = new Size(240,135);
