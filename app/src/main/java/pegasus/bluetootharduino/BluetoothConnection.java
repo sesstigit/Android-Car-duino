@@ -48,6 +48,13 @@ public class BluetoothConnection {
     byte read[];
     static Netstrings nt = new Netstrings();
 
+    static long sendCount; //debug
+    static long start;  //debug
+
+    BluetoothConnection() {
+        sendCount = 0;  //debug
+        start = System.nanoTime();  //debug
+    }
 
     public void runBT() throws IOException, NullPointerException {
 
@@ -117,7 +124,6 @@ public class BluetoothConnection {
         });
 
         BlueToothThread.start();
-
     }
 
 
@@ -131,9 +137,22 @@ public class BluetoothConnection {
 
                 if(!text.isEmpty()) {
                     if (socket.isConnected()) {
-			if (Settings.LogDebug) {
-			  Log.d("runBT send", text);
-			}
+                        // start debug
+                        long elapsedTime;
+                        float sendRate;
+
+                        sendCount++;
+                        if ((sendCount % 100) == 0) {
+                            // log the framerate
+                            elapsedTime = System.nanoTime() - start;
+                            sendRate = 100/(float)(elapsedTime/1000000000);
+                            Log.i("runBT Sendrate=", "value=" + sendRate);
+                            start = System.nanoTime();
+                        }
+                        //if (Settings.LogDebug) {
+                          Log.d("runBT send", text);
+                        //}
+                        // end debug
                         out.write(text.getBytes());
                     }
                 }
