@@ -21,6 +21,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string>
+#include <chrono>  //for benchmarking
 
 //#define _AUTODRIVE_SHOWCANNY
 //#define _AUTODRIVE_SHOWHOUGH
@@ -33,6 +34,9 @@
 using namespace cv;
 using namespace std;
 using namespace Autodrive;
+
+using  ns = chrono::nanoseconds;  //for benchmarking
+using get_time = chrono::steady_clock;  //for benchmarking
 
 void resize_frame(Mat& in, Mat& out) {
 	cv::Size inSize = in.size();
@@ -69,19 +73,31 @@ int main()
 		capture >> frame;
 		resize_frame(frame, resized_frame);
 	}
-	for (;;)
-	{
+	auto start = get_time::now(); // start of real processing
+	bool vid_end = false;
+	long frame_count = 0;
+	while (!vid_end) {
 		capture >> frame;
 		if (frame.empty()) {
-			capture.open(filename);
+			//capture.open(filename);
+			vid_end = true;
 			continue;
 		}
+		frame_count++;
 		resize_frame(frame, resized_frame);
 		Autodrive::car.img_proc_->continue_processing(resized_frame);
 
 		show_image(resized_frame, 3, drive_window);
-		waitKey(); //wait for user input to continue
+		//waitKey(); //wait for user input to continue
 		//waitKey(10); // waits short time to display frame
 	}
+
+	auto end = get_time::now();
+	auto diff = end - start;
+
+	cout << "Elapsed time is :  " << chrono::duration_cast<ns>(diff).count() << " ns " << endl;
+	cout << "Frame count is :" << frame_count << endl;
+	cout << "Frames per second = " << static_cast<double>(frame_count) * 1000.0 / chrono::duration <double, milli>(diff).count() << endl;
+	waitKey();
 	return 0;
 }
