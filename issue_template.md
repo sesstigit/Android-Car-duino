@@ -7,7 +7,7 @@
 
 
 
-* **Related code
+* **Related code**
 ```
 insert short code snippets here
 ```
@@ -27,4 +27,4 @@ insert short code snippets here
   - Language: [ C++ | C | Java ]
 
 
-* **Other information** (e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. stackoverflow, gitter, etc)
+* **Other information** (e.g. stacktraces, related issues, suggestions how to fix, links eg. stackoverflow)
