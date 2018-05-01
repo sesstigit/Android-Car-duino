@@ -34,6 +34,50 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, const ImageConf
 	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
 }
 
+
+CarCmd RoadFollower::update_pid(cv::Mat& cannied, cv::Mat& drawInOut) {
+    CarCmd cmd;
+    
+    left_line_follower_->update(cannied);
+    right_line_follower_->update(cannied);
+    
+    //! Method calls RoadFollower::draw which returns a color copy of cannied, and also calls draw for each LineFollower object
+    if (img_conf_.display_debug_ == true) {
+        RoadFollower::draw(cannied, drawInOut);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
+    }
+    
+    optional<float> left_line_bottom = left_line_follower_->get_mean_start_distance(1);
+    // This is target distance from center to left line
+    left_line_target_distance = left_line_follower_->get_ewma_corr_target_road_distance();
+    optional<float> right_line_bottom = right_line_follower_->get_mean_start_distance(1);
+    // This is target distance from center to right line
+    right_line_target_distance = right_line_follower_->get_ewma_corr_target_road_distance();
+    float lane_width = left_line_target_distance + right_lane_target_distance;
+    optional<float> line_middle = nullptr;
+    optional<float> targetAngle = nullptr;
+    
+    //calculate the cross track error cte = lane_middle - car_middle
+    if (left_line_bottom && right_line_bottom) {
+        //take average to get current position
+        lane_middle = (left_line_bottom+right_line_bottom)/2;
+    } else if (left_line_bottom) {
+        // lane middle estimated as left_line_bottom + lane_width/2
+        lane_middle = left_line_bottom + (lane_width/2) ;
+    } else if (right_line_bottom) {
+         // lane middle estimated as left_line_bottom + lane_width/2
+         lane_middle = right_line_bottom - (lane_width/2);
+     } else {
+         // lane_middle unknown
+     }
+    
+    if (lane_middle) {
+        pid.UpdateError(lane_middle - centerX);
+        cmd.set_angle(static_cast<float>(pid.TotalError()));
+        cmd.set_speed(0.23);  //TODO: Fix hardcoded number
+    }
+    return cmd;
+}
+
 CarCmd RoadFollower::update(cv::Mat& cannied, cv::Mat& drawInOut) {
 	CarCmd cmd;
 	

@@ -50,7 +50,7 @@ namespace Autodrive {
 		bool is_found();
 		//! Return amount of gap in the road as a proportion of the road length
 		int total_gap();
-
+        float get_ewma_corr_target_road_distance() { return ewma_corr_target_road_distance_;}; 
 	private:
 		// params
 		//! Keep a reference to the image processing configuration parameters
