@@ -40,13 +40,13 @@ namespace Autodrive {
 		//! init_processing is the first function called by Autodrive to locate the lanes
         //! and apply a birdseye transform to the input camera image.
         //! If it cannot find the lanes, it prints a message to screen.
-        bool init_processing(cv::Mat* mat);
+        bool init_processing(cv::Mat& mat);
         //! After successful initialisation, continue_processing is called for each frame from the camera.
         //! It tracks the lane lines in the input frame, and calculates driving commands
         //! to steer the car along the lane.
 		CarCmd continue_processing(cv::Mat& mat);
 		//! Normalize lighting in the input frame with the CLAHE algorithm
-		void normalize_lighting(cv::Mat* bgr_image);
+		void normalize_lighting(cv::Mat& bgr_image);
 		//! Set the perspective externally, e.g. from one saved in a file
 		void set_perspective(cv::Mat* p);
 		//! Remove the perspective so we know to calculate a new one

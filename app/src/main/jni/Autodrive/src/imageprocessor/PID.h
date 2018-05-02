@@ -1,6 +1,9 @@
 #ifndef PID_H
 #define PID_H
 
+#include "ImageConfig.h"
+
+namespace Autodrive {
 
 class PID {
 
@@ -13,27 +16,16 @@ public:
     double error_derivative_;
 
     /*
-    * Coefficients
-    */
-    double Kp_;
-    double Ki_;
-    double Kd_;
-
-    /*
     * Constructor
     */
-    PID();
+    PID(const ImageConfig& img_conf);
 
     /*
     * Destructor.
     */
     virtual ~PID();
 
-    /*
-    * Initialize PID.
-    */
-    void Init(double Kp, double Ki, double Kd);
-
+    
     /*
     * Update the PID error variables given cross track error.
     */
@@ -43,6 +35,13 @@ public:
     * Calculate the total PID error.
     */
     double TotalError();
+    
+private:
+    /*
+    * Coefficients pid_kp_, pid_ki_, pid_kd_ are stored in ImageConfig class
+    */
+    const ImageConfig& img_conf_;    
 };
 
+}
 #endif /* PID_H */

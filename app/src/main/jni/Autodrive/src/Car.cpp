@@ -78,7 +78,7 @@ void Car::drive() {
   switch (mode_)
   {
   case AutoDriveMode::kSearchingForLanes:
-      if ((image_ != NULL) && img_proc_->init_processing(image_))  //!< must successfully find lanes first.
+      if ((image_ != NULL) && img_proc_->init_processing(*image_))  //!< must successfully find lanes first.
         {
 		  lastCarCmd.set_speed(normal_speed_);
           mode_ = AutoDriveMode::kFollowingLanes; //!< Now can follow the lanes

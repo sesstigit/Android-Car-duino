@@ -17,7 +17,7 @@ SRCDIR2=$(AUTODRIVE_HOME)/src/imageprocessor/
 SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp) 
 OBJS=$(subst .cpp,.o,$(SRCS))
 
-all: Sample/test_main Sample/test_drive Sample/test_image_manip docs
+all: Sample/test_main Sample/test_drive #Sample/test_image_manip docs
 
 # Perhaps add LDLIBS to this?
 Sample/test_drive: Sample/test_drive.o $(OBJS)
@@ -26,8 +26,8 @@ Sample/test_drive: Sample/test_drive.o $(OBJS)
 Sample/test_main: Sample/test_main.o $(OBJS)
 	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
 
-Sample/test_image_manip: Sample/test_image_manip.o $(OBJS)
-	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
+#Sample/test_image_manip: Sample/test_image_manip.o $(OBJS)
+#	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
 
 
 %.o: %.cpp

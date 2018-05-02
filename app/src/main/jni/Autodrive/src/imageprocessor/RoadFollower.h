@@ -33,7 +33,7 @@
 #include "CarCmd.h"
 #include "ImageConfig.h"
 #include "Util.h"
-
+#include "PID.h"
 using namespace std;
 
 namespace Autodrive {
@@ -43,6 +43,7 @@ namespace Autodrive {
 	class RoadFollower {
 	public:
 		RoadFollower(const cv::Mat& cannied, int center_x, const ImageConfig& img_conf);
+		void Init(const cv::Mat& cannied);
 		bool left_line_found();
 		bool right_line_found();
 		//! Determine lane by finding which line has more gaps, i.e. which line is dotted
@@ -54,6 +55,8 @@ namespace Autodrive {
         //! - gets the preferred angle for each of those lines
         //! - Calculates a turn angle which weights the left line higher, and with smoothing applied.
 		CarCmd update(cv::Mat& cannied, cv::Mat& drawOut);
+		//! As per update(), but instead uses a PID controller for steering
+		CarCmd update_with_pid(cv::Mat& cannied, cv::Mat& drawOut);
 
 	private:
     	//! Find the top of the car bonnet and save to car_y_. Start at the bottom center,
@@ -74,6 +77,7 @@ namespace Autodrive {
 		std::vector<float> prev_dirs_;  //!< keep history of previous targetAngles up to count "smoothening" so average can be used
 		int unfound_counter_;
 		const ImageConfig& img_conf_;
+		std::unique_ptr<PID> pid_;
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_ROADFOLLOWER_H_

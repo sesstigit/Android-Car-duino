@@ -32,10 +32,16 @@ RoadFollower::RoadFollower(const cv::Mat& cannied, int center_x, const ImageConf
 	// The LineFollower constructor uses the found lines as a starting point 
 	left_line_follower_ = make_unique<LineFollower>(cannied, left_line_start, center_x_,car_y_, img_conf);
 	right_line_follower_ = make_unique<LineFollower>(cannied, right_line_start, center_x_,car_y_, img_conf);
+	
+	pid_ = make_unique<PID>(img_conf);
 }
 
+void RoadFollower::Init(const cv::Mat& cannied) {
+    left_line_follower_->Init(cannied);
+    right_line_follower_->Init(cannied);
+}
 
-CarCmd RoadFollower::update_pid(cv::Mat& cannied, cv::Mat& drawInOut) {
+CarCmd RoadFollower::update_with_pid(cv::Mat& cannied, cv::Mat& drawInOut) {
     CarCmd cmd;
     
     left_line_follower_->update(cannied);
@@ -46,33 +52,38 @@ CarCmd RoadFollower::update_pid(cv::Mat& cannied, cv::Mat& drawInOut) {
         RoadFollower::draw(cannied, drawInOut);  //!< show the Canny edge detection of the camera image, with overlaid RoadLines.
     }
     
-    optional<float> left_line_bottom = left_line_follower_->get_mean_start_distance(1);
-    // This is target distance from center to left line
-    left_line_target_distance = left_line_follower_->get_ewma_corr_target_road_distance();
-    optional<float> right_line_bottom = right_line_follower_->get_mean_start_distance(1);
-    // This is target distance from center to right line
-    right_line_target_distance = right_line_follower_->get_ewma_corr_target_road_distance();
-    float lane_width = left_line_target_distance + right_lane_target_distance;
-    optional<float> line_middle = nullptr;
-    optional<float> targetAngle = nullptr;
+    //TODO: improve id of lane line intersection with bottom of image, e.g. using Udacity approach of advanced lane tracking with polynomial fit
+    //calculate the cross track error cte = average deviation from expected lane lines.
+    float cte = 0.0; //cross track error
+    bool lane_found = true;
+    if (left_line_follower_->is_found() && right_line_follower_->is_found()) {
+        //take average to get current cross track error
+        cte = (left_line_follower_->distance_deviation() + right_line_follower_->distance_deviation())/2.0;
+    } else if (left_line_follower_->is_found()) {
+        cte = left_line_follower_->distance_deviation();
+    } else if (right_line_follower_->is_found()) {
+        cte = right_line_follower_->distance_deviation();
+    } else {
+        lane_found = false;
+    }
     
-    //calculate the cross track error cte = lane_middle - car_middle
-    if (left_line_bottom && right_line_bottom) {
-        //take average to get current position
-        lane_middle = (left_line_bottom+right_line_bottom)/2;
-    } else if (left_line_bottom) {
-        // lane middle estimated as left_line_bottom + lane_width/2
-        lane_middle = left_line_bottom + (lane_width/2) ;
-    } else if (right_line_bottom) {
-         // lane middle estimated as left_line_bottom + lane_width/2
-         lane_middle = right_line_bottom - (lane_width/2);
-     } else {
-         // lane_middle unknown
-     }
-    
-    if (lane_middle) {
-        pid.UpdateError(lane_middle - centerX);
-        cmd.set_angle(static_cast<float>(pid.TotalError()));
+    if (lane_found == true) {
+        pid_->UpdateError((double)(cte));
+        // pid parameters chosen to give output in range [-1.0, 1,0]
+        // Hence to ensure output in range [0, PI] need to make following conversion (more precisely gives output in range (PI/2 - 1.0, PI/2 + 1.0))
+        float target_angle = Direction::FORWARD + (float)pid_->TotalError();
+        if (target_angle < 0.0) {
+            target_angle = 0.0;
+        } else if (target_angle > Mathf::PI) {
+            target_angle = Mathf::PI;
+        }
+        cmd.set_angle(target_angle);
+#ifdef DEBUG_
+        cout << "cte=" << cte << "; pid_error=" << pid_->TotalError() << endl;
+        cout << "LEFT: found=" << left_line_follower_->is_found() << "; deviation=" << left_line_follower_->distance_deviation() << endl;
+        cout << "RIGHT: found=" << right_line_follower_->is_found() << "; deviation=" << right_line_follower_->distance_deviation() << endl;
+#endif
+        //cmd.set_angle(0.0);
         cmd.set_speed(0.23);  //TODO: Fix hardcoded number
     }
     return cmd;

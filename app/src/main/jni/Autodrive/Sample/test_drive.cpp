@@ -62,7 +62,7 @@ int main()
 	resize_frame(frame, resized_frame);
 	
     cout << "calling init_processing()" << endl;
-    while (!Autodrive::car.img_proc_->init_processing(&resized_frame)) {
+    while (!Autodrive::car.img_proc_->init_processing(resized_frame)) {
         show_image(resized_frame, 3, drive_window); //cv::imshow(drive_window, frame);
         waitKey(); // waits to display frame
         capture >> frame;

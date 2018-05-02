@@ -14,7 +14,9 @@
 *    You should have received a copy of the GNU General Public License
 *    along with Autodrive.  If not, see <http://www.gnu.org/licenses/>.
 **/
- 
+
+#define USE_PID_CONTROLLER
+
 #include "ImageProcessor.h"
 #include "BirdseyeTransformer.h"
 
@@ -29,7 +31,7 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
     //start_center_(POINT(0.f, 0.f))
 }
 
-bool ImageProcessor::init_processing(cv::Mat* mat) {
+bool ImageProcessor::init_processing(cv::Mat& mat) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
 	if (perspective_.empty()) {
 		//only recalculate the warp matrix if it does not exist
@@ -44,12 +46,19 @@ bool ImageProcessor::init_processing(cv::Mat* mat) {
 			normalize_lighting(mat);
 		}
 		cv::Mat cannied_mat;
-		cv::Canny(*mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
-		int the_center = static_cast<int>(mat->size().width / 2.f + birdseye_->center_diff());
+		cv::Canny(mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
+		int the_center = static_cast<int>(mat.size().width / 2.f + birdseye_->center_diff());
 		road_follower_ = make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
+		road_follower_->Init(cannied_mat);
+		while (!(left_line_found() && right_line_found())) {
+		    cerr << "Update ..." << endl;
+		    road_follower_->update(cannied_mat, mat);
+		}
+		cerr << "left_line_found=" << left_line_found() << endl;
+		cerr << "right_line_found=" << right_line_found() << endl;
 		return true;
 	} else{
-		cv::putText(*mat, "SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat->size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
+		cv::putText(mat, "SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		return false;
 	}
 }
@@ -63,10 +72,10 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 		cerr << "ERROR: continue_processing() is missing perspective for birdseye_transform" << endl;
 		return cmnd;
 	}
-	birdseye_->birds_eye_transform(&mat, perspective_);
+	birdseye_->birds_eye_transform(mat, perspective_);
 	if (img_conf_.normalize_lighting_) {
-		//normalize_lighting(&mat, blur_i_, intensity_ / 100.f);
-		normalize_lighting(&mat);
+		//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
+		normalize_lighting(mat);
 	}
 
 	cv::Mat cannied_mat;
@@ -80,8 +89,13 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	//TEST birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(255), 10);
 	//TEST imshow("New Window", cannied_mat);
 
-	//! Key step is to call update on the road_follower
+    //! Key step is to call update on the road_follower
+#ifdef USE_PID_CONTROLLER
+	cmnd = road_follower_->update_with_pid(cannied_mat, mat);
+#else
 	cmnd = road_follower_->update(cannied_mat, mat);
+#endif
+
 	float angle;
 	//float angle =  Direction::FORWARD;  //measured in radians = PI/2
     // Cmnd has angle in absolute radians
@@ -150,11 +164,11 @@ int ImageProcessor::dashed_line_gaps() {
 }
 
 
-void ImageProcessor::normalize_lighting(cv::Mat* bgr_image)
+void ImageProcessor::normalize_lighting(cv::Mat& bgr_image)
 {
 	// convert bgr_image to Lab
 	cv::Mat lab_image;
-	cv::cvtColor(*bgr_image, lab_image, CV_BGR2Lab);
+	cv::cvtColor(bgr_image, lab_image, CV_BGR2Lab);
 
 	// Extract the L channel
 	std::vector<cv::Mat> lab_planes(3);
@@ -171,13 +185,13 @@ void ImageProcessor::normalize_lighting(cv::Mat* bgr_image)
 	cv::merge(lab_planes, lab_image);
 
 	// convert back to original number of color channels
-	if (bgr_image->type() == CV_8UC4) {
+	if (bgr_image.type() == CV_8UC4) {
 		cv::Mat temp_bgr_image;
 		cv::cvtColor(lab_image, temp_bgr_image, CV_Lab2RGB);
-		cv::cvtColor(temp_bgr_image, *bgr_image, CV_RGB2RGBA);  //android images appear to be RGBA
+		cv::cvtColor(temp_bgr_image, bgr_image, CV_RGB2RGBA);  //android images appear to be RGBA
 	}
 	else {
-		cv::cvtColor(lab_image, *bgr_image, CV_Lab2BGR);
+		cv::cvtColor(lab_image, bgr_image, CV_Lab2BGR);
 	}
 	
 }

@@ -36,6 +36,7 @@ namespace Autodrive {
 	{
 	public:
 		LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int center_x, int carY, const ImageConfig& img_conf);
+		void Init(const cv::Mat& cannied);
 		//! RoadFollower->update() calls this method for both the left and right lines of the road.
 		//! Update is required for every frame image.
 		void update(cv::Mat& cannied);
@@ -51,6 +52,11 @@ namespace Autodrive {
 		//! Return amount of gap in the road as a proportion of the road length
 		int total_gap();
         float get_ewma_corr_target_road_distance() { return ewma_corr_target_road_distance_;}; 
+        //! Returns signed distance from this line to the center of the lane minus the original target distance
+        //! Assumes the lane was initially found when driving in middle of lane.  A positive deviation 
+        //! means we are driving too far to RHS, and a negative deviation means we are too far to LHS.
+        float distance_deviation();
+        float getStartDistance();
 	private:
 		// params
 		//! Keep a reference to the image processing configuration parameters
@@ -65,10 +71,6 @@ namespace Autodrive {
 		float ewma_corr_target_road_distance_;  //!< corrected version for startup bias
 		int car_y_; //input param to constructor, saved for use in printing car_y_ line
 		// Private methods
-		//! Returns signed distance from this line to the center of the lane minus the original target distance
-		//! Assumes the lane was initially found when driving in middle of lane.  A positive deviation 
-		//! means we are driving too far to RHS, and a negative deviation means we are too far to LHS.
-		float distance_deviation();
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_LINEFOLLOWER_H_

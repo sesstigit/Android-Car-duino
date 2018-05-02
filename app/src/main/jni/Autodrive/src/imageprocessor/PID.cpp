@@ -2,9 +2,9 @@
 
 
 using namespace std;
+using namespace Autodrive;
 
-
-PID::PID() {
+PID::PID(const ImageConfig& img_conf) : img_conf_(img_conf) {
     error_proportional_ = 0.0;
     error_integral_     = 0.0;
     error_derivative_   = 0.0;
@@ -12,13 +12,6 @@ PID::PID() {
 
 
 PID::~PID() {}
-
-
-void PID::Init(double Kp, double Ki, double Kd) {
-    Kp_ = Kp;
-    Ki_ = Ki;
-    Kd_ = Kd;
-}
 
 
 void PID::UpdateError(double cte) {
@@ -29,6 +22,8 @@ void PID::UpdateError(double cte) {
 
 
 double PID::TotalError() {
-    return -(Kp_ * error_proportional_ + Ki_ * error_integral_ + Kd_ * error_derivative_);
+    return -(img_conf_.pid_kp_ * error_proportional_ +
+             img_conf_.pid_ki_ * error_integral_ +
+             img_conf_.pid_kd_ * error_derivative_);
 }
 

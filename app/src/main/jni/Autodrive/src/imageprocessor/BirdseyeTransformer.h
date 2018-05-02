@@ -41,7 +41,7 @@ namespace Autodrive {
 	    ~BirdseyeTransformer() {};
 	    //! Transform the input image using the supplied birdseye transform matrix (from find_perspective())
         //! The result should be a birdseye view of the road in which the lane lines are straight
-		void birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_matrix);
+		void birds_eye_transform(cv::Mat& mat, cv::Mat birdseye_matrix);
 		//! find_perspective is only used during car initialisation.  It aims to locate the edges of the lane,
         //! and then calculate a perspective to make those edge lines straight, i.e. in preparation for 
         //! a birdseye transform.  It assumes the car is on a straight road. Basic steps:
@@ -49,7 +49,7 @@ namespace Autodrive {
         //! - get_lane_markings for leftLine and rightLine
         //! - stretch the lines to make them a standard length
         //! - Then get birdseye perspective transform
-		cv::Mat find_perspective(cv::Mat* matIn, double thresh1 = 80, double thresh2 = 240);
+		cv::Mat find_perspective(cv::Mat& matIn, double thresh1 = 80, double thresh2 = 240);
 		float center_diff() { return center_diff_; };  //getter
 		linef left_image_border() { return left_image_border_; }; //getter
 		linef right_image_border() { return right_image_border_; }; //getter
@@ -61,7 +61,7 @@ namespace Autodrive {
         //! - apply tests to all lines to see if they could be the right or left lane line
         //! - save the best lane lines (which passed all tests) to class member lane_markings_, and indicate success with lane_markings_.found=true
         //! - if no lines passed the test, then lane_markings_.found remains false
-		void calc_lane_markings(const cv::Mat& canniedMat, cv::Mat* drawMat);
+		void calc_lane_markings(const cv::Mat& canniedMat, cv::Mat& drawMat);
 		//private members
 		lanes lane_markings_;
 		// The left and right image borders are the edge of the original image in the warped space

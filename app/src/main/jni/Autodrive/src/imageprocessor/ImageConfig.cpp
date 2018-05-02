@@ -31,6 +31,9 @@ ImageConfig::ImageConfig() :
   max_angle_diff_(1.0f),  //was 0.7 radians
   smoothening_(5),
   canny_thresh_(80),
-  car_scale_drift_fix_(2.0),
+  car_scale_drift_fix_(1.0),
+  pid_kp_(0.1),
+  pid_ki_(0.0001),  //was 0.0001
+  pid_kd_(1.0),  //was 1.0
   display_debug_(true) {
   }

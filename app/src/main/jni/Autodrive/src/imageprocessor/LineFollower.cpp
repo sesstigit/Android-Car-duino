@@ -25,11 +25,19 @@ LineFollower::LineFollower(const cv::Mat& cannied, POINT laneStartPoint, int cen
 	road_size_(40), //!< Note hardcoded roadsize of 40. This is how much of the road is built at a time.
 	is_found_(false),
 	beta_(0.999),
-	ewma_bias_counter(0)
+	ewma_bias_counter(0),
+	ewma_corr_target_road_distance_(0)
 	{
 	road_builder_ = make_unique<RoadLineBuilder>(laneStartPoint, center_x, carY, img_conf);
-	road_line_ = road_builder_->build(cannied, road_size_);
-	ewma_corr_target_road_distance_ = road_line_->get_mean_start_distance(5);
+}
+
+void LineFollower::Init(const cv::Mat& cannied) {
+    road_line_ = road_builder_->build(cannied, road_size_);
+    is_found_ = (road_line_->num_points() > 5 && fabs(road_line_->get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);
+    cerr << "Init is_found=" << is_found_ << endl;
+    cerr << "num points = " << road_line_->num_points() << endl;
+    cerr << "angle=" << road_line_->get_mean_angle() << endl;
+    ewma_corr_target_road_distance_ = road_line_->get_mean_start_distance(5);
 }
 
 void LineFollower::draw(cv::Mat& colorCopy, int centerX) {
@@ -73,10 +81,19 @@ bool LineFollower::is_found() {
 }
 
 float LineFollower::distance_deviation() {
-	if(!is_found())
+	if (!is_found_) {
 		return 0.f;
-	float startDistance = road_line_->get_mean_start_distance(4);
-	return (startDistance - ewma_corr_target_road_distance_) * img_conf_.car_scale_drift_fix_;  //scale the deviation to make it more/less sensitive
+	} else {
+	    return ((road_line_->get_mean_start_distance(4) - ewma_corr_target_road_distance_) * img_conf_.car_scale_drift_fix_);  //scale the deviation to make it more/less sensitive
+	}
+}
+
+float LineFollower::getStartDistance() {
+    if (!is_found_) {
+        return 0.f;
+    } else {
+        return (road_line_->get_mean_start_distance(4));
+    }
 }
 
 int LineFollower::total_gap() {
@@ -84,8 +101,7 @@ int LineFollower::total_gap() {
 }
 
 optional<float> LineFollower::get_prefered_angle() {
-	if (is_found())
-	{
+	if (is_found_)	{
 		// Start by setting the target angle to the mean road angle
 		float rads = road_line_->get_mean_angle(4);
 		//! For positive distance devation: we are currently too far to RHS.  Hence need to steer left, so add a bi to the angle.
@@ -108,6 +124,7 @@ optional<float> LineFollower::get_prefered_angle() {
 
 void LineFollower::update(cv::Mat& cannied) {
 	road_line_ = road_builder_->build(cannied, road_size_);  //!< road_size_ used by RoadLineBuilder as the max number of points to build
+	cerr << "num_points=" << road_line_->num_points() << endl;
 	is_found_ = (road_line_->num_points() > 5 && fabs(road_line_->get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);
 	//! New road_line_, so update EMWA
 	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t

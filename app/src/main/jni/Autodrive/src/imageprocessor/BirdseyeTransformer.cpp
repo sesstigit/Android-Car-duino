@@ -20,18 +20,18 @@ using namespace Autodrive;
 using namespace std;
 
 
-void BirdseyeTransformer::birds_eye_transform(cv::Mat* mat, cv::Mat birdseye_matrix)
+void BirdseyeTransformer::birds_eye_transform(cv::Mat& mat, cv::Mat birdseye_matrix)
 {
 	//birdseye_matrix comes from "find_perspective()"
-	cv::warpPerspective(*mat, *mat, birdseye_matrix, mat->size(), cv::INTER_LINEAR);
+	cv::warpPerspective(mat, mat, birdseye_matrix, mat.size(), cv::INTER_LINEAR);
 }
 
-cv::Mat BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, double thresh2) {
+cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, double thresh2) {
 	cv::Mat birdseye_matrix;
 	//Might be needed on track
 	//cv::erode(matCopy, matCopy, cv::Mat(), cv::Point(-1, -1), 1);
 	cv::Mat cannied;
-	cv::Canny(*matIn, cannied, thresh1, thresh2, 3);
+	cv::Canny(matIn, cannied, thresh1, thresh2, 3);
 	calc_lane_markings(cannied, matIn);
 	if (lane_markings_.found == false)
 		return birdseye_matrix;
@@ -40,8 +40,8 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, do
     Autodrive::lanes b_lines = lane_markings_;
     float icrop = 0.f;
     float xdiff;
-    float im_height = (float) matIn->size().height;
-    float im_width = (float) matIn->size().width;
+    float im_height = (float) matIn.size().height;
+    float im_width = (float) matIn.size().width;
     //! Stretch the lines, but if they converge at the top of the image,
     //  keep cropping the top of the lines until they are at least X pixels apart
     do
@@ -53,12 +53,12 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, do
     } while (xdiff < im_width/3.0f);  //was div by 3, but can increase this to see further into distance
 
     //! draw blue lane lines
-    if (matIn->type() == CV_8UC4) {
-        b_lines.right.draw(*matIn, cv::Scalar(0,0,255),3);  //android input image appears to be RGBA
-        b_lines.left.draw(*matIn, cv::Scalar(0,0,255),3);
+    if (matIn.type() == CV_8UC4) {
+        b_lines.right.draw(matIn, cv::Scalar(0,0,255),3);  //android input image appears to be RGBA
+        b_lines.left.draw(matIn, cv::Scalar(0,0,255),3);
     } else {
-        b_lines.right.draw(*matIn, cv::Scalar(255,0,0),3);  //opening an image with OpenCV makes it BGR
-        b_lines.left.draw(*matIn, cv::Scalar(255,0,0),3);
+        b_lines.right.draw(matIn, cv::Scalar(255,0,0),3);  //opening an image with OpenCV makes it BGR
+        b_lines.left.draw(matIn, cv::Scalar(255,0,0),3);
     }
     
     //stretchY ensures the lines start at lowY and end at highY
@@ -103,7 +103,7 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat* matIn, double thresh1, do
 	return birdseye_matrix;
 }
 
-void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* drawMat) {
+void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat, cv::Mat& drawMat) {
 	std::vector<cv::Vec4i> lines;
 	linef leftMostLine;
 	linef rightMostLine;
@@ -134,10 +134,10 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		if (abs(dir_diff) > 0.9f)
 			continue;
         //! Draw all remaining candidate lines in yellow
-        if (drawMat->type() == CV_8UC4) {
-		    one_hough_line.draw(*drawMat, cv::Scalar(255, 255, 0), 1);  //android input image appears to be RGBA
+        if (drawMat.type() == CV_8UC4) {
+		    one_hough_line.draw(drawMat, cv::Scalar(255, 255, 0), 1);  //android input image appears to be RGBA
         } else {
-		    one_hough_line.draw(*drawMat, cv::Scalar(0, 255, 255), 1);
+		    one_hough_line.draw(drawMat, cv::Scalar(0, 255, 255), 1);
         }
 		//! Work out whether it is the left or right line
 		if (startx > center + 5) {
@@ -169,12 +169,12 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 	}
 	if (foundRight && foundLeft) {
         // Draw the likely the lane markers, red for left lane, green for right
-        if (drawMat->type() == CV_8UC4) {
-            leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),2);  //Android RGBA
-            rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),2);
+        if (drawMat.type() == CV_8UC4) {
+            leftMostLine.draw(drawMat,cv::Scalar(255,0,0),2);  //Android RGBA
+            rightMostLine.draw(drawMat,cv::Scalar(0,255,0),2);
         } else {
-    		leftMostLine.draw(*drawMat,cv::Scalar(0,0,255),2);  //BGR
-    		rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),2);
+    		leftMostLine.draw(drawMat,cv::Scalar(0,0,255),2);  //BGR
+    		rightMostLine.draw(drawMat,cv::Scalar(0,255,0),2);
         }
 		//! As lines get more vertical, slope becomes a large number.  Hence getting two lines with the same slope +-1 is unlikely.
 		//! Instead, use radians.  Compare the absolute direction of the two lines versus FORWARD.  Each should be between 10 and 30 degrees. 
@@ -186,23 +186,23 @@ void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat,cv::Mat* 
 		cout << "leftMostLine radian direction from FORWARD = " << dir_diff_left << ", requires " << CV_PI / 4 << " < diff < " << CV_PI/18 << endl;
 		if (abs(dir_diff_left) < (CV_PI / 4) && abs(dir_diff_left) > (CV_PI / 18) &&
 			abs(dir_diff_right) < (CV_PI / 4) && abs(dir_diff_right) > (CV_PI / 18)) {  //between 10 and 30 degrees
-			rightMostLine.stretchY(0.f, (float)(*drawMat).size().height);
-			leftMostLine.stretchY(0.f, (float)(*drawMat).size().height);
+			rightMostLine.stretchY(0.f, (float)(drawMat).size().height);
+			leftMostLine.stretchY(0.f, (float)(drawMat).size().height);
 			//! Draw the final chosen lane lines in thick red for left, green for right
-			if (drawMat->type() == CV_8UC4) {
-                leftMostLine.draw(*drawMat,cv::Scalar(255,0,0),5);  //Android RGBA
-                rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),5);
+			if (drawMat.type() == CV_8UC4) {
+                leftMostLine.draw(drawMat,cv::Scalar(255,0,0),5);  //Android RGBA
+                rightMostLine.draw(drawMat,cv::Scalar(0,255,0),5);
             } else {
-                leftMostLine.draw(*drawMat,cv::Scalar(0,0,255),5);  //BGR
-                rightMostLine.draw(*drawMat,cv::Scalar(0,255,0),5);
+                leftMostLine.draw(drawMat,cv::Scalar(0,0,255),5);  //BGR
+                rightMostLine.draw(drawMat,cv::Scalar(0,255,0),5);
             }
             lane_markings_.left = leftMostLine;
 			lane_markings_.right = rightMostLine;
 			lane_markings_.found = true;
-			std::cout << "lane markings found" << std::endl;
+			std::cout << "Initialisation: lane markings found" << std::endl;
 		}
 	}
 #ifdef _DEBUG
-	cv::imshow("mytest", *drawMat);
+	cv::imshow("mytest", drawMat);
 #endif
 }
