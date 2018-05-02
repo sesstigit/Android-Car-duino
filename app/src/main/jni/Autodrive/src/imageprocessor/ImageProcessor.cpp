@@ -26,16 +26,19 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
 	img_conf_(img_conf),
 	road_follower_(nullptr),
 	birdseye_(nullptr) {
-    //Note: did not initialise the following class members
+    //Note: did not initialise the following class members       
     //perspective_(nullptr),  
     //start_center_(POINT(0.f, 0.f))
 }
 
 bool ImageProcessor::init_processing(cv::Mat& mat) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
+	cv::Mat mat_copy;
+
 	if (perspective_.empty()) {
+		mat_copy = mat.clone();
 		//only recalculate the warp matrix if it does not exist
-		perspective_ = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		perspective_ = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 	
 	if (!(perspective_.empty())) {
@@ -50,14 +53,15 @@ bool ImageProcessor::init_processing(cv::Mat& mat) {
 		int the_center = static_cast<int>(mat.size().width / 2.f + birdseye_->center_diff());
 		road_follower_ = make_unique<RoadFollower>(cannied_mat, the_center, img_conf_);
 		road_follower_->Init(cannied_mat);
-		while (!(left_line_found() && right_line_found())) {
-		    cerr << "Update ..." << endl;
-		    road_follower_->update(cannied_mat, mat);
-		}
+		//while (!(left_line_found() && right_line_found())) {
+		//    cerr << "Update ..." << endl;
+		//    road_follower_->update(cannied_mat, mat);
+		//}
 		cerr << "left_line_found=" << left_line_found() << endl;
 		cerr << "right_line_found=" << right_line_found() << endl;
 		return true;
 	} else{
+		mat_copy.copyTo(mat);  //display the image prior to finding birdseye perspective
 		cv::putText(mat, "SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		return false;
 	}

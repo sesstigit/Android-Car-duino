@@ -30,7 +30,7 @@ import android.util.Log;
 //! This class handles the advanced settings GUI screen.  It changes Autodrive settings to configure the car for different driving conditions.
 public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarChangeListener, GestureDetector.OnGestureListener {
 
-    SeekBar cannyThresh, carMaxSpeed, carScaleSteering, carScaleDriftFix, smoothening, fragment, leftIteration, rightIteration, angle;
+    SeekBar cannyThresh, carMaxSpeed, carScaleSteering, carScaleDriftFix, pidKp, pidKd, pidKi, smoothening, fragment, leftIteration, rightIteration, angle;
     GestureDetector detector;
     SharedPreferences shared;
     float progressValue;
@@ -68,7 +68,26 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
         carScaleDriftFix.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress9)).setText("carScaleDriftFix value set to " + shared.getFloat("carScaleDriftFix", progressValue));
         carScaleDriftFix.setProgress((int) (shared.getFloat("carScaleDriftFix", progressValue) * 10 ));
-        
+
+        pidKp = (SeekBar)findViewById(R.id.pidKp);
+        pidKp.setMax(400);  //want range 0.1 to 0.0001 float
+        pidKp.setOnSeekBarChangeListener(this);
+        ((TextView)findViewById(R.id.progress10)).setText("pidKp value set to " + shared.getFloat("pidKp", progressValue));
+        //pidKp.setProgress((int) (1.0 / (0.1 - shared.getFloat("pidKp", progressValue))));  //x = 1/(0.1 - f(x)) for x in range 10 to 10000 (but linear scale is difficult to enter)
+        pidKp.setProgress((int) (0.1001 - Math.pow(10,(-shared.getFloat("pidKp", progressValue)/100))));  //f(x) = 0.1001 - 10^(-x/100) for x in range 100 to 400 (log scale)
+
+        pidKd = (SeekBar)findViewById(R.id.pidKd);
+        pidKd.setMax(1000);  //want 0.1 to 0.0001 float
+        pidKd.setOnSeekBarChangeListener(this);
+        ((TextView)findViewById(R.id.progress11)).setText("pidKd value set to " + shared.getFloat("pidKd", progressValue));
+        pidKd.setProgress((int) (shared.getFloat("pidKd", progressValue) * 1000 ));
+
+        pidKi = (SeekBar)findViewById(R.id.pidKi);
+        pidKi.setMax(1000);  //want 0.1 to 0.0001 float
+        pidKi.setOnSeekBarChangeListener(this);
+        ((TextView)findViewById(R.id.progress12)).setText("pidKi value set to " + shared.getFloat("pidKi", progressValue));
+        pidKi.setProgress((int) (shared.getFloat("pidKi", progressValue) * 1000 ));
+
         smoothening = (SeekBar)findViewById(R.id.smoothening);
         smoothening.setMax(8); // values 0-8
         smoothening.setOnSeekBarChangeListener(this);
@@ -150,6 +169,45 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                     sharedEditor.apply();
                     Autodrive.setCarScaleDriftFix(progressValue);
                     Log.i("setCarScaleDriftFix:", "value=" + progressValue);
+                }
+                break;
+            case R.id.pidKp:
+                if(fromUser) {
+                    //make min value 10
+                    if(progress < 10) {
+                        progress = 10;
+                        pidKp.setProgress(progress);
+                    }
+                    //progressValue = (float) (-Math.log10(progress+1));  //formula is ((log(y) - minlog)*(max - min)/(maxlog - minlog)) + min
+                    progressValue = (float) (0.1 - 1.0/(float)progress);
+                    ((TextView)findViewById(R.id.progress10)).setText("pidKp value set to " + progressValue);
+                    SharedPreferences.Editor sharedEditor = shared.edit();
+                    sharedEditor.putFloat("pidKp", progressValue);
+                    sharedEditor.apply();
+                    Autodrive.setPidKp(progressValue);
+                    Log.i("setPidKp:", "value=" + progressValue);
+                }
+                break;
+            case R.id.pidKd:
+                if(fromUser) {
+                    progressValue = (float) (progress / 1000.0);
+                    ((TextView)findViewById(R.id.progress11)).setText("pidKd value set to " + progressValue);
+                    SharedPreferences.Editor sharedEditor = shared.edit();
+                    sharedEditor.putFloat("pidKd", progressValue);
+                    sharedEditor.apply();
+                    Autodrive.setPidKd(progressValue);
+                    Log.i("setPidKd:", "value=" + progressValue);
+                }
+                break;
+            case R.id.pidKi:
+                if(fromUser) {
+                    progressValue = (float) (progress / 1000.0);
+                    ((TextView)findViewById(R.id.progress12)).setText("pidKi value set to " + progressValue);
+                    SharedPreferences.Editor sharedEditor = shared.edit();
+                    sharedEditor.putFloat("pidKi", progressValue);
+                    sharedEditor.apply();
+                    Autodrive.setPidKi(progressValue);
+                    Log.i("setPidKi:", "value=" + progressValue);
                 }
                 break;
             case R.id.smoothening:

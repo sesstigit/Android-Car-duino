@@ -124,7 +124,7 @@ optional<float> LineFollower::get_prefered_angle() {
 
 void LineFollower::update(cv::Mat& cannied) {
 	road_line_ = road_builder_->build(cannied, road_size_);  //!< road_size_ used by RoadLineBuilder as the max number of points to build
-	cerr << "num_points=" << road_line_->num_points() << endl;
+	//cerr << "num_points=" << road_line_->num_points() << endl;
 	is_found_ = (road_line_->num_points() > 5 && fabs(road_line_->get_mean_angle() - Direction::FORWARD) < Mathf::PI_2);
 	//! New road_line_, so update EMWA
 	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t

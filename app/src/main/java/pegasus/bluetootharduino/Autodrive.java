@@ -170,4 +170,10 @@ public class Autodrive
 
     public static native void setCarScaleDriftFix(float value);
 
+    //PID controller parameters: Kp, Kd and Ki
+    public static native void setPidKp(float value);
+
+    public static native void setPidKd(float value);
+
+    public static native void setPidKi(float value);
 }

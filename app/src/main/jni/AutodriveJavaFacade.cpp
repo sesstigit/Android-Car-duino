@@ -322,6 +322,18 @@ extern "C"
     {
         Autodrive::car.img_conf_.car_scale_drift_fix_ = value;
     }
+	TYPE(void) NAME(setPidKp) PARAMS(float value)
+	{
+		Autodrive::car.img_conf_.pid_kp_ = (double)value;
+	}
+	TYPE(void) NAME(setPidKd) PARAMS(float value)
+	{
+		Autodrive::car.img_conf_.pid_kd_ = (double)value;
+	}
+	TYPE(void) NAME(setPidKi) PARAMS(float value)
+	{
+		Autodrive::car.img_conf_.pid_ki_ = (double)value;
+	}
 }
 
 #undef TYPE

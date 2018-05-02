@@ -51,8 +51,8 @@ int main()
 	cv::Mat frame;
 	cv::Mat resized_frame;
 	cout << "Entering test_drive main()" << endl;
-	//string filename = "testreal_small.mp4";
-	string filename = "homedrive.mp4";
+	string filename = "testreal_small.mp4";
+	//string filename = "homedrive.mp4";
 	//string filename = "testdrive.mp4";
 	//string filename = "Test4-1.m4v";
 	cv::VideoCapture capture(filename);
@@ -67,12 +67,16 @@ int main()
 	resize_frame(frame, resized_frame);
 	
 	cout << "calling init_processing()" << endl;
-	while (!Autodrive::car.img_proc_->init_processing(&resized_frame)) {
+	while (!Autodrive::car.img_proc_->init_processing(resized_frame)) {
 		show_image(resized_frame, 3, drive_window);
 		waitKey();
 		capture >> frame;
 		resize_frame(frame, resized_frame);
 	}
+
+	show_image(resized_frame, 3, drive_window);
+	waitKey();
+
 	auto start = get_time::now(); // start of real processing
 	bool vid_end = false;
 	long frame_count = 0;
@@ -88,7 +92,7 @@ int main()
 		Autodrive::car.img_proc_->continue_processing(resized_frame);
 
 		show_image(resized_frame, 3, drive_window);
-		//waitKey(); //wait for user input to continue
+		waitKey(); //wait for user input to continue
 		//waitKey(10); // waits short time to display frame
 	}
 

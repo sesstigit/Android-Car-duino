@@ -7,7 +7,7 @@
 
     <RelativeLayout
         android:layout_width="290dp"
-        android:layout_height="321dp"
+        android:layout_height="400dp"
         android:layout_gravity="center_vertical">
 
         <TextView
@@ -27,11 +27,11 @@
             android:layout_height="wrap_content"
             android:id="@+id/cannyThresh"
             android:indeterminate="false"
-            android:paddingTop="2dp"
+            android:paddingTop="0dp"
             android:layout_above="@+id/progress2"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
-            android:layout_marginBottom="39dp" />
+        />
 
         <TextView
             android:id="@+id/progress2"
@@ -46,13 +46,16 @@
             android:textSize="12sp" />
 
         <SeekBar
-            android:id="@+id/carMaxSpeed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
+            android:id="@+id/carMaxSpeed"
+            android:textColor="@color/white"
             android:indeterminate="false"
-            android:paddingTop="2dp" />
+            android:paddingTop="0dp"
+            android:layout_above="@+id/progress3"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+        />
 
         <TextView
             android:id="@+id/progress3"
@@ -72,7 +75,7 @@
             android:id="@+id/carScaleSteering"
             android:textColor="@color/white"
             android:indeterminate="false"
-            android:paddingTop="2dp"
+            android:paddingTop="0dp"
             android:layout_above="@+id/progress9"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
@@ -95,11 +98,72 @@
             android:layout_height="wrap_content"
             android:id="@+id/carScaleDriftFix"
             android:indeterminate="false"
-            android:paddingTop="2dp"
-            android:layout_alignParentBottom="true"
+            android:paddingTop="0dp"
+            android:layout_centerVertical="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
-            android:layout_marginBottom="49dp" />
+        />
+
+        <TextView
+            android:id="@+id/progress10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/carScaleDriftFix"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="PID Kp"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/pidKp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/progress10"
+            android:layout_alignParentStart="true"
+            android:indeterminate="false"
+            android:paddingTop="0dp" />
+
+        <TextView
+            android:id="@+id/progress11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/pidKp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="PID Kd"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/pidKd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="false"
+            android:paddingTop="0dp"
+            android:layout_below="@+id/progress11"
+            android:layout_alignParentStart="true" />
+
+        <TextView
+            android:id="@+id/progress12"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/pidKd"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="PID Ki"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/pidKi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginBottom="20dp"
+            android:indeterminate="false"
+            android:layout_below="@+id/progress12" />
 
     </RelativeLayout>
 
