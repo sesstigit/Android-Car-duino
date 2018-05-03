@@ -66,6 +66,7 @@ public class AutomaticCarDriver{
         if(Settings.DisplayDebug)
             Imgproc.resize(resized, image, prevSize,0,0,Imgproc.INTER_NEAREST);
 
+
         return image;
     }
 }
