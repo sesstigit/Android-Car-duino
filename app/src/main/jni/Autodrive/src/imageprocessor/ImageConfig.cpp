@@ -25,7 +25,7 @@ ImageConfig::ImageConfig() :
   first_fragment_max_dist_(20),
   left_iteration_length_(6),
   right_iteration_length_(6),
-  transform_line_removal_threshold_(12),
+  transform_line_removal_threshold_(2),  //now we detect the border of the warped image correctly, don't need this to be large.
   use_left_line_(true),
   iterate_reduce_on_start_(-0.f),
   max_angle_diff_(1.0f),  //was 0.7 radians

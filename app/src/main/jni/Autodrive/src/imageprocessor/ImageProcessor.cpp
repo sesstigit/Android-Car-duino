@@ -59,10 +59,14 @@ bool ImageProcessor::init_processing(cv::Mat& mat) {
 		//}
 		cerr << "left_line_found=" << left_line_found() << endl;
 		cerr << "right_line_found=" << right_line_found() << endl;
-		return true;
+		if (left_line_found() && right_line_found()) {
+			return true;  //only continue if the lines can be found using the same algorithm as used during "continue_processing()"
+		}
+		perspective_ = cv::Mat();  //clear the contents of persepective_, so a new perspective can be tested
+		return false;
 	} else{
 		mat_copy.copyTo(mat);  //display the image prior to finding birdseye perspective
-		cv::putText(mat, "SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
+		cv::putText(mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		return false;
 	}
 }
@@ -89,9 +93,9 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	//! BGR or RGBA does not matter here
 	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
 	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(0), img_conf_.transform_line_removal_threshold_);
-	//TEST birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(255), 10);
-	//TEST birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(255), 10);
-	//TEST imshow("New Window", cannied_mat);
+	//TEST	birdseye_->left_image_border().draw(cannied_mat, cv::Scalar(255), 20);
+	//TEST	birdseye_->right_image_border().draw(cannied_mat, cv::Scalar(255), 20);
+	//TEST	imshow("New Window", cannied_mat);
 
     //! Key step is to call update on the road_follower
 #ifdef USE_PID_CONTROLLER

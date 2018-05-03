@@ -47,7 +47,7 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, do
     do
     {
         xdiff = b_lines.right.leftMost_x() - b_lines.left.rightMost_x();
-        b_lines.right.stretchY(icrop, im_height);  //params=bottom(lowest value of y) to "top" (highest value of y)
+        b_lines.right.stretchY(icrop, im_height);  //params=bottom(smallest value of y) to "top" (largest value of y)
         b_lines.left.stretchY(icrop, im_height);
         icrop+=3.f;
     } while (xdiff < im_width/3.0f);  //was div by 3, but can increase this to see further into distance
@@ -87,18 +87,29 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, do
     //cout << "new right lane end" << b_lines.right.end << endl;
     
     //Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.end.x, im_height), Autodrive::POINT(b_lines.right.end.x, im_height) };
-    Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.left.end, b_lines.right.end };
+    Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.right.end, b_lines.left.end };
     //Autodrive::POINT pts1[] = { Autodrive::POINT(b_lines.left.begin.x -10, b_lines.left.begin.y), Autodrive::POINT(b_lines.right.begin.x +10, b_lines.right.begin.y), Autodrive::POINT(b_lines.left.end.x -10, b_lines.left.end.y), Autodrive::POINT(b_lines.right.end.x +10, b_lines.right.end.y) };
     // Next two lines tried to stretch the single lane out to the whole screen, however it distorted the image too much, and made the lane lines too fuzzy
     //Autodrive::POINT pts2[] = { Autodrive::POINT(b_lines.left.end.x, 0), Autodrive::POINT(b_lines.right.end.x, 0), b_lines.left.end, b_lines.right.end };
     //Autodrive::POINT pts2[] = { Autodrive::POINT(20,0), Autodrive::POINT(im_width-50,0), Autodrive::POINT(20,im_height), Autodrive::POINT(im_width-50,im_height) };
     // pts2 just ensures the lanes are now made straight, by going from the start of the detected lines (near top of image), then straight down to bottom of image.
-    Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.begin.x, im_height), Autodrive::POINT(b_lines.right.begin.x, im_height) };
+    Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.right.begin.x, im_height), Autodrive::POINT(b_lines.left.begin.x, im_height) };
+	// this version takes the average x value of each line for pts2.  Idea is to spread the lanes more (but not as much as using the widest point of the lane).  
+	//int av_left_x = (b_lines.left.begin.x + b_lines.left.end.x) / 2;
+	//int av_right_x = (b_lines.right.begin.x + b_lines.right.end.x) / 2;
+	//Autodrive::POINT pts2[] = { Autodrive::POINT(av_left_x, b_lines.left.begin.y), Autodrive::POINT(av_right_x, b_lines.right.begin.y), Autodrive::POINT(av_left_x, im_height), Autodrive::POINT(av_right_x, im_height) };
 
     birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-    // TODO The calculation here isnt perfect for some reason, but it is good enough. Have fudged +5 to each x value.  FIX.
-    left_image_border_ = linef(Autodrive::POINT(b_lines.left.begin.x - b_lines.left.end.x / 2 +5, b_lines.left.end.y), Autodrive::POINT(0, b_lines.left.begin.y));
-    right_image_border_ = linef(Autodrive::POINT(b_lines.right.begin.x - (b_lines.right.end.x - im_width) / 2 +5, b_lines.right.end.y), Autodrive::POINT(im_width, b_lines.right.begin.y));
+    
+	// Apply border points from original image to funcion perspectiveTransform() to find border points in transformed image
+	// Usage: void perspectiveTransform(InputArray src, OutputArray dst, InputArray m)
+	std::vector<cv::Point2f> src = { Autodrive::POINT(0,0), Autodrive::POINT(0,im_height), Autodrive::POINT(im_width,0), Autodrive::POINT(im_width,im_height) };
+	std::vector<cv::Point2f> dst = { Autodrive::POINT(0,0), Autodrive::POINT(0,im_height), Autodrive::POINT(im_width,0), Autodrive::POINT(im_width,im_height) };
+	perspectiveTransform(src, dst, birdseye_matrix);
+	left_image_border_ = linef(dst[0], dst[1]);
+	right_image_border_ = linef(dst[2], dst[3]);
+	left_image_border_.stretchY(0, im_height);
+	right_image_border_.stretchY(0, im_height);
 
 	return birdseye_matrix;
 }
