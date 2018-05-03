@@ -74,19 +74,20 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
         pidKp.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress10)).setText("pidKp value set to " + shared.getFloat("pidKp", progressValue));
         //pidKp.setProgress((int) (1.0 / (0.1 - shared.getFloat("pidKp", progressValue))));  //x = 1/(0.1 - f(x)) for x in range 10 to 10000 (but linear scale is difficult to enter)
-        pidKp.setProgress((int) (0.1001 - Math.pow(10,(-shared.getFloat("pidKp", progressValue)/100))));  //f(x) = 0.1001 - 10^(-x/100) for x in range 100 to 400 (log scale)
+	// Log scale values 0.0001-0.1 to 100-400
+        pidKp.setProgress((int) (-100 * Math.log(0.1001 - shared.getFloat("pidKp", progressValue))));  //x=-100*log(0.1001 - f(x))
 
         pidKd = (SeekBar)findViewById(R.id.pidKd);
-        pidKd.setMax(1000);  //want 0.1 to 0.0001 float
+        pidKd.setMax(400);  //want 0.1 to 0.0001 float
         pidKd.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress11)).setText("pidKd value set to " + shared.getFloat("pidKd", progressValue));
-        pidKd.setProgress((int) (shared.getFloat("pidKd", progressValue) * 1000 ));
+	pidKd.setProgress((int) (-100 * Math.log(0.1001 - shared.getFloat("pidKd", progressValue))));  //x=-100*log(0.1001 - f(x))
 
         pidKi = (SeekBar)findViewById(R.id.pidKi);
-        pidKi.setMax(1000);  //want 0.1 to 0.0001 float
+        pidKi.setMax(400);  //want 0.1 to 0.0001 float
         pidKi.setOnSeekBarChangeListener(this);
         ((TextView)findViewById(R.id.progress12)).setText("pidKi value set to " + shared.getFloat("pidKi", progressValue));
-        pidKi.setProgress((int) (shared.getFloat("pidKi", progressValue) * 1000 ));
+	pidKi.setProgress((int) (-100 * Math.log(0.1001 - shared.getFloat("Ki", progressValue))));  //x=-100*log(0.1001 - f(x))
 
         smoothening = (SeekBar)findViewById(R.id.smoothening);
         smoothening.setMax(8); // values 0-8
@@ -173,13 +174,14 @@ public class AdvSettingsActivity extends Activity implements SeekBar.OnSeekBarCh
                 break;
             case R.id.pidKp:
                 if(fromUser) {
-                    //make min value 10
-                    if(progress < 10) {
-                        progress = 10;
+                    //make min value 100
+                    if(progress < 100) {
+                        progress = 100;
                         pidKp.setProgress(progress);
                     }
                     //progressValue = (float) (-Math.log10(progress+1));  //formula is ((log(y) - minlog)*(max - min)/(maxlog - minlog)) + min
-                    progressValue = (float) (0.1 - 1.0/(float)progress);
+		    // Scale 100-400 down to 0.0001-0.1
+                    progressValue = (float) (0.1001 - Math.pow(10,-progress/100));  //f(x) = 0.1001 - 10^(-x/100) for x in range 100 to 400 (log scale)
                     ((TextView)findViewById(R.id.progress10)).setText("pidKp value set to " + progressValue);
                     SharedPreferences.Editor sharedEditor = shared.edit();
                     sharedEditor.putFloat("pidKp", progressValue);
