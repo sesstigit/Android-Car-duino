@@ -20,7 +20,7 @@
             android:gravity="center"
             android:text="canny thresh"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:layout_width="match_parent"
@@ -43,7 +43,7 @@
             android:gravity="center"
             android:text="car max speed"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:layout_width="match_parent"
@@ -67,7 +67,7 @@
             android:gravity="center"
             android:text="car scale steering"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:layout_width="match_parent"
@@ -91,7 +91,7 @@
             android:gravity="center"
             android:text="car scale drift fix"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
         
         <SeekBar
             android:layout_width="match_parent"
@@ -113,7 +113,7 @@
             android:gravity="center"
             android:text="PID Kp"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:id="@+id/pidKp"
@@ -134,7 +134,7 @@
             android:gravity="center"
             android:text="PID Kd"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:id="@+id/pidKd"
@@ -154,7 +154,7 @@
             android:gravity="center"
             android:text="PID Ki"
             android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
 
         <SeekBar
             android:id="@+id/pidKi"
@@ -177,7 +177,7 @@
             android:id="@+id/progress4"
             android:text="Smoothening"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:gravity="center"
             android:layout_above="@+id/smoothening"
             android:layout_alignParentLeft="true"
@@ -200,7 +200,7 @@
             android:id="@+id/progress5"
             android:text="Fragment Max Distance"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:gravity="center"
             android:layout_above="@+id/fragment"
             android:layout_alignParentLeft="true"
@@ -222,7 +222,7 @@
             android:id="@+id/progress6"
             android:text="Left Iteration"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:gravity="center"
             android:layout_above="@+id/leftIteration"
             android:layout_alignParentLeft="true"
@@ -244,7 +244,7 @@
             android:id="@+id/progress7"
             android:text="Right Iteration"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:gravity="center"
             android:layout_below="@+id/leftIteration"
             android:layout_alignParentLeft="true"
@@ -266,7 +266,7 @@
             android:id="@+id/progress8"
             android:text="Max angle"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:gravity="center"
             android:layout_below="@+id/rightIteration"
             android:layout_alignParentLeft="true"
