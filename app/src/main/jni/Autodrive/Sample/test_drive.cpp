@@ -44,6 +44,24 @@ void resize_frame(Mat& in, Mat& out) {
 
 int main()
 {
+    // LOAD CAMERA INTRINSIC AND DISTORTION MATRICES IF AVAILABLE:
+    string camera_conf = "intrinsics.xml";
+    cv::FileStorage fs(camera_conf, cv::FileStorage::READ);
+    if (!fs.isOpened()) {
+      cerr << "failed to open " << camera_conf << ".  Distortion will not be corrected." << endl;
+    } else {
+      cout << "\nimage width: " << static_cast<int>(fs["image_width"]);
+      cout << "\nimage height: " << static_cast<int>(fs["image_height"]);
+      cv::Mat intrinsic_matrix_loaded, distortion_coeffs_loaded;
+      fs["camera_matrix"] >> intrinsic_matrix_loaded;
+      fs["distortion_coefficients"] >> distortion_coeffs_loaded;
+      cout << "\nintrinsic matrix:" << intrinsic_matrix_loaded;
+      cout << "\ndistortion coefficients: " << distortion_coeffs_loaded << "\n" << endl;
+    // store the matrices in ImageConfig
+      car.img_conf_.intrinsic_matrix_ = &intrinsic_matrix_loaded;
+      car.img_conf_.distortion_coeffs_ = &distortion_coeffs_loaded;
+    }
+
     cv::Mat frame;
 	cv::Mat resized_frame;
     cout << "Entering test_drive main()" << endl;
