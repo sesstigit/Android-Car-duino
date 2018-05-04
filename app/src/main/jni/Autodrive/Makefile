@@ -14,10 +14,11 @@ LDLIBS=$(shell pkg-config opencv --libs)
 INC=-I$(AUTODRIVE_HOME)/src/
 SRCDIR1=$(AUTODRIVE_HOME)/src/
 SRCDIR2=$(AUTODRIVE_HOME)/src/imageprocessor/
-SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp) 
+SRCDIR3=$(AUTODRIVE_HOME)/src/histogram/
+SRCS=$(wildcard $(SRCDIR1)/*.cpp) $(wildcard $(SRCDIR2)/*.cpp) $(wildcard $(SRCDIR3)/*.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 
-all: Sample/test_main Sample/test_drive #Sample/test_image_manip docs
+all: Sample/test_main Sample/test_drive Sample/camera_calibration #Sample/test_image_manip docs
 
 # Perhaps add LDLIBS to this?
 Sample/test_drive: Sample/test_drive.o $(OBJS)
@@ -26,9 +27,12 @@ Sample/test_drive: Sample/test_drive.o $(OBJS)
 Sample/test_main: Sample/test_main.o $(OBJS)
 	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
 
+# Will not compile until fixed passing input mat by reference
 #Sample/test_image_manip: Sample/test_image_manip.o $(OBJS)
 #	$(CXX) $(LDFLAGS) $(INC) -o $@ $^ $(LDLIBS)
 
+Sample/camera_calibration: Sample/camera_calibration.o
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.o: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) -c -o $@ $<
