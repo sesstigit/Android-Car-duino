@@ -25,6 +25,11 @@
 
 #include <iostream>
 #include <string>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/mat.hpp>
+
 namespace Autodrive {
 
 	class ImageConfig {
@@ -67,10 +72,14 @@ namespace Autodrive {
 		// 0-10, a scaling factor to fix lane drifting.  Higher value fixes lane drift quicker, but risks wobble.
 		float car_scale_drift_fix_;
 
-        //! Gain parameters for the PID Controller
-        double pid_kp_;
-        double pid_ki_;
-        double pid_kd_;
+	        //! Gain parameters for the PID Controller
+        	double pid_kp_;
+	        double pid_ki_;
+        	double pid_kd_;
+
+		//! Camera calibration coefficients
+		cv::Mat* intrinsic_matrix_;
+		cv::Mat* distortion_coeffs_;
 		//Other Autodrive settings handled elsewhere
 		// Car Length: Measured in cm.  Read only.  Used for obstacle avoidance and parking.  Ensures the car drives far enough around objects so the back does not hit.
 		// Left Lane: currently unused.  Should be used to instruct car to use Left Lane (in Aus) or Right Lane (in USA).

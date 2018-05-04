@@ -35,5 +35,7 @@ ImageConfig::ImageConfig() :
   pid_kp_(0.1),
   pid_ki_(0.0001),  //was 0.0001
   pid_kd_(1.0),  //was 1.0
+  intrinsic_matrix_(nullptr),
+  distortion_coeffs_(nullptr),
   display_debug_(true) {
   }
