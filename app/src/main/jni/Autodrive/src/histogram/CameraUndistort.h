@@ -16,7 +16,7 @@
 **/
 #pragma once
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAMERA_UNDISTORT_H_
-#define ANDROIDCARDUINO_AUTODRIVE_CARERA_UNDISTORT_H_
+#define ANDROIDCARDUINO_AUTODRIVE_CAMERA_UNDISTORT_H_
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
@@ -35,6 +35,6 @@
 using namespace std;
 
 namespace Autodrive {
-  void undistort(cv::Mat& inframe, cv::Mat& outframe, ImageConfig& img_conf);
+  
 }
-#endif //ANDROIDCARDUINO_AUTODRIVE_CARERA_UNDISTORT_H_
+#endif //ANDROIDCARDUINO_AUTODRIVE_CAMERA_UNDISTORT_H_

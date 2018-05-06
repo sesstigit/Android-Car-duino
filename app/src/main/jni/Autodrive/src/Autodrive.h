@@ -24,7 +24,6 @@
 //#include "imageprocessor/ImageConfig.h"
 //using namespace std;
 
-
 namespace Autodrive {
     static Car car;  //car methods can now be called from JNI
 	Car* get_pcar();

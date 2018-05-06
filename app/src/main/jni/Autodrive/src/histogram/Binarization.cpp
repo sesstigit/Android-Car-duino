@@ -14,40 +14,66 @@
 *    You should have received a copy of the GNU General Public License
 *    along with Autodrive.  If not, see <http://www.gnu.org/licenses/>.
 **/
-
+#include <stdlib.h>
 #include "Binarization.h"
 
 using namespace Autodrive;
 
 //! Highlight the lane lines in an output binary image from input colour image
-void binarize(cv::Mat& matIn) {
-    //im_height = matIn.size().height;
-    //im_width = matIn.size().width;
-    
-    cv::Mat grayMat(matIn.size(), CV_8UC1, Scalar(0));
-    cv::Mat maskedMat(matIn.size(), CV_8UC1, Scalar(0));
+//! Compared to the original approach in imageprocessing direction, differences are:
+//!   - HistogramEqualization used to normalize the image (instead of light normalisation with Clahe algorithm)
+//!   - tries to highlight particular colours with masks
+//!   - Sobel line detection used (instead of Canny)
+//!   - add smarts to fill the lane lines using MorphologyEx closure.
+
+void binarize(cv::Mat& matIn, cv::Mat& matGray) {
+    //cv::Mat matGray(matIn.size(), CV_8UC1, Scalar(0));
+    //cv::Mat maskedMat(matIn.size(), CV_8UC1, Scalar(0));
     
     // Create grayscale version of matIn
-    if (MatIn.type() == CV_8UC4) {
-            cv::cvtColor(matIn, grayMat, CV_RGBA2GRAY);  //android input image is RGBA
+    if (matIn.type() == CV_8UC4) {
+            cv::cvtColor(matIn, matGray, CV_RGBA2GRAY);  //android input image is RGBA
     } else {
-            cv::cvtColor(matIn, grayMat, CV_BGR2GRAY);  //open an image with OpenCV makes it BGR
+            cv::cvtColor(matIn, matGray, CV_BGR2GRAY);  //open an image with OpenCV makes it BGR
     }
     
+	// Note: this binarization is different to Udacity example because I apply the each opencv operation to the image in series.
+	// On the other hand, the example applies each opencv operation to a separate image and then combines all images using np.logical_or.
+	// highlight white lines by thresholding the grayscale image
+	//TODO: run code from https://docs.opencv.org/2.4/doc/tutorials/imgproc/threshold/threshold.html to test best thresholding for our situation
     // Perform histogram equalisation and threshold it
-    //eq_global = cv2.equalizeHist(grayMat);
-    //_, white_mask = cv2.threshold(eq_global, thresh=250, maxval=255, type=cv2.THRESH_BINARY);
+    cv::equalizeHist(matGray, matGray);
+	imshow("EqualizeHist", matGray);
+	int thresh_value = 250;
+	int max_binary_value = 255;
+	cv::threshold(matGray, matGray, thresh_value, max_binary_value, CV_THRESH_BINARY);
+	imshow("EqualizeHistThresh", matGray);
     
-    // highlight white lines by thresholding the equalized mat, i.e. apply the white_mask to the grayscale image
-    grayMat.copyTo(maskedImage, white_mask);
+    //matGray.copyTo(maskedImage, white_mask);
     
-    // get Sobel binary mask (thresholded gradients)
-    //sobel_mask = thresh_frame_sobel(img, kernel_size=9)
-    //binary = np.logical_or(binary, sobel_mask)
-  
-    // apply a light morphology to "fill the gaps" in the binary image
-    //  kernel = np.ones((5, 5), np.uint8)
-    //  closing = cv2.morphologyEx(binary.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
-    
-    
+	// Perform edge detection with Sobel (thresholded gradients)
+	//void Sobel(InputArray src, OutputArray dst, int ddepth, int dx, int dy, int ksize = 3, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT)
+	int kernel_size = 7;  //must be 1,3,5 or 7
+	cv::Mat grad_x, grad_y;
+	cv::Mat abs_grad_x, abs_grad_y;
+
+	cv::Sobel(matGray, grad_x, CV_64F, 1, 0, kernel_size);
+	cv::convertScaleAbs(grad_x, abs_grad_x);
+	cv::Sobel(matGray, grad_y, CV_64F, 0, 1, kernel_size);
+	cv::convertScaleAbs(grad_y, abs_grad_y);
+	/// Total Gradient (approximate)
+	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, matGray);
+	thresh_value = 50;
+	max_binary_value = 255;  //FIX - was 1
+	cv::threshold(matGray, matGray, 50, 1, cv::THRESH_BINARY);
+	cv::imshow("SobelEdges", matGray);
+
+	// apply a light morphology to "fill the gaps" in the binary image
+	//  kernel = np.ones((5, 5), np.uint8)
+	//  closing = cv2.morphologyEx(binary.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
+	cv::Mat mkernel;
+	mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	cv::morphologyEx(matGray, matGray, cv::MORPH_CLOSE, mkernel);
+	cv::imshow("LightMorphology", matGray);
+	cv::waitKey();
 }

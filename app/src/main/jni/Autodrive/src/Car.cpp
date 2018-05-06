@@ -19,13 +19,18 @@
 #include "ParkingManeuver.h"
 #include "Overtaking.h"
 #include "imageprocessor/ImageProcessor.h"
+#include "histogram/AdvImageProcessor.h"
 #include "CarCmd.h"
 
 using namespace Autodrive;
 
 //Constructor
 Car::Car() :
+#ifdef USE_IMAGEPROCESSOR
   img_proc_(make_unique<ImageProcessor>(img_conf_)),
+#else
+	img_proc_(make_unique<AdvImageProcessor>(img_conf_)),
+#endif
   parking_(make_unique<ParkingManeuver>(this, ParkingManeuverMode::kNoManeuver)),
   overtaking_(make_unique<Overtaking>(this)),
   changed_speed_(false),
@@ -36,7 +41,8 @@ Car::Car() :
   slow_speed_(0.22),  //was 0.26.  Speed ranges between -1 and 1.
   normal_speed_(0.23), //was 0.28
   backwards_speed_(-0.65),
-  image_(nullptr) {
+  image_(nullptr)
+{
 	// All sensors are objects, so constructor should take care of them.
 }
 

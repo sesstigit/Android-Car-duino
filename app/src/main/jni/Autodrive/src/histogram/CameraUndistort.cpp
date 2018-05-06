@@ -23,7 +23,7 @@ using namespace Autodrive;
 // the cv::undistort functions calls initUndistortRectifyMap and then remap.
 // initUndistortRectifyMap only needs to be done once, so we could improve
 // app efficiency that way.
-void undistort(cv::Mat& inframe, cv::Mat& outframe, ImageConfig& img_conf) {
+void camera_undistort(cv::Mat& inframe, cv::Mat& outframe, ImageConfig& img_conf) {
 
   //if (img_conf.intrinsic_matrix_.is_empty() || img_conf.distortion_coeffs_.is_empty()){
   if (img_conf.intrinsic_matrix_ == nullptr || img_conf.distortion_coeffs_ == nullptr) {

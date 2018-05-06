@@ -18,10 +18,15 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
+#define USE_IMAGEPROCESSOR  //choose between imageprocessor and histogram directories for image processing
+#undef USE_ADVIMAGEPROCESSOR  //histogram version
+
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/mat.hpp>
 #include <memory>
+
 
 #include "imageprocessor/ImageConfig.h"
 #include "CarSensor.h"
@@ -61,6 +66,7 @@ namespace Autodrive {
 	class ParkingManeuver;  //forward declaration
 	class Overtaking;  //forward declaration
 	class ImageProcessor;  //forward declaration
+	class AdvImageProcessor;  //forward declaration
 
 	//! Base Class
 	//! The two main actuators in a car are the accelerator for motor speed,
@@ -109,8 +115,11 @@ namespace Autodrive {
 		const double backwards_speed_;
 		
 		cv::Mat* image_; //public so it can be set externally (e.g. via JNI).  Memory managed by caller.
-		
-		std::unique_ptr<ImageProcessor> img_proc_;
+#ifdef USE_IMAGEPROCESSOR
+		std::unique_ptr<ImageProcessor> img_proc_;  //imageprocessor directory image processing
+#else  //USE_ADVIMAGEPROCESSOR
+		std::unique_ptr<AdvImageProcessor> img_proc_;  //histogram directory image processing
+#endif
 		std::unique_ptr<ParkingManeuver> parking_; //pointer to object with methods for car parking
 		ImageConfig img_conf_;
 	private:

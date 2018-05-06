@@ -21,6 +21,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string>
+#include <chrono>  //for benchmarking
 
 //#define _AUTODRIVE_SHOWCANNY
 //#define _AUTODRIVE_SHOWHOUGH
@@ -33,6 +34,9 @@
 using namespace cv;
 using namespace std;
 using namespace Autodrive;
+
+using  ns = chrono::nanoseconds;  //for benchmarking
+using get_time = chrono::steady_clock;  //for benchmarking
 
 void resize_frame(Mat& in, Mat& out) {
 	cv::Size inSize = in.size();
@@ -65,8 +69,9 @@ int main()
     cv::Mat frame;
 	cv::Mat resized_frame;
     cout << "Entering test_drive main()" << endl;
-    string filename = "testreal_small.mp4";
-    //string filename = "vid1.mp4";
+    //string filename = "testreal_small.mp4";
+	//string filename = "homedrive.mp4";
+    string filename = "testdrive.mp4";
     //string filename = "Test4-1.m4v";
     cv::VideoCapture capture(filename);
     if (!capture.isOpened()) {
@@ -85,14 +90,22 @@ int main()
         waitKey(); // waits to display frame
         capture >> frame;
 		resize_frame(frame, resized_frame);
-    }   
-    for (;;)
-    {
+    }
+	
+	show_image(resized_frame, 3, drive_window);
+	waitKey();
+
+	auto start = get_time::now(); // start of real processing
+	bool vid_end = false;
+	long frame_count = 0;	
+    while (!vid_end) {
         capture >> frame;
         if (frame.empty()) {
-            capture.open(filename);
+            //capture.open(filename);
+			vid_end = true;
             continue;
         }
+		frame_count++;
 		resize_frame(frame, resized_frame);
         Autodrive::car.img_proc_->continue_processing(resized_frame);
         
@@ -100,5 +113,13 @@ int main()
 		waitKey();
         //waitKey(10); // waits to display frame
     }
-    return 0;
+	
+    auto end = get_time::now();
+	auto diff = end - start;
+
+	cout << "Elapsed time is :  " << chrono::duration_cast<ns>(diff).count() << " ns " << endl;
+	cout << "Frame count is :" << frame_count << endl;
+	cout << "Frames per second = " << static_cast<double>(frame_count) * 1000.0 / chrono::duration <double, milli>(diff).count() << endl;
+	waitKey();
+	return 0;
 }
