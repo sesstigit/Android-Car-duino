@@ -42,8 +42,8 @@ namespace Autodrive {
 	    //! Transform the input image using the supplied birdseye transform matrix (from find_perspective())
         //! The result should be a birdseye view of the road in which the lane lines are straight
 		void birds_eye_transform(cv::Mat& mat, cv::Mat birdseye_matrix);
-		//! find_perspective is only used during car initialisation.  It aims to locate the edges of the lane,
-        //! and then calculate a perspective to make those edge lines straight, i.e. in preparation for 
+		//! find_perspective is only used during car initialisation.  It locates the edges of the lane,
+        //! and calculates a perspective to make those edge lines straight, i.e. in preparation for 
         //! a birdseye transform.  It assumes the car is on a straight road. Basic steps:
         //! - Canny the input image
         //! - get_lane_markings for leftLine and rightLine
