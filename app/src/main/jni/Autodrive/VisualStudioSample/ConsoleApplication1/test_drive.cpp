@@ -71,8 +71,8 @@ int main()
 	cv::Mat resized_frame;
 	cout << "Entering test_drive main()" << endl;
 	//string filename = "testreal_small.mp4";
-	//string filename = "homedrive.mp4";
-	string filename = "testdrive.mp4";
+	string filename = "homedrive.mp4";
+	//string filename = "testdrive.mp4";
 	//string filename = "Test4-1.m4v";
 	cv::VideoCapture capture(filename);
 	if (!capture.isOpened()) {
