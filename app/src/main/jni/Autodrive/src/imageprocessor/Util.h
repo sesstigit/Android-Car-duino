@@ -23,6 +23,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/mat.hpp>
+#include <stdlib.h>
+#include <iostream>
 
 #include <memory>
 #ifdef _DEBUG
@@ -100,15 +102,17 @@ namespace Autodrive {
     //! This works becaue the image is thresholded to be black 0 or white 1 only,
 	SearchResult firstnonzero_direction(const cv::Mat& mat, cv::Point_ < float > start, float direction, int maxDist);
 
-	
 	optional<cv::Point> firstnonzero_horizontal(const cv::Mat& mat, cv::Point iterator);
-
 
 	template <class numeric_t>
 	numeric_t weighted_average(numeric_t val1, numeric_t val2, numeric_t val1_multiplier)
 	{
 		return (val1*val1_multiplier + val2) / (val1_multiplier + 1);
-	}
+	};
+
+	void camera_undistort(cv::Mat& inframe, cv::Mat& outframe, cv::Mat* intrinsic_matrix, cv::Mat* distortion_coeffs);
+	//! Normalize lighting in the input frame with the CLAHE algorithm
+	void normalize_lighting(cv::Mat& bgr_image);
 	
 #ifdef _DEBUG
 	//! Convert a Mat type to a human readable string
