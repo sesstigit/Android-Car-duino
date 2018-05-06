@@ -26,7 +26,7 @@ using namespace Autodrive;
 //!   - Sobel line detection used (instead of Canny)
 //!   - add smarts to fill the lane lines using MorphologyEx closure.
 
-void binarize(cv::Mat& matIn, cv::Mat& matGray) {
+void binarize(cv::Mat& matIn, cv::Mat& matGray) {  //should use this version so the image is modified in-place
     //cv::Mat matGray(matIn.size(), CV_8UC1, Scalar(0));
     //cv::Mat maskedMat(matIn.size(), CV_8UC1, Scalar(0));
     
@@ -37,23 +37,27 @@ void binarize(cv::Mat& matIn, cv::Mat& matGray) {
             cv::cvtColor(matIn, matGray, CV_BGR2GRAY);  //open an image with OpenCV makes it BGR
     }
     
+	int thresh_value;
+	int max_binary_value;
+
 	// Note: this binarization is different to Udacity example because I apply the each opencv operation to the image in series.
 	// On the other hand, the example applies each opencv operation to a separate image and then combines all images using np.logical_or.
 	// highlight white lines by thresholding the grayscale image
 	//TODO: run code from https://docs.opencv.org/2.4/doc/tutorials/imgproc/threshold/threshold.html to test best thresholding for our situation
-    // Perform histogram equalisation and threshold it
+    
+	// Perform histogram equalisation and threshold it
+	/*  Omitted, since light normalization now done prior to binarization
     cv::equalizeHist(matGray, matGray);
 	imshow("EqualizeHist", matGray);
 	int thresh_value = 250;
 	int max_binary_value = 255;
 	cv::threshold(matGray, matGray, thresh_value, max_binary_value, CV_THRESH_BINARY);
-	imshow("EqualizeHistThresh", matGray);
-    
-    //matGray.copyTo(maskedImage, white_mask);
-    
+	imshow("EqualizeThresh", matGray);
+    */
+ 
 	// Perform edge detection with Sobel (thresholded gradients)
 	//void Sobel(InputArray src, OutputArray dst, int ddepth, int dx, int dy, int ksize = 3, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT)
-	int kernel_size = 7;  //must be 1,3,5 or 7
+	int kernel_size = 3;  //must be 1,3,5 or 7
 	cv::Mat grad_x, grad_y;
 	cv::Mat abs_grad_x, abs_grad_y;
 
@@ -63,16 +67,14 @@ void binarize(cv::Mat& matIn, cv::Mat& matGray) {
 	cv::convertScaleAbs(grad_y, abs_grad_y);
 	/// Total Gradient (approximate)
 	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, matGray);
-	thresh_value = 50;
-	max_binary_value = 255;  //FIX - was 1
-	cv::threshold(matGray, matGray, 50, 1, cv::THRESH_BINARY);
 	cv::imshow("SobelEdges", matGray);
+	thresh_value = 100;  //TODO: lane detection performance is sensitive to this value
+	max_binary_value = 255;  //FIX - was 1
+	cv::threshold(matGray, matGray, thresh_value, max_binary_value, cv::THRESH_BINARY);
+	cv::imshow("SobelThresh", matGray);
 
 	// apply a light morphology to "fill the gaps" in the binary image
-	//  kernel = np.ones((5, 5), np.uint8)
-	//  closing = cv2.morphologyEx(binary.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
-	cv::Mat mkernel;
-	mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	cv::Mat mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
 	cv::morphologyEx(matGray, matGray, cv::MORPH_CLOSE, mkernel);
 	cv::imshow("LightMorphology", matGray);
 	cv::waitKey();
