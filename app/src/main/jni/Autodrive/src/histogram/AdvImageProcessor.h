@@ -56,9 +56,9 @@ namespace Autodrive {
 		//! Hence if it is wrong, this program will not work well
 		cv::Mat perspective_;
 		// Flag whether lane line state is conserved (this permits averaging results)
-		bool keep_state;
-		LaneLine line_lt;
-		LaneLine line_rt;
+		bool keep_state_;
+		LaneLine line_lt_;
+		LaneLine line_rt_;
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_ADVIMAGEPROCESSOR_H_
