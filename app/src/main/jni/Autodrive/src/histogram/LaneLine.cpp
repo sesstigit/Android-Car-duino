@@ -81,3 +81,13 @@ float LaneLine::curvature_meter() {
 	vector<float> coeffs = np.mean(recent_fits_meter_, axis=0)
 	return ((1 + (2 * coeffs[0] * y_eval + coeffs[1]) ** 2) ** 1.5) / np.absolute(2 * coeffs[0]);
 }
+
+void LaneLine::clear_line_coords() {
+	all_x_.clear();
+	all_y_.clear();
+}
+
+void LaneLine::append_line_coords(vector<int>& inds_x, vector<int>& inds_y) {
+	all_x_.insert(std::end(all_x_), std::begin(inds_x), std::end(inds_x));
+	all_y_.insert(std::end(all_y_), std::begin(inds_y), std::end(inds_y));
+}

@@ -114,6 +114,8 @@ void AdvImageProcessor::get_fits_by_sliding_windows(Mat& birdseye_binary_mat, Ma
 	// Also uses
 	//!     line_lt_: class member, left lane-line previously detected
 	//!     line_rt_: class member, left lane-line previously detected
+	line_lt_.clear_line_coords();  //clear the previous entries
+	line_rt_.clear_line_coords();
 
 	height = birdseye_binary_mat.size().height;
 	width = birdseye_binary_mat.size().width;
@@ -169,8 +171,13 @@ void AdvImageProcessor::get_fits_by_sliding_windows(Mat& birdseye_binary_mat, Ma
 	if (cv::countNonZero(birdseye_binary_mat) > 0) {
 		cv::findNonZero(binaryImage, nonzero);
 	}
-	nonzero_y = std::vector(nonzero.y);
-	nonzero_x = std::vector(nonzero.x);
+	//Split the vector into separate x and y vectors
+	nonzero_x = std::vector<int>;
+	nonzero_y = std::vector<int>;
+	for (a_point : nonzero) {
+		nonzero_x.push_back(a_point.x);
+		nonzero_y.push_back(a_point.y);
+	}
 
 	// Current positions to be updated for each window
 	int leftx_current = leftx_base;
@@ -179,95 +186,97 @@ void AdvImageProcessor::get_fits_by_sliding_windows(Mat& birdseye_binary_mat, Ma
 	int margin = 100;  // width of the windows + / -margin
 	int minpix = 50;   // minimum number of pixels found to recenter window
 
-	// Create empty lists to receive left and right lane pixel indices
-	std::vector<cv::Point2i> left_lane_inds;
-	std::vector<cv::Point2i> right_lane_inds;
-
 	// Step through the windows one by one
 	for (window = 0; window < n_windows; window++) {
 		// Identify window boundaries in x and y(and right and left)
-		int win_y_low = height - (window + 1) * window_height
-			int win_y_high = height - window * window_height
-			int win_xleft_low = leftx_current - margin
-			int win_xleft_high = leftx_current + margin
-			int win_xright_low = rightx_current - margin
-			int win_xright_high = rightx_current + margin
+		int win_y_low = height - (window + 1) * window_height;
+		int win_y_high = height - window * window_height;
+		int win_xleft_low = leftx_current - margin;
+		int win_xleft_high = leftx_current + margin;
+		int win_xright_low = rightx_current - margin;
+		int win_xright_high = rightx_current + margin;
 
-			// Draw the windows on the visualization image
-			cv2.rectangle(temp_mat, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
-			cv2.rectangle(temp_mat, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
+		// Create empty vectors to receive left and right lane pixel indices
+		std::vector<int> good_left_inds_x;
+		std::vector<int> good_left_inds_y;
+		std::vector<int> good_right_inds_x;
+		std::vector<int> good_right_inds_y;
 
-			// Identify the nonzero pixels in x and y within the window
-			good_left_inds = ((nonzero_y >= win_y_low) && (nonzero_y < win_y_high) && (nonzero_x >= win_xleft_low)
-				&& (nonzero_x < win_xleft_high)).nonzero()[0]
-			good_right_inds = ((nonzero_y >= win_y_low) && (nonzero_y < win_y_high) && (nonzero_x >= win_xright_low)
-				&& (nonzero_x < win_xright_high)).nonzero()[0]
+		// Draw the windows on the visualization image
+		cv2.rectangle(temp_mat, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
+		cv2.rectangle(temp_mat, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
 
-			// Append these indices to the vector
-			left_lane_inds.insert(std::end(left_lane_inds), std::begin(good_left_inds), std::end(good_left_inds));
-		right_lane_inds.insert(std::end(right_lane_inds), std::begin(good_right_inds), std::end(good_right_inds));
+		// Identify the nonzero pixels in x and y within the window, and assign them to a line
+		for (int i = 0; i < nonzero.size(); i++) {
+			if ((nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) && (nonzero_x[i] >= win_xleft_low)
+				&& (nonzero_x[i] < win_xleft_high)) {
+				good_left_inds_x.push_back(nonzero_x[i]);	//add index to left line
+				good_left_inds_y.push_back(nonzero_y[i]);	//add index to left line
+			}
+			if ((nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) && (nonzero_x[i] >= win_xright_low)
+				&& (nonzero_x[i] < win_xright_high)) {
+				good_right_inds_x.push_back(nonzero_x[i]);	//add index to right line
+				good_right_inds_y.push_back(nonzero_y[i]);	//add index to right line
+			}
+		}
+			
+		// Append these indices to the vector
+		line_lt_.append_coords(good_left_inds_x, good_left_inds_y);
+		line_rt_.append_coords(good_right_inds_x, good_right_inds_y);
 
 		// If you found > minpix pixels, recenter next window on their mean position
-		if (good_left_inds.size() > minpix) {
-			leftx_current = np.int(np.mean(nonzero_x[good_left_inds]))  //need to ensure I average the "values" not the indices!
+		if (good_left_inds_x.size() > minpix) {
+			leftx_current = accumulate(good_left_inds_x.begin(), good_left_inds_x.end(), 0.0) / good_left_inds_x.size();  //average the x coordinate
 		}
-		if (good_right_inds.size() > minpix) {
-			rightx_current = np.int(np.mean(nonzero_x[good_right_inds]))
+		if (good_right_inds_x.size() > minpix) {
+			rightx_current = accumulate(good_right_inds_x.begin(), good_right_inds_x.end(), 0.0) / good_right_inds_x.size();  //average the x coordinate
 		}
 	}
 
-	# Concatenate the arrays of indices
-	left_lane_inds = np.concatenate(left_lane_inds)
-	right_lane_inds = np.concatenate(right_lane_inds)
-
-	# Extract left and right line pixel positions
-	line_lt.all_x, line_lt.all_y = nonzero_x[left_lane_inds], nonzero_y[left_lane_inds]
-	line_rt.all_x, line_rt.all_y = nonzero_x[right_lane_inds], nonzero_y[right_lane_inds]
-
 	// Use C++ polyfit from https://github.com/LLNL/CxxPolyFit
 
-	detected = True
-	if not list(line_lt.all_x) or not list(line_lt.all_y) :
-		left_fit_pixel = line_lt.last_fit_pixel
-		left_fit_meter = line_lt.last_fit_meter
-		detected = False
-	else:
-		left_fit_pixel = np.polyfit(line_lt.all_y, line_lt.all_x, 2)
-		left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2)
+	bool detected = true;
+	if (line_lt_.all_x_.empty() || line_lt_.all_y_.empty()) {
+		left_fit_pixel = line_lt_.last_fit_pixel_; //TODO: TYPE???
+		left_fit_meter = line_lt_.last_fit_meter_;
+		detected = false;
+	} else {
+		left_fit_pixel = np.polyfit(line_lt.all_y, line_lt.all_x, 2);
+		left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2);
+	}
 
-	if not list(line_rt.all_x) or not list(line_rt.all_y) :
-		right_fit_pixel = line_rt.last_fit_pixel
-		right_fit_meter = line_rt.last_fit_meter
-		detected = False
-	else:
-		right_fit_pixel = np.polyfit(line_rt.all_y, line_rt.all_x, 2)
-		right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2)
+	if (line_rt_.all_x_.empty() || line_rt_.all_y_.empty()) {
+		right_fit_pixel = line_rt_.last_fit_pixel;
+		right_fit_meter = line_rt_.last_fit_meter;
+		detected = false;
+	} else {
+		right_fit_pixel = np.polyfit(line_rt.all_y, line_rt.all_x, 2);
+		right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
+	}
 
-		line_lt.update_line(left_fit_pixel, left_fit_meter, detected = detected)
-		line_rt.update_line(right_fit_pixel, right_fit_meter, detected = detected)
+	line_lt_.update_line(left_fit_pixel, left_fit_meter, detected);
+	line_rt_.update_line(right_fit_pixel, right_fit_meter, detected);
 
-		# Generate x and y values for plotting
-		ploty = np.linspace(0, height - 1, height)
-		left_fitx = left_fit_pixel[0] * ploty ** 2 + left_fit_pixel[1] * ploty + left_fit_pixel[2]
-		right_fitx = right_fit_pixel[0] * ploty ** 2 + right_fit_pixel[1] * ploty + right_fit_pixel[2]
+	//	# Generate x and y values for plotting
+	//	ploty = np.linspace(0, height - 1, height)
+//		left_fitx = left_fit_pixel[0] * ploty ** 2 + left_fit_pixel[1] * ploty + left_fit_pixel[2]
+//			right_fitx = right_fit_pixel[0] * ploty ** 2 + right_fit_pixel[1] * ploty + right_fit_pixel[2]
 
-		out_img[nonzero_y[left_lane_inds], nonzero_x[left_lane_inds]] = [255, 0, 0]
-		out_img[nonzero_y[right_lane_inds], nonzero_x[right_lane_inds]] = [0, 0, 255]
+	//	out_img[nonzero_y[left_lane_inds], nonzero_x[left_lane_inds]] = [255, 0, 0]
+	//	out_img[nonzero_y[right_lane_inds], nonzero_x[right_lane_inds]] = [0, 0, 255]
 
-if verbose:
-f, ax = plt.subplots(1, 2)
-f.set_facecolor('white')
-ax[0].imshow(birdeye_binary, cmap = 'gray')
-ax[1].imshow(out_img)
-ax[1].plot(left_fitx, ploty, color = 'yellow')
-ax[1].plot(right_fitx, ploty, color = 'yellow')
-ax[1].set_xlim(0, 1280)
-ax[1].set_ylim(720, 0)
-
-plt.show()
-
-return line_lt, line_rt, out_img
-
+//if verbose:
+//f, ax = plt.subplots(1, 2)
+//f.set_facecolor('white')
+//ax[0].imshow(birdeye_binary, cmap = 'gray')
+//ax[1].imshow(out_img)
+//ax[1].plot(left_fitx, ploty, color = 'yellow')
+//ax[1].plot(right_fitx, ploty, color = 'yellow')
+//ax[1].set_xlim(0, 1280)
+//ax[1].set_ylim(720, 0)
+//plt.show()
+//return line_lt, line_rt, out_img
+}
 
 def get_fits_by_previous_fits(birdeye_binary, line_lt, line_rt, verbose = False) :
 	"""

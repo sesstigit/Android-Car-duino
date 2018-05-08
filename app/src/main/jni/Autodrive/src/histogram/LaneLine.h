@@ -29,6 +29,11 @@ namespace Autodrive {
 class LaneLine {
  public:
   LaneLine(int buffer_len=10);
+
+  bool get_detected() { return detected_; };
+  //void set_detected(bool val) { detected_ = val; };
+  void append_line_coords(vector<int>& inds_x, vector<int>& inds_y);
+  void clear_line_coords() {
     
  private:
   # flag to mark if the line was detected the last iteration
@@ -45,8 +50,8 @@ class LaneLine {
   float radius_of_curvature_;
 
   # store all pixels coords (x, y) of line detected
-  std::vector<POINT> all_x_;
-  std::vector<POINT> all_y_;
+  std::vector<int> all_x_;
+  std::vector<int> all_y_;
 		
 }  //class
 }  //namespace
