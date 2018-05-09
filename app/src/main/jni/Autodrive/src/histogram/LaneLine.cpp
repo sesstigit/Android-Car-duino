@@ -74,7 +74,8 @@ void LaneLine::draw_polyfit(cv::Mat& img) {
     
     // Generate x and y values of curved lane lines for plotting
     std::vector<cv::Point2f> line_points;
-    // Curve is defined by the polynomial equation and the provided coefficients (polyfits)
+#ifdef LLNL_POLY
+	// Curve is defined by the polynomial equation and the provided coefficients (polyfits)
     for (double x = 0; x < img_width; x++){
         double y = last_fit_pixel_[2]*x*x + last_fit_pixel_[1]*x + last_fit_pixel_[0];
         if ((y >= 0) && (y <= img_height)) {
@@ -82,9 +83,24 @@ void LaneLine::draw_polyfit(cv::Mat& img) {
             line_points.push_back(new_point);
         }
     }
+#else
+	// x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
+	for (double y = 0; y < img_height; y++) {
+		double x = last_fit_pixel_[2] * y*y + last_fit_pixel_[1] * y + last_fit_pixel_[0];
+		if ((x >= 0) && (x <= img_width)) {
+			cv::Point2f new_point = cv::Point2f(x, y);
+			line_points.push_back(new_point);
+		}
+	}
+
+#endif
     // Draw an opencv "line" between with each pair of consecutives points
     for (int i = 0; i < line_points.size() - 1; i++) {
-        cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(255), 2, CV_AA);
+		if (img.type() == CV_8UC4) {
+			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
+		} else {
+			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+		}
     }
 }
 

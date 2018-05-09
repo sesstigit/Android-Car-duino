@@ -244,11 +244,17 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		left_fit_meter = line_lt_.last_fit_meter();
 		detected = false;
 	} else {
+#ifdef LLNL_POLY
 		//poly = Polynomial(xs, func, dims, order);  dims=1 since y is dependent on only x; order=2 for quadratic equation.
         Polynomial poly = Polynomial(line_lt_.all_x_, line_lt_.all_y_, 1, 2);
         std::cout << "Polynomial coeffs = " << poly.termsToString() << endl;
         left_fit_pixel = poly.getCoefficients();
         std::cout << "My Polynomial coeffs = " << left_fit_pixel[0] << "," << left_fit_pixel[1] << "," << left_fit_pixel[2] << endl;
+#else
+		PolynomialRegression<double> poly_l = PolynomialRegression<double>();
+		// swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
+		poly_l.fitIt(line_lt_.all_y_, line_lt_.all_x_, 2, left_fit_pixel);
+#endif
 		//left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2);
 	}
 
@@ -257,8 +263,14 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		right_fit_meter = line_rt_.last_fit_meter();
 		detected = false;
 	} else {
+#ifdef LLNL_POLY
 	    Polynomial poly = Polynomial(line_rt_.all_x_, line_rt_.all_y_, 1, 2);
         right_fit_pixel = poly.getCoefficients();
+#else
+		PolynomialRegression<double> poly_r = PolynomialRegression<double>();
+		// swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
+		poly_r.fitIt(line_rt_.all_y_, line_rt_.all_x_, 2, right_fit_pixel);
+#endif
 		//right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
 	}
 
@@ -267,6 +279,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 
     cerr<< "Drawing polyfit" << endl;
     line_lt_.draw_polyfit(temp_mat);
+	line_rt_.draw_polyfit(temp_mat);
     //cv::imshow("Curve 1 - polylines", temp_mat);
     temp_mat.copyTo(outMat);
 }

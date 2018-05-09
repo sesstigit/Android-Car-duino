@@ -29,7 +29,11 @@
 #include "CarCmd.h"
 #include "imageprocessor/BirdseyeTransformer.h"
 #include "histogram/Binarization.h"
-#include "Polynomial.hh"
+#ifdef LLNL_POLY
+  #include "Polynomial.hh"
+#else
+ #include "PolynomialRegression.h"
+#endif
 //using namespace std;
 namespace Autodrive {
 
