@@ -48,6 +48,7 @@
 // application inlcudes
 #include "Autodrive.h"
 #include "imageprocessor/ImageProcessor.h"
+#include "histogram/AdvImageProcessor.h"
 #include "imageprocessor/Line.h"
 
 using namespace std;

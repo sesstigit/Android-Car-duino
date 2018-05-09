@@ -23,17 +23,17 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 
-#include "ImageConfig.h"
-#include "Util.h"
-#include "Line.h"
+#include "imageprocessor/ImageConfig.h"
+#include "imageprocessor/Util.h"
+#include "histogram/LaneLine.h"
 #include "CarCmd.h"
-#include "BirdseyeTransformer.h"
-#include "Binarization.h"
-
+#include "imageprocessor/BirdseyeTransformer.h"
+#include "histogram/Binarization.h"
+#include "Polynomial.hh"
 //using namespace std;
 namespace Autodrive {
 
-	class RoadFollower; //forward declaraion.
+	class LaneLine; //forward declaraion.
 
 	class AdvImageProcessor {
 	public:
@@ -59,6 +59,10 @@ namespace Autodrive {
 		bool keep_state_;
 		LaneLine line_lt_;
 		LaneLine line_rt_;
+		// private methods
+		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9, bool verbose = false);
+		void get_fits_by_previous_fits(cv::Mat& birdeye_binary, cv::Mat& outMat);
+		void draw_back_onto_the_road(cv::Mat& img_undistorted);
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_ADVIMAGEPROCESSOR_H_

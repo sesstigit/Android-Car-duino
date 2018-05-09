@@ -74,10 +74,10 @@ namespace Autodrive {
 
 		//if (img_conf.intrinsic_matrix_.is_empty() || img_conf.distortion_coeffs_.is_empty()){
 		if (intrinsic_matrix == nullptr || distortion_coeffs == nullptr) {
-			std::cerr << "INFO: camera calibration info unavailable.  No undistortion applied" << std::endl;
+			//std::cerr << "INFO: camera calibration info unavailable.  No undistortion applied" << std::endl;
 		}
 		else {
-			std::cerr << "INFO: undistorting frame" << std::endl;
+			//std::cerr << "INFO: undistorting frame" << std::endl;
 			cv::undistort(inframe, outframe, *intrinsic_matrix, *distortion_coeffs);
 		}
 	}

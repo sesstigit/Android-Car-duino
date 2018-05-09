@@ -21,7 +21,8 @@
 
 #include <vector>
 #include <numeric>
-#include "Util.h"
+#include <math.h>
+#include "imageprocessor/Util.h"
 
 namespace Autodrive {
 
@@ -30,30 +31,43 @@ class LaneLine {
  public:
   LaneLine(int buffer_len=10);
 
-  bool get_detected() { return detected_; };
+  bool detected() { return detected_; };
+  bool empty() { return (all_x_.empty() || all_y_.empty()); };
+  std::vector<double> last_fit_pixel() { return last_fit_pixel_; };
+  std::vector<double> last_fit_meter() { return last_fit_meter_; };
   //void set_detected(bool val) { detected_ = val; };
-  void append_line_coords(vector<int>& inds_x, vector<int>& inds_y);
-  void clear_line_coords() {
-    
+  void append_line_coords(std::vector<int>& inds_x, std::vector<int>& inds_y);
+  void clear_line_coords();
+  void update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buffer=false);
+  double curvature();
+  std::vector<double> average_fit();
+  
+  //! Draw the curved Lane Line of best fit on a color image.
+  void draw_polyfit(cv::Mat& img);
+
+  //TODO: make these private
+  // store all pixels coords (x, y) of line detected
+  std::vector<double> all_x_;
+  std::vector<double> all_y_;
+  
  private:
-  # flag to mark if the line was detected the last iteration
+  // flag to mark if the line was detected the last iteration
   bool detected_;
 
-  # polynomial coefficients fitted on the last iteration
-  float last_fit_pixel_;
-  float last_fit_meter_;
+  // polynomial coefficients fitted on the last iteration
+  std::vector<double> last_fit_pixel_;
+  std::vector<double> last_fit_meter_;
 
-  # list of polynomial coefficients of the last N iterations
-  std::vector<float> recent_fits_pixel_;
-  std::vector<float> recent_fits_meter_;
+  // list of polynomial coefficients of the last N iterations
+  std::vector<double> recent_fits_pixel_;
+  std::vector<double> recent_fits_meter_;
 
-  float radius_of_curvature_;
+  double radius_of_curvature_;
+  
+  int buffer_len_;   // the length of the buffer to take average line from
 
-  # store all pixels coords (x, y) of line detected
-  std::vector<int> all_x_;
-  std::vector<int> all_y_;
-		
-}  //class
+  
+};  //class
 }  //namespace
 
 #endif //ANDROIDCARDUINO_AUTODRIVE_LANELINE_H_

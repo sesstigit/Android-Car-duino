@@ -18,8 +18,8 @@
 #ifndef ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 #define ANDROIDCARDUINO_AUTODRIVE_CAR_H_
 
-#define USE_IMAGEPROCESSOR  //choose between imageprocessor and histogram directories for image processing
-#undef USE_ADVIMAGEPROCESSOR  //histogram version
+#undef USE_IMAGEPROCESSOR  //choose between imageprocessor and histogram directories for image processing
+#define USE_ADVIMAGEPROCESSOR  //histogram version
 
 
 #include <opencv2/opencv.hpp>
