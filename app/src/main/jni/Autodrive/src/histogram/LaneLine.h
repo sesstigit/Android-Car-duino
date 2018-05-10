@@ -43,7 +43,7 @@ class LaneLine {
   std::vector<double> average_fit();
   
   //! Draw the curved Lane Line of best fit on a color image.
-  void draw_polyfit(cv::Mat& img);
+  void draw_polyfit(cv::Mat& img, double margin);
 
   //TODO: make these private
   // store all pixels coords (x, y) of line detected

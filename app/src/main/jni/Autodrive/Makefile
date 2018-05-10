@@ -9,7 +9,9 @@ CPPFLAGS=-g -std=c++11
 LDFLAGS=-g -std=c++11 
 #-v #add this to LDFLAGS for verbosity
 #LDLIBS=$(shell root-config --libs)
-LDLIBS=$(shell pkg-config opencv --libs) -L$(AUTODRIVE_HOME)/external/ -lcxxlsfit
+LDLIBS=$(shell pkg-config opencv --libs) 
+# This library only required for LLNL_POLY code, i.e. polynomial fitting using external library
+#-L$(AUTODRIVE_HOME)/external/ -lcxxlsfit
 
 INC=-I$(AUTODRIVE_HOME)/src/ -I$(AUTODRIVE_HOME)/external/
 SRCDIR1=$(AUTODRIVE_HOME)/src/

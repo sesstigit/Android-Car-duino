@@ -67,23 +67,13 @@ void LaneLine::draw(mask, color=(255, 0, 0), line_width=50, average=False) {
 */
 
 
-//! Draw the Lane Line on a color mask image.
-void LaneLine::draw_polyfit(cv::Mat& img) {
+//! Draw the Lane Line in yellow on theimage.
+void LaneLine::draw_polyfit(cv::Mat& img, double margin) {
     int img_width = img.size().width;
     int img_height = img.size().height;
     
     // Generate x and y values of curved lane lines for plotting
     std::vector<cv::Point2f> line_points;
-#ifdef LLNL_POLY
-	// Curve is defined by the polynomial equation and the provided coefficients (polyfits)
-    for (double x = 0; x < img_width; x++){
-        double y = last_fit_pixel_[2]*x*x + last_fit_pixel_[1]*x + last_fit_pixel_[0];
-        if ((y >= 0) && (y <= img_height)) {
-            cv::Point2f new_point = cv::Point2f(x, y);                  
-            line_points.push_back(new_point);
-        }
-    }
-#else
 	// x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
 	for (double y = 0; y < img_height; y++) {
 		double x = last_fit_pixel_[2] * y*y + last_fit_pixel_[1] * y + last_fit_pixel_[0];
@@ -92,8 +82,6 @@ void LaneLine::draw_polyfit(cv::Mat& img) {
 			line_points.push_back(new_point);
 		}
 	}
-
-#endif
     // Draw an opencv "line" between with each pair of consecutives points
     for (int i = 0; i < line_points.size() - 1; i++) {
 		if (img.type() == CV_8UC4) {
@@ -102,6 +90,42 @@ void LaneLine::draw_polyfit(cv::Mat& img) {
 			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
     }
+    // TODO: add something like this to highlight the lane search area
+    // Color in left and right line pixels
+    for (int i = 0; i < all_x_.size() - 1; i++) {
+        img[all_y_[i], all_x_[i]] = cv::Scalar(255,0,0);  //TODO: draw points red/blue for left/right line
+    }
+    
+    // Generate a polygon to illustrate the search window area
+    std::vector<cv::Point2f> search_perimeter;
+    for (int i = 0; i < line_points.size() - 1; i++) {
+        search_perimeter.push_back(cv::Point2f(line_points[i].x - margin, line_points[i].y));
+        search_perimeter.push_back(cv::Point2f(line_points[i].x + margin, line_points[i].y));
+    }
+    cv::fillPoly(img, search_perimeter, cv::Scalar(0, 255, 0));
+    
+    /*
+    # And recast the x and y points into usable format for cv2.fillPoly()
+    left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
+    left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
+    left_line_pts = np.hstack((left_line_window1, left_line_window2))
+    right_line_window1 = np.array([np.transpose(np.vstack([right_fitx - margin, ploty]))])
+    right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx + margin, ploty])))])
+    right_line_pts = np.hstack((right_line_window1, right_line_window2))
+    
+    # Draw the lane onto the warped blank image
+    cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))
+    cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
+    result = cv2.addWeighted(img_fit, 1, window_img, 0.3, 0)
+    
+    if verbose:
+    plt.imshow(result)
+    plt.plot(left_fitx, ploty, color = 'yellow')
+    plt.plot(right_fitx, ploty, color = 'yellow')
+    plt.xlim(0, 1280)
+    plt.ylim(720, 0)
+    
+    plt.show()*/
 }
 
 //! average of polynomial coefficients of the last N iterations

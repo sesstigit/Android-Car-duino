@@ -75,7 +75,7 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 	if (keep_state_ && line_lt_.detected() && line_rt_.detected()) {
 		get_fits_by_previous_fits(binMat, mat);
 	} else {
-		get_fits_by_sliding_windows(binMat, mat, 9, false);
+		get_fits_by_sliding_windows(binMat, mat, 9);
 	}
 
     // compute offset in meter from center of the lane
@@ -106,72 +106,48 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 //! Get polynomial coefficients for lane-lines detected in an binary image.
 //!     @param birdseye_binary_mat: input bird's eye view binary image
 //!     @param n_windows: number of sliding windows used to search for the lines
-//!     @param verbose: if True, display intermediate output
-//!     @return updated lane lines and output image
-void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows, bool verbose) {
-	// Also uses
-	//!     line_lt_: class member, left lane-line previously detected
-	//!     line_rt_: class member, left lane-line previously detected
+//!     Result: updated lane lines line_lt, line_rt, and output image outMat
+void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows) {
+	// Find the lanes from scratch, so first clear line_lt_ and line_rt class members, which hold the lane-lines previously detected.
 	line_lt_.clear_line_coords();  //clear the previous entries
 	line_rt_.clear_line_coords();
 
 	int height = birdseye_binary_mat.size().height;
 	int width = birdseye_binary_mat.size().width;
 
-	//int histSize = 256; // number of bins in histogram
-	//float range[] = { 0, 256 };  // Set the range. Upper boundary is exclusive
-	//const float* histRange = { range };
-	//bool uniform = true; bool accumulate = false; //bins have same size (uniform), and histogram cleared at start
-	//Mat b_hist;  //for storing histogram of binary image
-
-	// Compute the histogram: 1=num source arrays, 0=channel, b_hist=output, 1=dimensionality
-	//cv::calcHist(birdseye_binary_mat, 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
-
-	// Take a histogram of the bottom half of the image (aim to find lane lines in bottom half)
-	//histogram = np.sum(birdseye_binary[height//2:-30, :], axis=0)
+    // Create a temp colour image to draw on and visualize the result
+    cv::Mat temp_mat;
+    if (outMat.type() == CV_8UC4) {
+        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
+    } else {
+        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+    }
+	// Take a histogram of the bottom half of the image (where the lane lines start)
+	// Histogram calculated with "reduce" function to get column sums.
 	cv::Mat col_sum;
-    //Reduce (bottom half of) matrix to a vector by treating the columns as a set of 1D vector and summing vector elements until a single row is obtained
+    //Reduce  matrix to a vector by treating the columns as a set of 1D vector and summing vector elements until a single row is obtained
 	cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height/2), width, height-int(height/2))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
-
-	cv::Mat temp_mat;
-	// Create a temp colour image to draw on and visualize the result
-	if (outMat.type() == CV_8UC4) {
-		cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
-	} else {
-		cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
-	}
-
-	// Find the peak of the left and right halves of the histogram
-	// These will be the starting point for the left and right lines
-	double minVal;
-	double maxVal;
-	cv::Point minLoc;
-	cv::Point maxLoc;
-	//minMaxLoc(InputArray src, double* minVal, double* maxVal=0, Point* minLoc=0, Point* maxLoc=0, InputArray mask=noArray())
+	// Find the peak of the left and right halves of the histogram as starting points for the left and right lines
+	double minVal, maxVal;
+	cv::Point minLoc, maxLoc;
 	//Rect params are x, y, width, height
 	// Search left half of col_sum for max column (should be the left LaneLine)
 	cv::minMaxLoc(col_sum(cv::Rect(0, 0, (int)(width/2), 1)), &minVal, &maxVal, &minLoc, &maxLoc);
-	cout << "min val : " << minVal << endl;
-	cout << "max val: " << maxVal << endl;
 	int leftx_base = maxLoc.x;
-
 	// Search right half of col_sum for max column (should be the right LaneLine)
 	cv::minMaxLoc(col_sum(cv::Rect((width/2)+1, 0, (int)(width-(width/2)-1), 1)), &minVal, &maxVal, &minLoc, &maxLoc);
-	cout << "min val : " << minVal << endl;
-	cout << "max val: " << maxVal << endl;
 	int rightx_base = maxLoc.x + (int)(width/2);
 
 	// Set height of bounding box windows for tracking the line
 	int window_height = (height / n_windows);
 
-	// Identify the x and y positions of all nonzero pixels in the image
-	std::vector<cv::Point2i> nonzero;   // output, locations of non-zero pixels 
+	// Identify the x and y positions of all nonzero pixels from the input image
+	std::vector<cv::Point2i> nonzero;
 	if (cv::countNonZero(birdseye_binary_mat) > 0) {
 		cv::findNonZero(birdseye_binary_mat, nonzero);
 	}
-	//Split the vector into separate x and y std::vector
-	std::vector<int> nonzero_x;
-	std::vector<int> nonzero_y;
+	//Split the nonzero vector into separate x and y std::vectors (since polynomial fitting requires this)
+	std::vector<int> nonzero_x, nonzero_y;
 	for (cv::Point a_point : nonzero) {
 		nonzero_x.push_back(a_point.x);
 		nonzero_y.push_back(a_point.y);
@@ -181,9 +157,9 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	int leftx_current = leftx_base;
 	int rightx_current = rightx_base;
 
-    //TODO: make these configurable!!!
-	int margin = 20;  // width of the windows + / -margin //was 100
-	int minpix = 10;   // minimum number of pixels found to recenter window  //was 50
+    //Margin and minpix are configurable.  Required espcially for different resolution images
+	int margin = img_conf_.histogram_lane_margin_; //20;  // width of the windows + / -margin //was 100
+	int minpix = img_conf_.histogram_win_minpix_; //10;   // minimum number of pixels found to recenter window  //was 50
 
 	// Step through the windows one by one
 	for (int window = 0; window < n_windows; window++) {
@@ -196,16 +172,13 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		int win_xright_high = rightx_current + margin;
 
 		// Create empty std::vector to receive left and right lane pixel indices
-		std::vector<int> good_left_inds_x;
-		std::vector<int> good_left_inds_y;
-		std::vector<int> good_right_inds_x;
-		std::vector<int> good_right_inds_y;
-
-		// Draw the windows on the visualization image
+		std::vector<int> good_left_inds_x, good_left_inds_y, good_right_inds_x, good_right_inds_y;
+		
+		// Draw the windows in green on the visualization image
 		cv::rectangle(temp_mat, cv::Point(win_xleft_low, win_y_low), cv::Point(win_xleft_high, win_y_high), cv::Scalar(0, 255, 0), 1);
 		cv::rectangle(temp_mat, cv::Point(win_xright_low, win_y_low), cv::Point(win_xright_high, win_y_high), cv::Scalar(0, 255, 0), 1);
 
-		// Identify the nonzero pixels in x and y within the window, and assign them to a line
+		// Identify the nonzero pixels within the left and right windows
 		for (int i = 0; i < nonzero.size(); i++) {
 			if ((nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) && (nonzero_x[i] >= win_xleft_low)
 				&& (nonzero_x[i] < win_xleft_high)) {
@@ -218,12 +191,11 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 				good_right_inds_y.push_back(nonzero_y[i]);	//add index to right line
 			}
 		}
-			
-		// Append these indices to the vector
+		// Append these indices to the current lane lines
 		line_lt_.append_line_coords(good_left_inds_x, good_left_inds_y);
 		line_rt_.append_line_coords(good_right_inds_x, good_right_inds_y);
 
-		// If you found > minpix pixels, recenter next window on their mean position
+		// If found > minpix pixels in window, recenter next window on their mean position
 		if (good_left_inds_x.size() > minpix) {
 			leftx_current = accumulate(good_left_inds_x.begin(), good_left_inds_x.end(), 0.0) / good_left_inds_x.size();  //average the x coordinate
 		}
@@ -232,146 +204,121 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		}
 	}
 
-	// Use C++ polyfit from https://github.com/LLNL/CxxPolyFit
+    std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
 
-	bool detected = true;
-	std::vector<double> left_fit_pixel;
-	std::vector<double> right_fit_pixel;
-	std::vector<double> left_fit_meter;
-    std::vector<double> right_fit_meter;
 	if (line_lt_.empty()) {
-		left_fit_pixel = line_lt_.last_fit_pixel();
-		left_fit_meter = line_lt_.last_fit_meter();
-		detected = false;
+		line_lt_.update_line(line_lt_.last_fit_pixel(), line_lt_.last_fit_meter(), false);
 	} else {
-#ifdef LLNL_POLY
-		//poly = Polynomial(xs, func, dims, order);  dims=1 since y is dependent on only x; order=2 for quadratic equation.
-        Polynomial poly = Polynomial(line_lt_.all_x_, line_lt_.all_y_, 1, 2);
-        std::cout << "Polynomial coeffs = " << poly.termsToString() << endl;
-        left_fit_pixel = poly.getCoefficients();
-        std::cout << "My Polynomial coeffs = " << left_fit_pixel[0] << "," << left_fit_pixel[1] << "," << left_fit_pixel[2] << endl;
-#else
 		PolynomialRegression<double> poly_l = PolynomialRegression<double>();
 		// swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
 		poly_l.fitIt(line_lt_.all_y_, line_lt_.all_x_, 2, left_fit_pixel);
-#endif
+		line_lt_.update_line(left_fit_pixel, left_fit_meter, true);
 		//left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2);
 	}
 
 	if (line_rt_.empty()) {
-		right_fit_pixel = line_rt_.last_fit_pixel();
-		right_fit_meter = line_rt_.last_fit_meter();
-		detected = false;
+		line_rt_.update_line(line_rt_.last_fit_pixel(), line_rt_.last_fit_meter(), false);
 	} else {
-#ifdef LLNL_POLY
-	    Polynomial poly = Polynomial(line_rt_.all_x_, line_rt_.all_y_, 1, 2);
-        right_fit_pixel = poly.getCoefficients();
-#else
 		PolynomialRegression<double> poly_r = PolynomialRegression<double>();
 		// swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
 		poly_r.fitIt(line_rt_.all_y_, line_rt_.all_x_, 2, right_fit_pixel);
-#endif
+		line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
 		//right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
 	}
-
-	line_lt_.update_line(left_fit_pixel, left_fit_meter, detected);
-	line_rt_.update_line(right_fit_pixel, right_fit_meter, detected);
-
-    cerr<< "Drawing polyfit" << endl;
-    line_lt_.draw_polyfit(temp_mat);
-	line_rt_.draw_polyfit(temp_mat);
-    //cv::imshow("Curve 1 - polylines", temp_mat);
+    line_lt_.draw_polyfit(temp_mat, margin);
+	line_rt_.draw_polyfit(temp_mat, margin);
     temp_mat.copyTo(outMat);
 }
 
 //! Get polynomial coefficients for lane - lines detected in a binary image.
-//! This function starts from previously detected lane - lines to speed - up the search of lane - lines in the current frame.
+//! Starts from previously detected lane lines to speed up the search oin the current frame.
 //! @param birdeye_binary : input bird's eye view binary image
 //! @return : updated lane lines and output image
+void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat) {
+    line_lt_.clear_line_coords();  //clear the previous entries
+    line_rt_.clear_line_coords();
 
-void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdeye_binary, cv::Mat& outMat) {
-    line_lt_.update_line(line_lt_.last_fit_pixel(), line_lt_.last_fit_meter(), false);  //just set detected to false for now
-    line_rt_.update_line(line_rt_.last_fit_pixel(), line_rt_.last_fit_meter(), false);  //just set detected to false for now
+	int height = birdseye_binary_mat.size().height;
+    int width = birdseye_binary_mat.size().width;
+    
+    // Create a temp colour image to draw on and visualize the result
+    cv::Mat temp_mat;
+    if (outMat.type() == CV_8UC4) {
+        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
+    } else {
+        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+    }
+    std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
+	left_fit_pixel = line_lt_.last_fit_pixel();
+	right_fit_pixel = line_rt_.last_fit_pixel();
 
-/*
-	height, width = birdeye_binary.shape
-
-	left_fit_pixel = line_lt.last_fit_pixel
-	right_fit_pixel = line_rt.last_fit_pixel
-
-	nonzero = birdeye_binary.nonzero()
-	nonzero_y = np.array(nonzero[0])
-	nonzero_x = np.array(nonzero[1])
-	margin = 100
-	left_lane_inds = (
-	(nonzero_x > (left_fit_pixel[0] * (nonzero_y ** 2) + left_fit_pixel[1] * nonzero_y + left_fit_pixel[2] - margin)) & (
-		nonzero_x < (left_fit_pixel[0] * (nonzero_y ** 2) + left_fit_pixel[1] * nonzero_y + left_fit_pixel[2] + margin)))
-	right_lane_inds = (
-	(nonzero_x >(right_fit_pixel[0] * (nonzero_y ** 2) + right_fit_pixel[1] * nonzero_y + right_fit_pixel[2] - margin)) & (
-		nonzero_x < (right_fit_pixel[0] * (nonzero_y ** 2) + right_fit_pixel[1] * nonzero_y + right_fit_pixel[2] + margin)))
-
-	# Extract left and right line pixel positions
-	line_lt.all_x, line_lt.all_y = nonzero_x[left_lane_inds], nonzero_y[left_lane_inds]
-	line_rt.all_x, line_rt.all_y = nonzero_x[right_lane_inds], nonzero_y[right_lane_inds]
-
-	detected = True
-	if not list(line_lt.all_x) or not list(line_lt.all_y) :
-		left_fit_pixel = line_lt.last_fit_pixel
-		left_fit_meter = line_lt.last_fit_meter
-		detected = False
-	else:
-left_fit_pixel = np.polyfit(line_lt.all_y, line_lt.all_x, 2)
-left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2)
-
-if not list(line_rt.all_x) or not list(line_rt.all_y) :
-	right_fit_pixel = line_rt.last_fit_pixel
-	right_fit_meter = line_rt.last_fit_meter
-	detected = False
-else:
-right_fit_pixel = np.polyfit(line_rt.all_y, line_rt.all_x, 2)
-right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2)
-
-line_lt.update_line(left_fit_pixel, left_fit_meter, detected = detected)
-line_rt.update_line(right_fit_pixel, right_fit_meter, detected = detected)
-
-# Generate x and y values for plotting
-ploty = np.linspace(0, height - 1, height)
-left_fitx = left_fit_pixel[0] * ploty ** 2 + left_fit_pixel[1] * ploty + left_fit_pixel[2]
-right_fitx = right_fit_pixel[0] * ploty ** 2 + right_fit_pixel[1] * ploty + right_fit_pixel[2]
-
-# Create an image to draw on and an image to show the selection window
-img_fit = np.dstack((birdeye_binary, birdeye_binary, birdeye_binary)) * 255
-window_img = np.zeros_like(img_fit)
-
-# Color in left and right line pixels
-img_fit[nonzero_y[left_lane_inds], nonzero_x[left_lane_inds]] = [255, 0, 0]
-img_fit[nonzero_y[right_lane_inds], nonzero_x[right_lane_inds]] = [0, 0, 255]
-
-# Generate a polygon to illustrate the search window area
-# And recast the x and y points into usable format for cv2.fillPoly()
-left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
-left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
-left_line_pts = np.hstack((left_line_window1, left_line_window2))
-right_line_window1 = np.array([np.transpose(np.vstack([right_fitx - margin, ploty]))])
-right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx + margin, ploty])))])
-right_line_pts = np.hstack((right_line_window1, right_line_window2))
-
-# Draw the lane onto the warped blank image
-cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))
-cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
-result = cv2.addWeighted(img_fit, 1, window_img, 0.3, 0)
-
-if verbose:
-plt.imshow(result)
-plt.plot(left_fitx, ploty, color = 'yellow')
-plt.plot(right_fitx, ploty, color = 'yellow')
-plt.xlim(0, 1280)
-plt.ylim(720, 0)
-
-plt.show()
-
-return line_lt, line_rt, img_fit
-*/
+    // Identify the x and y positions of all nonzero pixels from the input image
+    std::vector<cv::Point2i> nonzero;
+    if (cv::countNonZero(birdseye_binary_mat) > 0) {
+        cv::findNonZero(birdseye_binary_mat, nonzero);
+    }
+	// Split the nonzero vector into separate x and y std::vectors (since polynomial fitting requires this)
+    std::vector<int> nonzero_x, nonzero_y;
+    for (cv::Point a_point : nonzero) {
+        nonzero_x.push_back(a_point.x);
+        nonzero_y.push_back(a_point.y);
+    }
+	
+	// Use the existing polynomial fit lane lines (plus a margin either side) as the search zone for the updated lane lines
+	// Get all non-zero points in the search zone, and then fit a polynomial again.
+	double margin = img_conf_.histogram_lane_margin_;
+	
+	// Option 1: non-vectorized, exhaustive search of non-zero points, assigning each point to a line_lt or line_rt or neither
+	//             - just use coefficients to calculate current lane position and margin.
+	//             - shouldn't be too inefficient, assuming not too many non-zero points in whole image
+	//             - vectorized numpy solution would be much faster
+	// Option 2:  make points for left and right margins for onelane line, and use cv::fillpoly to fill the search region
+	//             - use that image as a mask on the input image
+	//             - after masking, all non-zero points are assigned to the lane line
+	//             - repeat for the other lane
+	// Try option 1:
+	double xleft, xright;
+	std::vector<int> good_left_inds_x, good_left_inds_y, good_right_inds_x, good_right_inds_y;
+	for (int i = 0; i < nonzero.size(); i++) {
+	    // For the y value of this nonzero point, calculate the position of the known lane lines
+	    //polynomial is x = ay^2 + by + c
+	    xleft = (left_fit_pixel[2] * std::pow((double)nonzero_y[i],2.0)) + (left_fit_pixel[1] * (double)nonzero_y[i]) + left_fit_pixel[0];
+	    xright = (right_fit_pixel[2] * std::pow((double)nonzero_y[i],2)) + (right_fit_pixel[1] * (double)nonzero_y[i]) + right_fit_pixel[0];
+	    // Check whether the nonzero point is inside the lane margin
+        if (((double)nonzero_x[i] >= (xleft - margin)) && ((double)nonzero_x[i] <= (xleft + margin))) {
+            good_left_inds_x.push_back(nonzero_x[i]);    //add index to left line
+            good_left_inds_y.push_back(nonzero_y[i]);    //add index to left line
+        }
+        if (((double)nonzero_x[i] >= (xright - margin)) && ((double)nonzero_x[i] <= (xright + margin))) {
+            good_right_inds_x.push_back(nonzero_x[i]);    //add index to right line
+            good_right_inds_y.push_back(nonzero_y[i]);    //add index to right line
+        }
+    }
+    // Append these indices to the current lane lines
+    line_lt_.append_line_coords(good_left_inds_x, good_left_inds_y);
+    line_rt_.append_line_coords(good_right_inds_x, good_right_inds_y);
+    
+    if (line_lt_.empty()) {
+        line_lt_.update_line(line_lt_.last_fit_pixel(), line_lt_.last_fit_meter(), false);
+    } else {
+        PolynomialRegression<double> poly_l = PolynomialRegression<double>();
+        // swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
+        poly_l.fitIt(line_lt_.all_y_, line_lt_.all_x_, 2, left_fit_pixel);
+        line_lt_.update_line(left_fit_pixel, left_fit_meter, true);
+        //left_fit_meter = np.polyfit(line_lt.all_y * ym_per_pix, line_lt.all_x * xm_per_pix, 2);
+    }
+	if (line_rt_.empty()) {
+        line_rt_.update_line(line_rt_.last_fit_pixel(), line_rt_.last_fit_meter(), false);
+    } else {
+        PolynomialRegression<double> poly_r = PolynomialRegression<double>();
+        // swap x and y for PolynomialRegression to convert almost vertical lane lines to almost horizontal.
+        poly_r.fitIt(line_rt_.all_y_, line_rt_.all_x_, 2, right_fit_pixel);
+        line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
+        //right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
+    }
+    line_lt_.draw_polyfit(temp_mat, margin);
+    line_rt_.draw_polyfit(temp_mat, margin);
+    temp_mat.copyTo(outMat);
 }
 
 //! Draw both the drivable lane area and the detected lane - lines onto the original(undistorted) frame.

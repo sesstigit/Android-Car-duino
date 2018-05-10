@@ -37,5 +37,7 @@ ImageConfig::ImageConfig() :
   pid_kd_(1.0),  //was 1.0
   intrinsic_matrix_(nullptr),
   distortion_coeffs_(nullptr),
+  histogram_lane_margin_(20.0),
+  histogram_win_minpix_(10.0),
   display_debug_(true) {
   }

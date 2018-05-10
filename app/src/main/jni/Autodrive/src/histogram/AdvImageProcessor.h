@@ -64,8 +64,8 @@ namespace Autodrive {
 		LaneLine line_lt_;
 		LaneLine line_rt_;
 		// private methods
-		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9, bool verbose = false);
-		void get_fits_by_previous_fits(cv::Mat& birdeye_binary, cv::Mat& outMat);
+		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9);
+		void get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat);
 		void draw_back_onto_the_road(cv::Mat& img_undistorted);
 	};
 }
