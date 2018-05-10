@@ -40,10 +40,10 @@ class LaneLine {
   void clear_line_coords();
   void update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buffer=false);
   double curvature();
-  std::vector<double> average_fit();
-  
-  //! Draw the curved Lane Line of best fit on a color image.
-  void draw_polyfit(cv::Mat& img, double margin);
+  double curvature_meter();
+    
+  //! Draw the curved Lane Line of best fit on a color image.  If average, then draw the line of best fit from the past "buffer_len" times.
+  void draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool average=false);
 
   //TODO: make these private
   // store all pixels coords (x, y) of line detected
@@ -65,7 +65,7 @@ class LaneLine {
   double radius_of_curvature_;
   
   int buffer_len_;   // the length of the buffer to take average line from
-
+  int ewma_steps_;  // exponentially weighted moving average steps taken so far
   
 };  //class
 }  //namespace

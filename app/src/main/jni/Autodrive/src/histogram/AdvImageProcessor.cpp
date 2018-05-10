@@ -116,11 +116,17 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	int width = birdseye_binary_mat.size().width;
 
     // Create a temp colour image to draw on and visualize the result
+	cv::Vec3b red;
+	cv::Vec3b blue;
     cv::Mat temp_mat;
     if (outMat.type() == CV_8UC4) {
         cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
+		red = cv::Vec3b(255, 0, 0);
+		blue = cv::Vec3b(0, 0, 255);
     } else {
         cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+		red = cv::Vec3b(0, 0, 255);
+		blue = cv::Vec3b(255, 0, 0);
     }
 	// Take a histogram of the bottom half of the image (where the lane lines start)
 	// Histogram calculated with "reduce" function to get column sums.
@@ -225,8 +231,8 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
 		//right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
 	}
-    line_lt_.draw_polyfit(temp_mat, margin);
-	line_rt_.draw_polyfit(temp_mat, margin);
+    line_lt_.draw_polyfit(temp_mat, margin, red, true);
+	line_rt_.draw_polyfit(temp_mat, margin, blue, true);
     temp_mat.copyTo(outMat);
 }
 
@@ -242,12 +248,19 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
     int width = birdseye_binary_mat.size().width;
     
     // Create a temp colour image to draw on and visualize the result
+	cv::Vec3b red;
+	cv::Vec3b blue;
     cv::Mat temp_mat;
-    if (outMat.type() == CV_8UC4) {
-        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
-    } else {
-        cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
-    }
+	if (outMat.type() == CV_8UC4) {
+		cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
+		red = cv::Vec3b(255, 0, 0);
+		blue = cv::Vec3b(0, 0, 255);
+	}
+	else {
+		cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+		red = cv::Vec3b(0, 0, 255);
+		blue = cv::Vec3b(255, 0, 0);
+	}
     std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
 	left_fit_pixel = line_lt_.last_fit_pixel();
 	right_fit_pixel = line_rt_.last_fit_pixel();
@@ -316,9 +329,28 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
         //right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
     }
-    line_lt_.draw_polyfit(temp_mat, margin);
-    line_rt_.draw_polyfit(temp_mat, margin);
+    line_lt_.draw_polyfit(temp_mat, margin, red, true);
+    line_rt_.draw_polyfit(temp_mat, margin, blue, true);
     temp_mat.copyTo(outMat);
+
+	//Need to sanity check the lane lines.  If they do not make sense, then set "detected=false", to trigger re-detection from scratch.
+	// Basic check - are any of the points in the left and right line the same?  If so, bad!
+	bool lanes_intersect = false;
+	for (int i = 0; i < good_left_inds_x.size(); i++) {
+		for (int j = 0; j < good_right_inds_x.size(); j++) {
+			if ((good_left_inds_x[i] == good_right_inds_x[j]) && (good_left_inds_y[i] == good_right_inds_y[j])) {
+				lanes_intersect = true;
+				break;
+			}
+		}
+		if (lanes_intersect)
+			break;
+	}
+	if (lanes_intersect) {
+		line_lt_.update_line(left_fit_pixel, left_fit_meter, false);  //set detected to false, since the lane lines fail the sanity check
+		line_rt_.update_line(right_fit_pixel, right_fit_meter, false);
+	}
+				
 }
 
 //! Draw both the drivable lane area and the detected lane - lines onto the original(undistorted) frame.
