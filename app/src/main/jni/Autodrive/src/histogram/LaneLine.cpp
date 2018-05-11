@@ -19,7 +19,20 @@
 
 using namespace Autodrive;
 
-LaneLine::LaneLine(int buffer_len) : buffer_len_(buffer_len), detected_(false), ewma_steps_(0) {
+LaneLine::LaneLine(int buffer_len) : buffer_len_(buffer_len), detected_(false) {
+	clear_buffer();
+}
+
+void LaneLine::clear_buffer() {
+	recent_fits_pixel_.clear();
+	recent_fits_pixel_corr_.clear();
+	recent_fits_meter_.clear();
+	recent_fits_meter_corr_.clear();
+	recent_fits_pixel_ = { 0.0, 0.0, 0.0 };
+	recent_fits_pixel_corr_ = { 0.0, 0.0, 0.0 };
+	recent_fits_meter_ = { 0.0, 0.0, 0.0 };
+	recent_fits_meter_corr_ = { 0.0, 0.0, 0.0 };
+	ewma_steps_ = 0;
 }
 
 //!Update Line with new fitted coefficients.
@@ -28,30 +41,15 @@ LaneLine::LaneLine(int buffer_len) : buffer_len_(buffer_len), detected_(false), 
 //! @param detected: if the Line was detected or inferred
 //! @param clear_buffer: if True, reset state
 //! @return void
-void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buffer) {
+void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff) {
 	detected_ = detected;
 	//std::cout << "new_fit_pixel = " << new_fit_pixel[0] << "," << new_fit_pixel[1] << "," << new_fit_pixel[2] << "," << std::endl;
-	if (clear_buffer) {
-		recent_fits_pixel_.clear();
-		recent_fits_meter_.clear();
-		recent_fits_pixel_corr_.clear();
-        recent_fits_meter_corr_.clear();
-		ewma_steps_ = 0;
+	if (clear_buff) {
+		clear_buffer();
 	}
-
 	last_fit_pixel_ = new_fit_pixel;
 	last_fit_meter_ = new_fit_meter;
 
-	if (recent_fits_pixel_.size() == 0) {
-		recent_fits_pixel_ = new_fit_pixel;  //just to get the length
-		std::fill(recent_fits_pixel_.begin(), recent_fits_pixel_.end(), 0.0);  //now set each element of vector to zero
-		recent_fits_pixel_corr_ = recent_fits_pixel_;
-	}
-	if (recent_fits_meter_.size() == 0) {
-		recent_fits_meter_ = new_fit_meter;
-		std::fill(recent_fits_meter_.begin(), recent_fits_meter_.end(), 0.0);
-		recent_fits_meter_corr_ = recent_fits_meter_;
-	}
 	// Update recent_fits_pixel with an exponentionally weighted moving average.
 	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t
 	//! Correcting for startup bias: v_corr = v_t/(1-beta^t)
@@ -63,15 +61,15 @@ void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double
 		}
 		double beta = 1.0 - (1.0 / buffer_len_);  //take moving average from past buffer_len_ observations
 		// ewma of recent_fits_pixels
-		for (int i = 0; i < recent_fits_pixel_.size(); i++) {
+		for (int i = 0; i < new_fit_pixel.size(); i++) {
 			recent_fits_pixel_[i] = (beta * recent_fits_pixel_[i]) + (1 - beta)*new_fit_pixel[i];
 			if ((ewma_steps_ < 1000) && (ewma_steps_ > 0)) {
 				recent_fits_pixel_corr_[i] = recent_fits_pixel_[i] / (1 - std::pow(beta, ewma_steps_));
 			}
 		}
 		// repeat ewma for recent_fits_meters
-		for (int i = 0; i < recent_fits_meter_.size(); i++) {
-			recent_fits_meter_[i] = (beta * recent_fits_meter_[i]) + (1 - beta)*new_fit_meter[i];
+		for (int i = 0; i < new_fit_meter.size(); i++) {
+ 			recent_fits_meter_[i] = (beta * recent_fits_meter_[i]) + (1 - beta)*new_fit_meter[i];
             if ((ewma_steps_ < 1000) && (ewma_steps_ > 0)) {
                 recent_fits_meter_corr_[i] = recent_fits_meter_[i] / (1 - std::pow(beta, ewma_steps_));
             }
@@ -109,13 +107,8 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
     int img_width = img.size().width;
     int img_height = img.size().height;
     
-	std::vector<double> coeffs;
-	//if (average && (recent_fits_pixel_.size() >= 3)) {
-	//	coeffs = recent_fits_pixel_;
-	//} else {
-		coeffs = last_fit_pixel_;
-	//}
-
+	std::vector<double> coeffs = get_poly_coeffs(average);
+	
     // Generate x and y values of curved lane lines for plotting
     std::vector<cv::Point2f> line_points;
 	// x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
@@ -184,17 +177,42 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 //! radius of curvature of the line (averaged)
 double LaneLine::curvature() {
 	double y_eval = 0.0;
-	std::vector<double> coeffs = recent_fits_pixel_;
+	std::vector<double> coeffs = get_poly_coeffs(true);
 	return (1 + std::pow(std::pow((2 * coeffs[0] * y_eval + coeffs[1]), 2), 1.5) / std::abs(2 * coeffs[0]));
 }
 
 //! radius of curvature of the line (averaged)
 double LaneLine::curvature_meter() {
 	double y_eval = 0.0;
-	std::vector<double> coeffs = recent_fits_meter_;
+	//TODO: apply scaling to these coeffs to convert from pixel to meter (or create another class method to get meter coeffs)
+	std::vector<double> coeffs = get_poly_coeffs(true);
 	return (1 + std::pow(std::pow((2 * coeffs[0] * y_eval + coeffs[1]), 2), 1.5) / std::abs(2 * coeffs[0]));
 }
 
+//! For the current LaneLine polynomial, calculate x coordinate given y.
+//! @param y The y coordinate
+//! @param average If true, use the moving average of the polynomial to calculate x.  If false, use the current polynomial.
+double LaneLine::poly_eval(double y, bool average) {
+	std::vector<double> coeffs = get_poly_coeffs(average);
+	return (coeffs[2] * y*y + coeffs[1] * y + coeffs[0]);
+}
+
+//! Get the LaneLine polynomial coefficients.  This function chooses one of a few different options.
+std::vector<double> LaneLine::get_poly_coeffs(bool average) {
+	std::vector<double> coeffs;
+	if (average && (recent_fits_pixel_.size() >= 3)) {
+		if ((ewma_steps_ < 1000) && (ewma_steps_ > 0)) {
+			coeffs = recent_fits_pixel_corr_;  //handles startup moving average error correction
+		} else {
+			coeffs = recent_fits_pixel_;
+		}
+	} else if (last_fit_pixel_.size() >= 3) {
+		coeffs = last_fit_pixel_;
+	} else {
+		coeffs = { 0.0, 0.0, 0.0 };
+	}
+	return coeffs;
+}
 
 void LaneLine::clear_line_coords() {
 	all_x_.clear();

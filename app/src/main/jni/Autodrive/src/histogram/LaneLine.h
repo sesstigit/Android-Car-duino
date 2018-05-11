@@ -30,18 +30,21 @@ namespace Autodrive {
 class LaneLine {
  public:
   LaneLine(int buffer_len=10);
-
+  // Getters
   bool detected() { return detected_; };
   bool empty() { return (all_x_.empty() || all_y_.empty()); };
   std::vector<double> last_fit_pixel() { return last_fit_pixel_; };
   std::vector<double> last_fit_meter() { return last_fit_meter_; };
   //void set_detected(bool val) { detected_ = val; };
+  // Methods with calculations
   void append_line_coords(std::vector<int>& inds_x, std::vector<int>& inds_y);
   void clear_line_coords();
-  void update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buffer=false);
+  void clear_buffer();
+  void update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff=false);
   double curvature();
   double curvature_meter();
-    
+  std::vector<double> get_poly_coeffs(bool average);
+  double poly_eval(double y, bool average);
   //! Draw the curved Lane Line of best fit on a color image.  If average, then draw the line of best fit from the past "buffer_len" times.
   void draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool average=false);
 

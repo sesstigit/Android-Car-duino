@@ -79,8 +79,8 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 	}
 
     // compute offset in pixels from center of the lane
-    double offset_pix = compute_offset_from_center(line_lt, line_rt, binMat.size().width)
-
+	double offset_pix = compute_offset_from_center(binMat);
+	cout << "offset pix = " << offset_pix << endl;
     // draw the surface enclosed by lane lines back onto the original frame
     //blend_on_road = draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state_)
 
@@ -356,22 +356,20 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 //! Compute offset from center of the inferred lane.
 //! Assume camera is fixed midway acrosss the car. Hence offset is distance between the center of the image
 //! and the midpoint at the bottom of the image of the two lane-lines detected.
-//! @param line_lt: detected left lane-line
-//! @param line_rt: detected right lane-line
-//! @param image_width: width of the image
 //! @return: inferred offset in pixels
-double compute_offset_from_center(line_lt, line_rt, int frame_width) {
+double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
     double offset_pix = 0;
+	int img_height = img.size().height;
     
     if (line_lt_.detected() && line_rt_.detected()) {
         // Previous implementation chose the average of non-zero points which make up the bottom of line_lt_ and line_rt
-        // Instead, here we compute the value of x for each line using the fitted polynomial
-        ADD FUNCTION TO EVAL THE POLYNOMIAL???
-        double line_lt_bottom = np.mean(line_lt.all_x[line_lt.all_y > 0.95 * line_lt.all_y.max()]);
-        double line_rt_bottom = np.mean(line_rt.all_x[line_rt.all_y > 0.95 * line_rt.all_y.max()]);
-        lane_width = line_rt_bottom - line_lt_bottom;
-        midpoint = frame_width / 2;
-        offset_pix = abs((line_lt_bottom + lane_width / 2) - midpoint)
+        // Instead, here we compute the value of x for each line using the moving average of the fitted polynomial
+        //ADD FUNCTION TO EVAL THE POLYNOMIAL???
+		double line_lt_bottom = line_lt_.poly_eval(img_height - 10, true);  
+		double line_rt_bottom = line_rt_.poly_eval(img_height - 10, true);
+        double lane_width = line_rt_bottom - line_lt_bottom;
+        double midpoint = img.size().width / 2;
+		offset_pix = abs((line_lt_bottom + lane_width / 2) - midpoint);
     }
     //TODO: how do I return an error condition?
     return offset_pix;

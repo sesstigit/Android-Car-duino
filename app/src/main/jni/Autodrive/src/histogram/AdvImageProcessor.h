@@ -66,6 +66,7 @@ namespace Autodrive {
 		// private methods
 		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9);
 		void get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat);
+		double compute_offset_from_center(cv::Mat& img);
 		void draw_back_onto_the_road(cv::Mat& img_undistorted);
 	};
 }
