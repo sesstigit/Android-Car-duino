@@ -30,12 +30,14 @@ LaneLine::LaneLine(int buffer_len) : buffer_len_(buffer_len), detected_(false), 
 //! @return void
 void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buffer) {
 	detected_ = detected;
-	std::cout << "new_fit_pixel = " << new_fit_pixel[0] << "," << new_fit_pixel[1] << "," << new_fit_pixel[2] << "," << std::endl;
-	//if (clear_buffer) {
-	//	recent_fits_pixel_.clear();
-	//	recent_fits_meter_.clear();
-	//	ewma_steps_ = 0;
-	//}
+	//std::cout << "new_fit_pixel = " << new_fit_pixel[0] << "," << new_fit_pixel[1] << "," << new_fit_pixel[2] << "," << std::endl;
+	if (clear_buffer) {
+		recent_fits_pixel_.clear();
+		recent_fits_meter_.clear();
+		recent_fits_pixel_corr_.clear();
+        recent_fits_meter_corr_.clear();
+		ewma_steps_ = 0;
+	}
 
 	last_fit_pixel_ = new_fit_pixel;
 	last_fit_meter_ = new_fit_meter;
@@ -43,10 +45,12 @@ void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double
 	if (recent_fits_pixel_.size() == 0) {
 		recent_fits_pixel_ = new_fit_pixel;  //just to get the length
 		std::fill(recent_fits_pixel_.begin(), recent_fits_pixel_.end(), 0.0);  //now set each element of vector to zero
+		recent_fits_pixel_corr_ = recent_fits_pixel_;
 	}
 	if (recent_fits_meter_.size() == 0) {
 		recent_fits_meter_ = new_fit_meter;
 		std::fill(recent_fits_meter_.begin(), recent_fits_meter_.end(), 0.0);
+		recent_fits_meter_corr_ = recent_fits_meter_;
 	}
 	// Update recent_fits_pixel with an exponentionally weighted moving average.
 	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t
@@ -60,19 +64,22 @@ void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double
 		double beta = 1.0 - (1.0 / buffer_len_);  //take moving average from past buffer_len_ observations
 		// ewma of recent_fits_pixels
 		for (int i = 0; i < recent_fits_pixel_.size(); i++) {
-			double tempval = (beta * recent_fits_pixel_[i]) + (1 - beta)*new_fit_pixel[i];
+			recent_fits_pixel_[i] = (beta * recent_fits_pixel_[i]) + (1 - beta)*new_fit_pixel[i];
 			if ((ewma_steps_ < 1000) && (ewma_steps_ > 0)) {
-				tempval = tempval / (1 - std::pow(beta, ewma_steps_));
+				recent_fits_pixel_corr_[i] = recent_fits_pixel_[i] / (1 - std::pow(beta, ewma_steps_));
 			}
-			recent_fits_pixel_[i] = tempval;
 		}
 		// repeat ewma for recent_fits_meters
 		for (int i = 0; i < recent_fits_meter_.size(); i++) {
-			recent_fits_meter_[i] = ((beta * recent_fits_meter_[i]) + (1 - beta)*new_fit_meter[i]) / (1 - std::pow(beta, ewma_steps_));
+			recent_fits_meter_[i] = (beta * recent_fits_meter_[i]) + (1 - beta)*new_fit_meter[i];
+            if ((ewma_steps_ < 1000) && (ewma_steps_ > 0)) {
+                recent_fits_meter_corr_[i] = recent_fits_meter_[i] / (1 - std::pow(beta, ewma_steps_));
+            }
 		}
 	}
-	std::cout << "last_fit_pixel = " << last_fit_pixel_[0] << "," << last_fit_pixel_[1] << "," << last_fit_pixel_[2] << "," << std::endl;
-	std::cout << "recent_fits_pixel = " << recent_fits_pixel_[0] << "," << recent_fits_pixel_[1] << "," << recent_fits_pixel_[2] << "," << std::endl;
+	//std::cout << "last_fit_pixel = " << last_fit_pixel_[0] << "," << last_fit_pixel_[1] << "," << last_fit_pixel_[2] << "," << std::endl;
+	//std::cout << "recent_fits_pixel = " << recent_fits_pixel_[0] << "," << recent_fits_pixel_[1] << "," << recent_fits_pixel_[2] << "," << std::endl;
+	//std::cout << "recent_fits_pixel_corr = " << recent_fits_pixel_corr_[0] << "," << recent_fits_pixel_corr_[1] << "," << recent_fits_pixel_corr_[2] << "," << std::endl;
 }
 /*
 //! Draw the Lane Line on a color mask image.
@@ -138,15 +145,17 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 		}
     }
     // TODO: add something like this to highlight the lane search area
-    
-    
-    // Generate a polygon to illustrate the search window area
-    std::vector<cv::Point2f> search_perimeter;
-    for (int i = 0; i < line_points.size() - 1; i++) {
-        search_perimeter.push_back(cv::Point2f(line_points[i].x - margin, line_points[i].y));
-        search_perimeter.push_back(cv::Point2f(line_points[i].x + margin, line_points[i].y));
+    // Note: cvv::fillPoly only accepts 32 bit integers for Point coordinates.  Hence Point2f is not allowed.
+    std::vector<cv::Point> search_perimeter_left;
+    std::vector<cv::Point> search_perimeter_right;
+    for (int i = 0; i < line_points.size(); i++) {
+        search_perimeter_left.push_back(cv::Point(line_points[i].x - margin, line_points[i].y));
+        search_perimeter_right.push_back(cv::Point(line_points[i].x + margin, line_points[i].y));
     }
-    //cv::fillPoly(img, search_perimeter, cv::Scalar(0, 255, 0));
+    std::vector<std::vector<cv::Point> > search_perimeter_contours;
+    search_perimeter_contours.push_back(search_perimeter_left);  //can add more contours later if we want
+    search_perimeter_contours.push_back(search_perimeter_right);  //can add more contours later if we want
+    cv::fillPoly(img, search_perimeter_contours, cv::Scalar(0,255,0));
     
     /*
     # And recast the x and y points into usable format for cv2.fillPoly()

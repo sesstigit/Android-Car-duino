@@ -78,8 +78,8 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 		get_fits_by_sliding_windows(binMat, mat, 9);
 	}
 
-    // compute offset in meter from center of the lane
-    //offset_meter = compute_offset_from_center(line_lt, line_rt, frame_width=frame.shape[1])
+    // compute offset in pixels from center of the lane
+    double offset_pix = compute_offset_from_center(line_lt, line_rt, binMat.size().width)
 
     // draw the surface enclosed by lane lines back onto the original frame
     //blend_on_road = draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state_)
@@ -347,11 +347,36 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 			break;
 	}
 	if (lanes_intersect) {
-		line_lt_.update_line(left_fit_pixel, left_fit_meter, false);  //set detected to false, since the lane lines fail the sanity check
-		line_rt_.update_line(right_fit_pixel, right_fit_meter, false);
+		line_lt_.update_line(left_fit_pixel, left_fit_meter, false, true);  //set detected to false, since the lane lines fail the sanity check
+		line_rt_.update_line(right_fit_pixel, right_fit_meter, false, true); //also set clear_buffer to true
 	}
 				
 }
+
+//! Compute offset from center of the inferred lane.
+//! Assume camera is fixed midway acrosss the car. Hence offset is distance between the center of the image
+//! and the midpoint at the bottom of the image of the two lane-lines detected.
+//! @param line_lt: detected left lane-line
+//! @param line_rt: detected right lane-line
+//! @param image_width: width of the image
+//! @return: inferred offset in pixels
+double compute_offset_from_center(line_lt, line_rt, int frame_width) {
+    double offset_pix = 0;
+    
+    if (line_lt_.detected() && line_rt_.detected()) {
+        // Previous implementation chose the average of non-zero points which make up the bottom of line_lt_ and line_rt
+        // Instead, here we compute the value of x for each line using the fitted polynomial
+        ADD FUNCTION TO EVAL THE POLYNOMIAL???
+        double line_lt_bottom = np.mean(line_lt.all_x[line_lt.all_y > 0.95 * line_lt.all_y.max()]);
+        double line_rt_bottom = np.mean(line_rt.all_x[line_rt.all_y > 0.95 * line_rt.all_y.max()]);
+        lane_width = line_rt_bottom - line_lt_bottom;
+        midpoint = frame_width / 2;
+        offset_pix = abs((line_lt_bottom + lane_width / 2) - midpoint)
+    }
+    //TODO: how do I return an error condition?
+    return offset_pix;
+}
+
 
 //! Draw both the drivable lane area and the detected lane - lines onto the original(undistorted) frame.
 //! @param img_undistorted : original undistorted color frame
