@@ -28,6 +28,7 @@
 #include "histogram/LaneLine.h"
 #include "CarCmd.h"
 #include "imageprocessor/BirdseyeTransformer.h"
+#include "imageprocessor/PID.h"
 #include "histogram/Binarization.h"
 #ifdef LLNL_POLY
   #include "Polynomial.hh"
@@ -41,7 +42,7 @@ namespace Autodrive {
 
 	class AdvImageProcessor {
 	public:
-		AdvImageProcessor(const ImageConfig& img_conf);
+		AdvImageProcessor(const ImageConfig& img_conf, bool verbose=false);
 		//! init_processing is the first function called by Autodrive to locate the lanes
         //! and apply a birdseye transform to the input camera image.
         //! If it cannot find the lanes, it prints a message to screen.
@@ -59,6 +60,7 @@ namespace Autodrive {
 		//! Each subsequent input frame is then warped according to the perspective transform
 		//! Hence if it is wrong, this program will not work well
 		cv::Mat perspective_;
+		cv::Mat perspective_inv_;  //for warping image back to normal view
 		// Flag whether lane line state is conserved (this permits averaging results)
 		bool keep_state_;
 		LaneLine line_lt_;
@@ -67,7 +69,9 @@ namespace Autodrive {
 		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9);
 		void get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat);
 		double compute_offset_from_center(cv::Mat& img);
-		void draw_back_onto_the_road(cv::Mat& img_undistorted);
+		void draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat);
+		std::unique_ptr<PID> pid_;
+		bool verbose_;  //flag whether to be verbose in output, e.g. displaying debug images.
 	};
 }
 #endif //ANDROIDCARDUINO_AUTODRIVE_ADVIMAGEPROCESSOR_H_

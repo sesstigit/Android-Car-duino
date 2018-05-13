@@ -29,7 +29,7 @@ namespace Autodrive {
 //! Class to model a lane-line.
 class LaneLine {
  public:
-  LaneLine(int buffer_len=10);
+  LaneLine(int buffer_len=5);
   // Getters
   bool detected() { return detected_; };
   bool empty() { return (all_x_.empty() || all_y_.empty()); };

@@ -21,10 +21,12 @@
 
 using namespace Autodrive;
 
-AdvImageProcessor::AdvImageProcessor(const ImageConfig& img_conf) :
+AdvImageProcessor::AdvImageProcessor(const ImageConfig& img_conf, bool verbose) :
 	img_conf_(img_conf),
+	verbose_(verbose),
 	keep_state_(true) {
-	  birdseye_ = make_unique<BirdseyeTransformer>();
+	birdseye_ = make_unique<BirdseyeTransformer>();
+	pid_ = make_unique<PID>(img_conf);
 }
 
 bool AdvImageProcessor::init_processing(cv::Mat& mat) {
@@ -34,7 +36,7 @@ bool AdvImageProcessor::init_processing(cv::Mat& mat) {
 	if (perspective_.empty()) {
 		mat_copy = mat.clone();
 		//only recalculate the warp matrix if it does not exist (the warp matrix can be saved permanently by the app)
-		perspective_ = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 
 	if (perspective_.empty()) {
@@ -48,15 +50,13 @@ bool AdvImageProcessor::init_processing(cv::Mat& mat) {
 
 //! Apply whole lane detection pipeline to an input color frame.
 //! param mat: input color frame
-//!    :param keep_state_: if True, lane-line state is conserved (this permits to average results)
 //!    :return: output blend with detected lane overlaid
 CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 {
-	CarCmd cmnd;
+	CarCmd cmd;
 	
-    //global line_lt, line_rt
     cv::Mat normMat = mat.clone();
-    // undistort the image using coefficients found in calibration
+    // undistort the image using coefficients found in external calibration
     camera_undistort(mat, normMat, img_conf_.intrinsic_matrix_, img_conf_.distortion_coeffs_);
 	
 	// Normalize the lighting in the image
@@ -64,43 +64,54 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 	imshow("NormLight", normMat);
 
 	cv::Mat binMat(mat.size(), CV_8UC1, cv::Scalar(0));
-    // binarize the frame s.t. lane lines are highlighted as much as possible
+    // binarize frame to highlight the lane lines
     binarize(normMat, binMat);
 
-	// Do birdseye transform same as original imageprocessor which is prefered to Udacity hardcoding of transform params.
+	// Perform birdseye transform using saved perspective
 	birdseye_->birds_eye_transform(binMat, perspective_);
 	imshow("Birdseye", binMat);
 
-    // fit 2-degree polynomial curve onto lane lines found
+	// keep_state_: if True, lane line state is conserved (in turn allowing averaging of results)
 	if (keep_state_ && line_lt_.detected() && line_rt_.detected()) {
 		get_fits_by_previous_fits(binMat, mat);
 	} else {
+		// fit 2-degree polynomial curve onto lane lines found
 		get_fits_by_sliding_windows(binMat, mat, 9);
 	}
 
-    // compute offset in pixels from center of the lane
-	double offset_pix = compute_offset_from_center(binMat);
-	cout << "offset pix = " << offset_pix << endl;
+    // compute offset in pixels from center of the lane (cross track error "cte") for PID Controller
+	double cte = compute_offset_from_center(binMat);
+	cout << "cross track error = " << cte << endl;
     // draw the surface enclosed by lane lines back onto the original frame
-    //blend_on_road = draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state_)
+	draw_back_onto_the_road(normMat, mat);
 
     // stitch on the top of final output images from different steps of the pipeline
     // blend_output = prepare_out_blend_frame(blend_on_road, img_binary, img_birdeye, img_fit, line_lt, line_rt, offset_meter)
 
-    	
+	pid_->UpdateError(cte);
+	// pid parameters chosen to give output in range [-1.0, 1,0]
+	// Hence to ensure output in range [0, PI] need to make following conversion (more precisely gives output in range (PI/2 - 1.0, PI/2 + 1.0))
+	float target_angle = Direction::FORWARD + (float)pid_->TotalError();
+	if (target_angle < 0.0) {
+		target_angle = 0.0;
+	}
+	else if (target_angle > Mathf::PI) {
+		target_angle = Mathf::PI;
+	}
+	cmd.set_angle(target_angle);
+//#ifdef DEBUG_
+		cout << "cte=" << cte << "; pid_error=" << pid_->TotalError() << endl;
+//#endif
+	cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 	
-	
-	
-	float angle;
-	angle = cmnd.angle();
 	if (img_conf_.display_debug_ == true) {
 		//! Draw a short green line from center bottom in direction of the road_follower_ angle
 		//! BGR or RGBA does not matter here
 		int drawlen = 100;
 		POINT center(mat.size().width / 2.f, (float)mat.size().height);
-		linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
+		linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
 	}
-	return cmnd;
+	return cmd;
 }
 
 //! Get polynomial coefficients for lane-lines detected in an binary image.
@@ -116,8 +127,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	int width = birdseye_binary_mat.size().width;
 
     // Create a temp colour image to draw on and visualize the result
-	cv::Vec3b red;
-	cv::Vec3b blue;
+	cv::Vec3b red, blue;
     cv::Mat temp_mat;
     if (outMat.type() == CV_8UC4) {
         cv::cvtColor(birdseye_binary_mat, temp_mat, CV_GRAY2RGBA);  //android input image appears to be RGBA
@@ -133,7 +143,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	cv::Mat col_sum;
     //Reduce  matrix to a vector by treating the columns as a set of 1D vector and summing vector elements until a single row is obtained
 	cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height/2), width, height-int(height/2))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
-	// Find the peak of the left and right halves of the histogram as starting points for the left and right lines
+	// Assume peak of the left and right halves of the histogram are starting points for lane lines
 	double minVal, maxVal;
 	cv::Point minLoc, maxLoc;
 	//Rect params are x, y, width, height
@@ -181,18 +191,24 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		std::vector<int> good_left_inds_x, good_left_inds_y, good_right_inds_x, good_right_inds_y;
 		
 		// Draw the windows in green on the visualization image
-		cv::rectangle(temp_mat, cv::Point(win_xleft_low, win_y_low), cv::Point(win_xleft_high, win_y_high), cv::Scalar(0, 255, 0), 1);
-		cv::rectangle(temp_mat, cv::Point(win_xright_low, win_y_low), cv::Point(win_xright_high, win_y_high), cv::Scalar(0, 255, 0), 1);
+		if (win_xleft_low >= 0) {
+			cv::rectangle(temp_mat, cv::Point(win_xleft_low, win_y_low), cv::Point(win_xleft_high, win_y_high), cv::Scalar(0, 255, 0), 1);
+		}
+		if (win_xright_high <= width) {
+			cv::rectangle(temp_mat, cv::Point(win_xright_low, win_y_low), cv::Point(win_xright_high, win_y_high), cv::Scalar(0, 255, 0), 1);
+		}
 
 		// Identify the nonzero pixels within the left and right windows
 		for (int i = 0; i < nonzero.size(); i++) {
-			if ((nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) && (nonzero_x[i] >= win_xleft_low)
-				&& (nonzero_x[i] < win_xleft_high)) {
+			// stop if the window is off screen to left
+			if ((win_xleft_low >= 0) && (nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) &&
+				(nonzero_x[i] >= win_xleft_low)	&& (nonzero_x[i] < win_xleft_high)) {
 				good_left_inds_x.push_back(nonzero_x[i]);	//add index to left line
 				good_left_inds_y.push_back(nonzero_y[i]);	//add index to left line
 			}
-			if ((nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) && (nonzero_x[i] >= win_xright_low)
-				&& (nonzero_x[i] < win_xright_high)) {
+			// stop if the window is off screen to right
+			if ((win_xright_high <= width) && (nonzero_y[i] >= win_y_low) && (nonzero_y[i] < win_y_high) &&
+				(nonzero_x[i] >= win_xright_low) && (nonzero_x[i] < win_xright_high)) {
 				good_right_inds_x.push_back(nonzero_x[i]);	//add index to right line
 				good_right_inds_y.push_back(nonzero_y[i]);	//add index to right line
 			}
@@ -201,7 +217,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		line_lt_.append_line_coords(good_left_inds_x, good_left_inds_y);
 		line_rt_.append_line_coords(good_right_inds_x, good_right_inds_y);
 
-		// If found > minpix pixels in window, recenter next window on their mean position
+		// If found > minpix pixels in window, recenter next window on their mean position to track line.  Otherwise, keep unchanged.
 		if (good_left_inds_x.size() > minpix) {
 			leftx_current = accumulate(good_left_inds_x.begin(), good_left_inds_x.end(), 0.0) / good_left_inds_x.size();  //average the x coordinate
 		}
@@ -231,8 +247,10 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
 		//right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
 	}
-    line_lt_.draw_polyfit(temp_mat, margin, red, true);
-	line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+	if (verbose_ == true) {
+		line_lt_.draw_polyfit(temp_mat, margin, red, true);
+		line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+	}
     temp_mat.copyTo(outMat);
 }
 
@@ -241,7 +259,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 //! @param birdeye_binary : input bird's eye view binary image
 //! @return : updated lane lines and output image
 void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat) {
-    line_lt_.clear_line_coords();  //clear the previous entries
+    line_lt_.clear_line_coords();  //clear the previous line points (but keep the fitted polynomial and the start position)
     line_rt_.clear_line_coords();
 
 	int height = birdseye_binary_mat.size().height;
@@ -262,7 +280,7 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 		blue = cv::Vec3b(255, 0, 0);
 	}
     std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
-	left_fit_pixel = line_lt_.last_fit_pixel();
+	left_fit_pixel = line_lt_.last_fit_pixel();  //shortcut to avoid doing histograms to find starting point of each line
 	right_fit_pixel = line_rt_.last_fit_pixel();
 
     // Identify the x and y positions of all nonzero pixels from the input image
@@ -276,16 +294,14 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         nonzero_x.push_back(a_point.x);
         nonzero_y.push_back(a_point.y);
     }
-	
+	double margin = img_conf_.histogram_lane_margin_;
 	// Use the existing polynomial fit lane lines (plus a margin either side) as the search zone for the updated lane lines
 	// Get all non-zero points in the search zone, and then fit a polynomial again.
-	double margin = img_conf_.histogram_lane_margin_;
-	
 	// Option 1: non-vectorized, exhaustive search of non-zero points, assigning each point to a line_lt or line_rt or neither
-	//             - just use coefficients to calculate current lane position and margin.
+	//             - use coefficients to calculate current lane position and margin.
 	//             - shouldn't be too inefficient, assuming not too many non-zero points in whole image
 	//             - vectorized numpy solution would be much faster
-	// Option 2:  make points for left and right margins for onelane line, and use cv::fillpoly to fill the search region
+	// Option 2:  make points for left and right margins for one lane line, and use cv::fillpoly to fill the search region
 	//             - use that image as a mask on the input image
 	//             - after masking, all non-zero points are assigned to the lane line
 	//             - repeat for the other lane
@@ -329,8 +345,10 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         line_rt_.update_line(right_fit_pixel, right_fit_meter, true);
         //right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
     }
-    line_lt_.draw_polyfit(temp_mat, margin, red, true);
-    line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+	if (verbose_ == true) {
+		line_lt_.draw_polyfit(temp_mat, margin, red, true);
+		line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+	}
     temp_mat.copyTo(outMat);
 
 	//Need to sanity check the lane lines.  If they do not make sense, then set "detected=false", to trigger re-detection from scratch.
@@ -347,8 +365,10 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 			break;
 	}
 	if (lanes_intersect) {
-		line_lt_.update_line(left_fit_pixel, left_fit_meter, false, true);  //set detected to false, since the lane lines fail the sanity check
-		line_rt_.update_line(right_fit_pixel, right_fit_meter, false, true); //also set clear_buffer to true
+		line_lt_.update_line({ 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, false, true);  //set detected to false, since the lane lines fail the sanity check
+		line_rt_.update_line({ 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, false, true); //also set clear_buffer to true
+		//line_lt_.update_line(left_fit_pixel, left_fit_meter, false, true);  //set detected to false, since the lane lines fail the sanity check
+		//line_rt_.update_line(right_fit_pixel, right_fit_meter, false, true); //also set clear_buffer to true
 	}
 				
 }
@@ -356,6 +376,7 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 //! Compute offset from center of the inferred lane.
 //! Assume camera is fixed midway acrosss the car. Hence offset is distance between the center of the image
 //! and the midpoint at the bottom of the image of the two lane-lines detected.
+//! Note: use y value which is 10 pixels higher than bottom of image since that represents approx front of car.
 //! @return: inferred offset in pixels
 double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
     double offset_pix = 0;
@@ -364,7 +385,6 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
     if (line_lt_.detected() && line_rt_.detected()) {
         // Previous implementation chose the average of non-zero points which make up the bottom of line_lt_ and line_rt
         // Instead, here we compute the value of x for each line using the moving average of the fitted polynomial
-        //ADD FUNCTION TO EVAL THE POLYNOMIAL???
 		double line_lt_bottom = line_lt_.poly_eval(img_height - 10, true);  
 		double line_rt_bottom = line_rt_.poly_eval(img_height - 10, true);
         double lane_width = line_rt_bottom - line_lt_bottom;
@@ -376,44 +396,28 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
 }
 
 
-//! Draw both the drivable lane area and the detected lane - lines onto the original(undistorted) frame.
-//! @param img_undistorted : original undistorted color frame
-//! @param keep_state : if True, line state is maintained
+//! Draw the drivable lane area and the detected lines onto the original color (non-binarized) frame.
+//! @param img : original color image
+//! @param keep_state : if true, line state is maintained
 //! @return : color blend
 //! Also uses class members perspective_inv_ for the perspective transform, and line_lt_ and line_rt for the lane lines, and keep_state_
-void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img_undistorted) {
-/*	height, width, _ = img_undistorted.shape
+void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat) {
+	int width = img.size().width;
+	int height = img.size().height;
 
-	left_fit = line_lt.average_fit if keep_state_ else line_lt.last_fit_pixel
-	right_fit = line_rt.average_fit if keep_state_ else line_rt.last_fit_pixel
+	cv::Vec3b red, blue;
+	if (outMat.type() == CV_8UC4) {
+		red = cv::Vec3b(255, 0, 0);
+		blue = cv::Vec3b(0, 0, 255);
+	} else {
+		red = cv::Vec3b(0, 0, 255);
+		blue = cv::Vec3b(255, 0, 0);
+	}
+	line_lt_.draw_polyfit(img, img_conf_.histogram_lane_margin_, blue, true);
+	line_rt_.draw_polyfit(img, img_conf_.histogram_lane_margin_, red, true);
 
-	# Generate x and y values for plotting
-	ploty = np.linspace(0, height - 1, height)
-	left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
-	right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+	cv::Mat road_dewarped;
+	cv::warpPerspective(img, road_dewarped, perspective_inv_, cv::Size(width, height));  // Warp back to original image space
 
-	# draw road as green polygon on original frame
-	road_warp = np.zeros_like(img_undistorted, dtype = np.uint8)
-	pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-	pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
-	pts = np.hstack((pts_left, pts_right))
-	cv2.fillPoly(road_warp, np.int_([pts]), (0, 255, 0))
-	road_dewarped = cv2.warpPerspective(road_warp, Minv, (width, height))  # Warp back to original image space
-
-	blend_onto_road = cv2.addWeighted(img_undistorted, 1., road_dewarped, 0.3, 0)
-
-	# now separately draw solid lines to highlight them
-	line_warp = np.zeros_like(img_undistorted)
-	line_warp = line_lt.draw(line_warp, color = (255, 0, 0), average = keep_state_)
-	line_warp = line_rt.draw(line_warp, color = (0, 0, 255), average = keep_state_)
-	line_dewarped = cv2.warpPerspective(line_warp, Minv, (width, height))
-
-	lines_mask = blend_onto_road.copy()
-	idx = np.any([line_dewarped != 0][0], axis = 2)
-	lines_mask[idx] = line_dewarped[idx]
-
-	blend_onto_road = cv2.addWeighted(src1 = lines_mask, alpha = 0.8, src2 = blend_onto_road, beta = 0.5, gamma = 0.)
-
-	return blend_onto_road
-*/
+	cv::addWeighted(img, 1., road_dewarped, 0.3, 0, outMat);
 }

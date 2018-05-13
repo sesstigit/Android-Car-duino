@@ -68,7 +68,7 @@ namespace Autodrive {
 		//! Each subsequent input frame is then warped according to the perspective transform
 		//! Hence if it is wrong, then this program will not work well
 		cv::Mat perspective_;
-
+		cv::Mat perspective_inv_;  //for warping image back to normal
 		POINT start_center_;
 	};
 }

@@ -38,7 +38,7 @@ bool ImageProcessor::init_processing(cv::Mat& mat) {
 	if (perspective_.empty()) {
 		mat_copy = mat.clone();
 		//only recalculate the warp matrix if it does not exist
-		perspective_ = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 	
 	if (!(perspective_.empty())) {

@@ -26,15 +26,16 @@ void BirdseyeTransformer::birds_eye_transform(cv::Mat& mat, cv::Mat birdseye_mat
 	cv::warpPerspective(mat, mat, birdseye_matrix, mat.size(), cv::INTER_LINEAR);
 }
 
-cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, double thresh2) {
+std::tuple<cv::Mat, cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, double thresh2) {
 	cv::Mat birdseye_matrix;
+	cv::Mat birdseye_matrix_inv;
 	//Might be needed on track
 	//cv::erode(matCopy, matCopy, cv::Mat(), cv::Point(-1, -1), 1);
 	cv::Mat cannied;
 	cv::Canny(matIn, cannied, thresh1, thresh2, 3);
 	calc_lane_markings(cannied, matIn);
 	if (lane_markings_.found == false)
-		return birdseye_matrix;
+		return std::make_tuple(birdseye_matrix, birdseye_matrix_inv);
 		
 	//take a copy of the current lanes, so we can stretch them without affecting the class member
     Autodrive::lanes b_lines = lane_markings_;
@@ -100,7 +101,8 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, do
 	//Autodrive::POINT pts2[] = { Autodrive::POINT(av_left_x, b_lines.left.begin.y), Autodrive::POINT(av_right_x, b_lines.right.begin.y), Autodrive::POINT(av_left_x, im_height), Autodrive::POINT(av_right_x, im_height) };
 
     birdseye_matrix = cv::getPerspectiveTransform(pts1, pts2);
-    
+	birdseye_matrix_inv = cv::getPerspectiveTransform(pts2, pts1);
+
 	// Apply border points from original image to funcion perspectiveTransform() to find border points in transformed image
 	// Usage: void perspectiveTransform(InputArray src, OutputArray dst, InputArray m)
 	std::vector<cv::Point2f> src = { Autodrive::POINT(0,0), Autodrive::POINT(0,im_height), Autodrive::POINT(im_width,0), Autodrive::POINT(im_width,im_height) };
@@ -111,7 +113,8 @@ cv::Mat BirdseyeTransformer::find_perspective(cv::Mat& matIn, double thresh1, do
 	left_image_border_.stretchY(0, im_height);
 	right_image_border_.stretchY(0, im_height);
 
-	return birdseye_matrix;
+	//return birdseye_matrix;
+	return std::make_tuple(birdseye_matrix, birdseye_matrix_inv);
 }
 
 void BirdseyeTransformer::calc_lane_markings(const cv::Mat& canniedMat, cv::Mat& drawMat) {

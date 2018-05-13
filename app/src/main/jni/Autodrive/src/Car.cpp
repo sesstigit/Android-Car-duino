@@ -29,7 +29,7 @@ Car::Car() :
 #ifdef USE_IMAGEPROCESSOR
   img_proc_(make_unique<ImageProcessor>(img_conf_)),
 #else
-	img_proc_(make_unique<AdvImageProcessor>(img_conf_)),
+	img_proc_(make_unique<AdvImageProcessor>(img_conf_, false)),
 #endif
   parking_(make_unique<ParkingManeuver>(this, ParkingManeuverMode::kNoManeuver)),
   overtaking_(make_unique<Overtaking>(this)),

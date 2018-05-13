@@ -102,7 +102,7 @@ void LaneLine::draw(mask, color=(255, 0, 0), line_width=50, average=False) {
 */
 
 
-//! Draw the Lane Line in yellow on theimage.
+//! Draw the Lane Line in yellow on the image.
 void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool average) {
     int img_width = img.size().width;
     int img_height = img.size().height;
@@ -112,17 +112,20 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
     // Generate x and y values of curved lane lines for plotting
     std::vector<cv::Point2f> line_points;
 	// x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
+	// generate points for an additional 10 pixels around boundary.  Otherwise the margin lines are cropped.
+	int bmargin = 10;
 	if (coeffs.size() >= 3) {
-		for (double y = 0; y < img_height; y++) {
+		for (double y = (0-bmargin); y < (img_height+bmargin); y++) {
 			double x = coeffs[2] * y*y + coeffs[1] * y + coeffs[0];
-			if ((x >= 0) && (x <= img_width)) {
+			if ((x >= (0-bmargin)) && (x <= (img_width+bmargin))) {
 				cv::Point2f new_point = cv::Point2f(x, y);
 				line_points.push_back(new_point);
 			}
 		}
 	}
+
 	// Color in left (red) and right (blue) line pixels
-	for (int i = 0; i < all_x_.size() - 1; i++) {
+	for (int i = 0; i < all_x_.size(); i++) {
 		if ((all_y_[i] >= 0) && (all_y_[i] < img_height)) {
 			if ((all_x_[i] >= 0) && (all_x_[i] < img_width)) {
 				img.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
@@ -137,28 +140,50 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
     }
-    // TODO: add something like this to highlight the lane search area
-    // Note: cvv::fillPoly only accepts 32 bit integers for Point coordinates.  Hence Point2f is not allowed.
-    std::vector<cv::Point> search_perimeter_left;
-    std::vector<cv::Point> search_perimeter_right;
-    for (int i = 0; i < line_points.size(); i++) {
-        search_perimeter_left.push_back(cv::Point(line_points[i].x - margin, line_points[i].y));
-        search_perimeter_right.push_back(cv::Point(line_points[i].x + margin, line_points[i].y));
-    }
-    std::vector<std::vector<cv::Point> > search_perimeter_contours;
-    search_perimeter_contours.push_back(search_perimeter_left);  //can add more contours later if we want
-    search_perimeter_contours.push_back(search_perimeter_right);  //can add more contours later if we want
-    cv::fillPoly(img, search_perimeter_contours, cv::Scalar(0,255,0));
-    
+	// Highlight the lane search area
+	// This code is annoying because it fills the area, but when the lane is curved it cuts off the corner and fills the whole bounding box
+	/*
+	// Note: cv::fillPoly only accepts 32 bit integers for Point coordinates.  Hence Point2f is not allowed.
+	std::vector<cv::Point> search_perimeter_left;
+	std::vector<cv::Point> search_perimeter_right;
+	std::vector<cv::Point> search_perimeter;
+	std::vector<cv::Point> search_perimeter_top;
+	std::vector<cv::Point> search_perimeter_bottom;
+	for (int i = 0; i < line_points.size(); i++) {
+	search_perimeter_left.push_back(cv::Point(line_points[i].x - margin, line_points[i].y));
+	search_perimeter_right.push_back(cv::Point(line_points[i].x + margin, line_points[i].y));
+	std::reverse(search_perimeter_right.begin(), search_perimeter_right.end());
+	}
+	search_perimeter_top.push_back(cv::Point(line_points[0].x + margin, line_points[0].y));
+	search_perimeter_top.push_back(cv::Point(line_points[0].x - margin, line_points[0].y));
+	search_perimeter_bottom.push_back(cv::Point(line_points[line_points.size() - 1].x - margin, line_points[line_points.size() - 1].y));
+	search_perimeter_bottom.push_back(cv::Point(line_points[line_points.size() - 1].x + margin, line_points[line_points.size() - 1].y));
+	//Concatenate left and right
+	search_perimeter = search_perimeter_left;
+	search_perimeter.insert(search_perimeter.end(), search_perimeter_bottom.begin(), search_perimeter_bottom.end());
+	search_perimeter.insert(search_perimeter.end(), search_perimeter_right.begin(), search_perimeter_right.end());
+	search_perimeter.insert(search_perimeter.end(), search_perimeter_top.begin(), search_perimeter_top.end());
+
+	std::vector<std::vector<cv::Point> > search_perimeter_contours;
+	search_perimeter_contours.push_back(search_perimeter);
+	//cv::fillPoly(img, search_perimeter_contours, cv::Scalar(0, 255, 0));
+	cv::fillConvexPoly(img, search_perimeter, cv::Scalar(0, 255, 0));
+	*/
+	// Instead show the LaneLine search area as two more polynomial lines plus or minus the margin.
+	// Draw the lines between each pair of consecutives points
+	cv::Point2f p_offset = (0, margin);
+	for (int i = 0; i < (line_points.size() - 1); i++) {
+		if (img.type() == CV_8UC4) {
+			cv::line(img, line_points[i]+p_offset, line_points[i + 1]+p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
+			cv::line(img, line_points[i]-p_offset, line_points[i + 1]-p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
+		}
+		else {
+			cv::line(img, line_points[i]+p_offset, line_points[i + 1]+p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			cv::line(img, line_points[i]-p_offset, line_points[i + 1]-p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+		}
+	}
+
     /*
-    # And recast the x and y points into usable format for cv2.fillPoly()
-    left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
-    left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
-    left_line_pts = np.hstack((left_line_window1, left_line_window2))
-    right_line_window1 = np.array([np.transpose(np.vstack([right_fitx - margin, ploty]))])
-    right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx + margin, ploty])))])
-    right_line_pts = np.hstack((right_line_window1, right_line_window2))
-    
     # Draw the lane onto the warped blank image
     cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))
     cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
