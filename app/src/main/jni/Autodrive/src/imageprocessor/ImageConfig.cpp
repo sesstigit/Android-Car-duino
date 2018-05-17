@@ -38,6 +38,6 @@ ImageConfig::ImageConfig() :
   intrinsic_matrix_(nullptr),
   distortion_coeffs_(nullptr),
   histogram_lane_margin_(20.0),
-  histogram_win_minpix_(10.0),
+  histogram_win_minpix_(8.0),
   display_debug_(true) {
   }

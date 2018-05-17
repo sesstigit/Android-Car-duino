@@ -41,7 +41,7 @@ void LaneLine::clear_buffer() {
 //! @param detected: if the Line was detected or inferred
 //! @param clear_buffer: if True, reset state
 //! @return void
-void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff) {
+void LaneLine::update_line(cv::Mat& img, std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff) {
 	detected_ = detected;
 	//std::cout << "new_fit_pixel = " << new_fit_pixel[0] << "," << new_fit_pixel[1] << "," << new_fit_pixel[2] << "," << std::endl;
 	if (clear_buff) {
@@ -53,11 +53,11 @@ void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double
     // x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
     // generate points for an additional 10 pixels around boundary.  Otherwise the margin lines are cropped.
     last_fit_points_.clear();
-    std::vector double coeffs = last_fit_pixel_;
+    std::vector<double> coeffs = last_fit_pixel_;
     if (coeffs.size() >= 3) {
-        for (double y = 0; y < img_height; y++) {
+        for (double y = 0; y < img.size().height; y++) {
             double x = coeffs[2] * y*y + coeffs[1] * y + coeffs[0];
-            if ((x >= 0) && (x <= img_width)) {
+            if ((x >= 0) && (x <= img.size().width)) {
                 cv::Point2f new_point = cv::Point2f(x, y);
                 last_fit_points_.push_back(new_point);
             }
@@ -124,7 +124,7 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
     
     cv::Mat pixel_mat;
     cv::Mat search_mat;
-    if (outMat.type() == CV_8UC4) {
+    if (img.type() == CV_8UC4) {
         search_mat = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0,0,0));  //android input image appears to be RGBA
         pixel_mat = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0,0,0));
     } else {
@@ -142,21 +142,21 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 	}
     
     // Draw an opencv yellow "line" between with each pair of consecutives points in the fitted lane line
-    for (int i = 0; i < (last_fit_points.size() - 1); i++) {
+    for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
 		if (img.type() == CV_8UC4) {
-			cv::line(pixel_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
+			cv::line(pixel_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
 		} else {
-			cv::line(piel_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			cv::line(pixel_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
     }
 	// Highlight the lane search area
     // Easiest to display the search area by drawing the polynomial with width=2*margin
     // Draw green line (width=2*margin) between with each pair of consecutives points in the fitted lane line
-    for (int i = 0; i < (last_fit_points.size() - 1); i++) {
+    for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
         if (img.type() == CV_8UC4) {
-            cv::line(search_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(255, 255, 0), 2*margin, CV_AA);  //android image is RGBA
+            cv::line(search_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 2*margin, CV_AA);  //android image is RGBA
         } else {
-            cv::line(search_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(0, 255, 255), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
+            cv::line(search_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
         }
     }
     cv::addWeighted(pixel_mat, 1., search_mat, 0.3, 0, img);

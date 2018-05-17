@@ -40,7 +40,7 @@ class LaneLine {
   void append_line_coords(std::vector<int>& inds_x, std::vector<int>& inds_y);
   void clear_line_coords();
   void clear_buffer();
-  void update_line(std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff=false);
+  void update_line(cv::Mat& img, std::vector<double> new_fit_pixel, std::vector<double> new_fit_meter, bool detected, bool clear_buff=false);
   double curvature();
   double curvature_meter();
   std::vector<double> get_poly_coeffs(bool average);
@@ -53,6 +53,8 @@ class LaneLine {
   // store all pixels coords (x, y) of line detected
   std::vector<double> all_x_;
   std::vector<double> all_y_;
+  // polynomial line points for plotting
+  std::vector<cv::Point2f> last_fit_points_;
   
  private:
   // flag to mark if the line was detected the last iteration
@@ -61,8 +63,6 @@ class LaneLine {
   // polynomial coefficients fitted on the last iteration
   std::vector<double> last_fit_pixel_;
   std::vector<double> last_fit_meter_;
-  // polynomial line points for plotting
-  std::vector<cv::Point2f> last_fit_points_;
 
   // moving average of polynomial coefficients of the last buffer_len iterations
   std::vector<double> recent_fits_pixel_;
