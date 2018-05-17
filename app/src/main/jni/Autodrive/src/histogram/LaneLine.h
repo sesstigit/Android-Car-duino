@@ -61,12 +61,15 @@ class LaneLine {
   // polynomial coefficients fitted on the last iteration
   std::vector<double> last_fit_pixel_;
   std::vector<double> last_fit_meter_;
+  // polynomial line points for plotting
+  std::vector<cv::Point2f> last_fit_points_;
 
   // moving average of polynomial coefficients of the last buffer_len iterations
   std::vector<double> recent_fits_pixel_;
   std::vector<double> recent_fits_pixel_corr_;   //startupcorrection applied 
   std::vector<double> recent_fits_meter_;
   std::vector<double> recent_fits_meter_corr_;
+  
 
   int buffer_len_;   // the length of the buffer to take average line from
   int ewma_steps_;  // exponentially weighted moving average steps taken so far

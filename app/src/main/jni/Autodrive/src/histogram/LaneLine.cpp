@@ -50,6 +50,20 @@ void LaneLine::update_line(std::vector<double> new_fit_pixel, std::vector<double
 	last_fit_pixel_ = new_fit_pixel;
 	last_fit_meter_ = new_fit_meter;
 
+    // x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
+    // generate points for an additional 10 pixels around boundary.  Otherwise the margin lines are cropped.
+    last_fit_points_.clear();
+    std::vector double coeffs = last_fit_pixel_;
+    if (coeffs.size() >= 3) {
+        for (double y = 0; y < img_height; y++) {
+            double x = coeffs[2] * y*y + coeffs[1] * y + coeffs[0];
+            if ((x >= 0) && (x <= img_width)) {
+                cv::Point2f new_point = cv::Point2f(x, y);
+                last_fit_points_.push_back(new_point);
+            }
+        }
+    }
+
 	// Update recent_fits_pixel with an exponentionally weighted moving average.
 	//! Formula for EWMA is v_t = beta*v_(t-1) + (1 - beta)*theta_t
 	//! Correcting for startup bias: v_corr = v_t/(1-beta^t)
@@ -102,74 +116,52 @@ void LaneLine::draw(mask, color=(255, 0, 0), line_width=50, average=False) {
 */
 
 
-//! Draw the Lane Line in yellow on the image.
+
+//! Draw the Lane Line in yellow on the provided image.
 void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool average) {
     int img_width = img.size().width;
     int img_height = img.size().height;
     
-	std::vector<double> coeffs = get_poly_coeffs(average);
-	
-    // Generate x and y values of curved lane lines for plotting
-    std::vector<cv::Point2f> line_points;
-	// x and y were swapped in PolynomialRegression to cope with (normally) almost vertical lines
-	// generate points for an additional 10 pixels around boundary.  Otherwise the margin lines are cropped.
-	int bmargin = 10;
-	if (coeffs.size() >= 3) {
-		for (double y = (0-bmargin); y < (img_height+bmargin); y++) {
-			double x = coeffs[2] * y*y + coeffs[1] * y + coeffs[0];
-			if ((x >= (0-bmargin)) && (x <= (img_width+bmargin))) {
-				cv::Point2f new_point = cv::Point2f(x, y);
-				line_points.push_back(new_point);
-			}
-		}
-	}
+    cv::Mat pixel_mat;
+    cv::Mat search_mat;
+    if (outMat.type() == CV_8UC4) {
+        search_mat = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0,0,0));  //android input image appears to be RGBA
+        pixel_mat = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0,0,0));
+    } else {
+        search_mat = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0,0,0));  //android input image appears to be RGBA
+        pixel_mat = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0,0,0));
+    }
 
 	// Color in left (red) and right (blue) line pixels
 	for (int i = 0; i < all_x_.size(); i++) {
 		if ((all_y_[i] >= 0) && (all_y_[i] < img_height)) {
 			if ((all_x_[i] >= 0) && (all_x_[i] < img_width)) {
-				img.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
+				pixel_mat.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
 			}
 		}
 	}
-    // Draw an opencv yellow "line" between with each pair of consecutives points
-    for (int i = 0; i < (line_points.size() - 1); i++) {
+    
+    // Draw an opencv yellow "line" between with each pair of consecutives points in the fitted lane line
+    for (int i = 0; i < (last_fit_points.size() - 1); i++) {
 		if (img.type() == CV_8UC4) {
-			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
+			cv::line(pixel_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
 		} else {
-			cv::line(img, line_points[i], line_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			cv::line(piel_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
     }
 	// Highlight the lane search area
-	// This code is annoying because it fills the area, but when the lane is curved it cuts off the corner and fills the whole bounding box
-	/*
-	// Note: cv::fillPoly only accepts 32 bit integers for Point coordinates.  Hence Point2f is not allowed.
-	std::vector<cv::Point> search_perimeter_left;
-	std::vector<cv::Point> search_perimeter_right;
-	std::vector<cv::Point> search_perimeter;
-	std::vector<cv::Point> search_perimeter_top;
-	std::vector<cv::Point> search_perimeter_bottom;
-	for (int i = 0; i < line_points.size(); i++) {
-	search_perimeter_left.push_back(cv::Point(line_points[i].x - margin, line_points[i].y));
-	search_perimeter_right.push_back(cv::Point(line_points[i].x + margin, line_points[i].y));
-	std::reverse(search_perimeter_right.begin(), search_perimeter_right.end());
-	}
-	search_perimeter_top.push_back(cv::Point(line_points[0].x + margin, line_points[0].y));
-	search_perimeter_top.push_back(cv::Point(line_points[0].x - margin, line_points[0].y));
-	search_perimeter_bottom.push_back(cv::Point(line_points[line_points.size() - 1].x - margin, line_points[line_points.size() - 1].y));
-	search_perimeter_bottom.push_back(cv::Point(line_points[line_points.size() - 1].x + margin, line_points[line_points.size() - 1].y));
-	//Concatenate left and right
-	search_perimeter = search_perimeter_left;
-	search_perimeter.insert(search_perimeter.end(), search_perimeter_bottom.begin(), search_perimeter_bottom.end());
-	search_perimeter.insert(search_perimeter.end(), search_perimeter_right.begin(), search_perimeter_right.end());
-	search_perimeter.insert(search_perimeter.end(), search_perimeter_top.begin(), search_perimeter_top.end());
-
-	std::vector<std::vector<cv::Point> > search_perimeter_contours;
-	search_perimeter_contours.push_back(search_perimeter);
-	//cv::fillPoly(img, search_perimeter_contours, cv::Scalar(0, 255, 0));
-	cv::fillConvexPoly(img, search_perimeter, cv::Scalar(0, 255, 0));
-	*/
-	// Instead show the LaneLine search area as two more polynomial lines plus or minus the margin.
+    // Easiest to display the search area by drawing the polynomial with width=2*margin
+    // Draw green line (width=2*margin) between with each pair of consecutives points in the fitted lane line
+    for (int i = 0; i < (last_fit_points.size() - 1); i++) {
+        if (img.type() == CV_8UC4) {
+            cv::line(search_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(255, 255, 0), 2*margin, CV_AA);  //android image is RGBA
+        } else {
+            cv::line(search_mat, last_fit_points[i], last_fit_points[i + 1], cv::Scalar(0, 255, 255), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
+        }
+    }
+    cv::addWeighted(pixel_mat, 1., search_mat, 0.3, 0, img);
+    
+/*	// Instead show the LaneLine search area as two more polynomial lines plus or minus the margin.
 	// Draw the lines between each pair of consecutives points
 	float b = 10;  //bias = margin either side of polynomial
 	float m; //slope of normal to polynomial. Note: gradient * norm = -1
@@ -190,7 +182,7 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 			cv::line(img, r_margin, r_margin_next, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
 	}
-
+*/
     /*
     # Draw the lane onto the warped blank image
     cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))

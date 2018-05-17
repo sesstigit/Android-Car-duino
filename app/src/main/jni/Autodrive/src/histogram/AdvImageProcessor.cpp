@@ -285,50 +285,49 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 	left_fit_pixel = line_lt_.last_fit_pixel();  //shortcut to avoid doing histograms to find starting point of each line
 	right_fit_pixel = line_rt_.last_fit_pixel();
 
-    // Identify the x and y positions of all nonzero pixels from the input image
-    std::vector<cv::Point2i> nonzero;
-    if (cv::countNonZero(birdseye_binary_mat) > 0) {
-        cv::findNonZero(birdseye_binary_mat, nonzero);
-    }
-	// Split the nonzero vector into separate x and y std::vectors (since polynomial fitting requires this)
-    std::vector<int> nonzero_x, nonzero_y;
-    for (cv::Point a_point : nonzero) {
-        nonzero_x.push_back(a_point.x);
-        nonzero_y.push_back(a_point.y);
-    }
-	double margin = img_conf_.histogram_lane_margin_;
-	// Use the existing polynomial fit lane lines (plus a margin either side) as the search zone for the updated lane lines
-	// Get all non-zero points in the search zone, and then fit a polynomial again.
-	// Option 1: non-vectorized, exhaustive search of non-zero points, assigning each point to a line_lt or line_rt or neither
-	//             - use coefficients to calculate current lane position and margin.
-	//             - shouldn't be too inefficient, assuming not too many non-zero points in whole image
-	//             - vectorized numpy solution would be much faster
-	// Option 2:  make points for left and right margins for one lane line, and use cv::fillpoly to fill the search region
-	//             - use that image as a mask on the input image
-	//             - after masking, all non-zero points are assigned to the lane line
-	//             - repeat for the other lane
-	// Try option 1:
-	double xleft, xright;
-	std::vector<int> good_left_inds_x, good_left_inds_y, good_right_inds_x, good_right_inds_y;
-	for (int i = 0; i < nonzero.size(); i++) {
-	    // For the y value of this nonzero point, calculate the position of the known lane lines
-	    //polynomial is x = ay^2 + by + c
-	    xleft = (left_fit_pixel[2] * std::pow((double)nonzero_y[i],2.0)) + (left_fit_pixel[1] * (double)nonzero_y[i]) + left_fit_pixel[0];
-	    xright = (right_fit_pixel[2] * std::pow((double)nonzero_y[i],2)) + (right_fit_pixel[1] * (double)nonzero_y[i]) + right_fit_pixel[0];
-	    // Check whether the nonzero point is inside the lane margin
-        if (((double)nonzero_x[i] >= (xleft - margin)) && ((double)nonzero_x[i] <= (xleft + margin))) {
-            good_left_inds_x.push_back(nonzero_x[i]);    //add index to left line
-            good_left_inds_y.push_back(nonzero_y[i]);    //add index to left line
+    // *************************************************************************
+    // Use the existing polynomial fit lane lines (plus a margin either side) as
+    // the search zone for the updated lane lines
+    // Get all non-zero points in the search zone, and then fit a polynomial again.
+    // Option 3 to define search area: draw polynomial with width=2*margin.
+    //             - use thick lines as mask on original image
+    //             - all remaining non-zero points belong to the line.
+    double margin = img_conf_.histogram_lane_margin_;
+    for (int linenum = 0, linenum < 2; linenum++) {
+        cv::Mat maskMat = cv::Mat(birdseye_binary_mat.size(), CV_8UC1, cv::Scalar(0));
+        // Draw an opencv "line" of width 2*margin between with each pair of consecutives points
+        if (linenum==0) { //left line
+            for (int i = 0; i < (line_lt_.last_fit_points_.size() - 1); i++) {
+                cv::line(maskMat, line_lt_.last_fit_points_[i], line_lt_.last_fit_points_[i + 1], cv::Scalar(255), 2*margin, CV_AA);
+            }
+        } else {  //right line
+            for (int i = 0; i < (line_rt_.last_fit_points_.size() - 1); i++) {
+                cv::line(maskMat, line_rt_.last_fit_points_[i], line_lt_.last_fit_points_[i + 1], cv::Scalar(255), 2*margin, CV_AA);
+            }
         }
-        if (((double)nonzero_x[i] >= (xright - margin)) && ((double)nonzero_x[i] <= (xright + margin))) {
-            good_right_inds_x.push_back(nonzero_x[i]);    //add index to right line
-            good_right_inds_y.push_back(nonzero_y[i]);    //add index to right line
+        // Copy image with mask
+        cv::Mat bin_temp_mat;
+        birdseye_binary_mat.copyTo(bin_temp_mat, maskMat)
+        // Identify the x and y positions of all nonzero pixels from the input image
+        std::vector<cv::Point2i> nonzero;
+        if (cv::countNonZero(bin_temp_mat) > 0) {
+            cv::findNonZero(bin_temp_mat, nonzero);
+        }
+    	// Split the nonzero vector into separate x and y std::vectors (since polynomial fitting requires this)
+        std::vector<int> nonzero_x, nonzero_y;
+        for (cv::Point a_point : nonzero) {
+            nonzero_x.push_back(a_point.x);
+            nonzero_y.push_back(a_point.y);
+        }
+        // Append these indices to the current lane lines
+        if (linenum==0) { //left line
+            line_lt_.append_line_coords(nonzero_x, nonzero_y);
+        } else {
+            line_rt_.append_line_coords(nonzero_x, nonzero_y);
         }
     }
-    // Append these indices to the current lane lines
-    line_lt_.append_line_coords(good_left_inds_x, good_left_inds_y);
-    line_rt_.append_line_coords(good_right_inds_x, good_right_inds_y);
-    
+
+	// Refit a polynomial to the new points
     if (line_lt_.empty()) {
         line_lt_.update_line(line_lt_.last_fit_pixel(), line_lt_.last_fit_meter(), false);
     } else {
