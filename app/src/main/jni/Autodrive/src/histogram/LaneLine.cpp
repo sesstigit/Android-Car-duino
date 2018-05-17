@@ -171,15 +171,23 @@ void LaneLine::draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool a
 	*/
 	// Instead show the LaneLine search area as two more polynomial lines plus or minus the margin.
 	// Draw the lines between each pair of consecutives points
-	cv::Point2f p_offset = (0, margin);
+	float b = 10;  //bias = margin either side of polynomial
+	float m; //slope of normal to polynomial. Note: gradient * norm = -1
 	for (int i = 0; i < (line_points.size() - 1); i++) {
-		if (img.type() == CV_8UC4) {
-			cv::line(img, line_points[i]+p_offset, line_points[i + 1]+p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
-			cv::line(img, line_points[i]-p_offset, line_points[i + 1]-p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
+	    m = -1/poly_eval_slope((double)line_points[i].y, false);
+	    float dy = sqrt(pow(b,2)/(pow(m,2)+1));
+	    float dx = m * dy;
+	    cv::Point2f l_margin = cv::Point2f(line_points[i].x-dx, line_points[i].y-dy);
+	    cv::Point2f r_margin = cv::Point2f(line_points[i].x+dx, line_points[i].y+dy);
+		cv::Point2f l_margin_next = cv::Point2f(line_points[i+1].x-dx, line_points[i+1].y-dy);
+        cv::Point2f r_margin_next = cv::Point2f(line_points[i+1].x+dx, line_points[i+1].y+dy);
+        if (img.type() == CV_8UC4) {
+			cv::line(img, l_margin, l_margin_next, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
+			cv::line(img, r_margin, r_margin_next, cv::Scalar(255, 255, 255), 1, CV_AA);  //android image is RGBA
 		}
 		else {
-			cv::line(img, line_points[i]+p_offset, line_points[i + 1]+p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
-			cv::line(img, line_points[i]-p_offset, line_points[i + 1]-p_offset, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			cv::line(img, l_margin, l_margin_next, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			cv::line(img, r_margin, r_margin_next, cv::Scalar(255, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
 		}
 	}
 
@@ -220,6 +228,14 @@ double LaneLine::curvature_meter() {
 double LaneLine::poly_eval(double y, bool average) {
 	std::vector<double> coeffs = get_poly_coeffs(average);
 	return (coeffs[2] * y*y + coeffs[1] * y + coeffs[0]);
+}
+
+//! For the current LaneLine polynomial, calculate slope at point given y.
+//! @param y The y coordinate
+//! @param average If true, use the moving average of the polynomial to calculate slope.  If false, use the current polynomial.
+double LaneLine::poly_eval_slope(double y, bool average) {
+    std::vector<double> coeffs = get_poly_coeffs(average);
+    return (2* coeffs[2] * y + coeffs[1]);
 }
 
 //! Get the LaneLine polynomial coefficients.  This function chooses one of a few different options.

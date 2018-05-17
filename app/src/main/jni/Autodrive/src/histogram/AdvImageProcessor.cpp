@@ -80,10 +80,12 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 	}
 
     // compute offset in pixels from center of the lane (cross track error "cte") for PID Controller
-	double cte = compute_offset_from_center(binMat);
+	double cte = compute_offset_from_center(mat);
 	cout << "cross track error = " << cte << endl;
+	imshow("BirdseyeLaneTracking", mat);
+	
     // draw the surface enclosed by lane lines back onto the original frame
-	draw_back_onto_the_road(normMat, mat);
+	//draw_back_onto_the_road(normMat, mat);
 
     // stitch on the top of final output images from different steps of the pipeline
     // blend_output = prepare_out_blend_frame(blend_on_road, img_binary, img_birdeye, img_fit, line_lt, line_rt, offset_meter)
@@ -248,8 +250,8 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		//right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
 	}
 	if (verbose_ == true) {
-		line_lt_.draw_polyfit(temp_mat, margin, red, true);
-		line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+		line_lt_.draw_polyfit(temp_mat, margin, red, false);
+		line_rt_.draw_polyfit(temp_mat, margin, blue, false);
 	}
     temp_mat.copyTo(outMat);
 }
@@ -346,8 +348,8 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         //right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
     }
 	if (verbose_ == true) {
-		line_lt_.draw_polyfit(temp_mat, margin, red, true);
-		line_rt_.draw_polyfit(temp_mat, margin, blue, true);
+		line_lt_.draw_polyfit(temp_mat, margin, red, false);
+		line_rt_.draw_polyfit(temp_mat, margin, blue, false);
 	}
     temp_mat.copyTo(outMat);
 
@@ -406,18 +408,25 @@ void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat) {
 	int height = img.size().height;
 
 	cv::Vec3b red, blue;
+	cv::Mat blankMat;
 	if (outMat.type() == CV_8UC4) {
 		red = cv::Vec3b(255, 0, 0);
 		blue = cv::Vec3b(0, 0, 255);
+		blankMat = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0, 0, 0));
 	} else {
 		red = cv::Vec3b(0, 0, 255);
 		blue = cv::Vec3b(255, 0, 0);
+		blankMat = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 	}
-	line_lt_.draw_polyfit(img, img_conf_.histogram_lane_margin_, blue, true);
-	line_rt_.draw_polyfit(img, img_conf_.histogram_lane_margin_, red, true);
-
-	cv::Mat road_dewarped;
-	cv::warpPerspective(img, road_dewarped, perspective_inv_, cv::Size(width, height));  // Warp back to original image space
+	//Create a black image same size as input
+	// - draw birdseye lines on the image
+	// - then dewarp the birdseye before combining with input image
+	line_lt_.draw_polyfit(blankMat, img_conf_.histogram_lane_margin_, blue, false);  //do not average the curvature
+	line_rt_.draw_polyfit(blankMat, img_conf_.histogram_lane_margin_, red, false);
+	cv::Mat road_dewarped; 
+	cv::warpPerspective(blankMat, road_dewarped, perspective_inv_, cv::Size(width, height));  // Warp back to original image space
 
 	cv::addWeighted(img, 1., road_dewarped, 0.3, 0, outMat);
+	//road_dewarped.copyTo(outMat);
+	//img.copyTo(outMat);
 }
