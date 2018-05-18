@@ -24,6 +24,7 @@ using namespace Autodrive;
 AdvImageProcessor::AdvImageProcessor(const ImageConfig& img_conf, bool verbose) :
 	img_conf_(img_conf),
 	verbose_(verbose),
+	car_y_height(0),
 	keep_state_(true) {
 	birdseye_ = make_unique<BirdseyeTransformer>();
 	pid_ = make_unique<PID>(img_conf);
@@ -39,6 +40,7 @@ bool AdvImageProcessor::init_processing(cv::Mat& mat) {
 		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 
+    //TODO: check we have found a good perspective transform
 	if (perspective_.empty()) {
 		mat_copy.copyTo(mat);  //display the image prior to finding birdseye perspective
 		cv::putText(mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
@@ -70,6 +72,11 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 	// Perform birdseye transform using saved perspective
 	birdseye_->birds_eye_transform(binMat, perspective_);
 	imshow("Birdseye", binMat);
+	
+	if (car_y_height == 0) {
+	    car_y_height = find_car_height(binMat);  //find top of car bonnet in this binarized, birdseye view
+	    cerr << "car_y_height=" << car_y_height << endl;
+	}
 
 	// keep_state_: if True, lane line state is conserved (in turn allowing averaging of results)
 	if (keep_state_ && line_lt_.detected() && line_rt_.detected()) {
@@ -149,8 +156,10 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	// Take a histogram of the bottom half of the image (where the lane lines start)
 	// Histogram calculated with "reduce" function to get column sums.
 	cv::Mat col_sum;
+	//Rect creates a rectangle from params (x, y, width, height)
+	cerr << "Rect params are 0," << (int)(height/2) << "," << width << "," << (int)(height/2-car_y_height) << endl;
     //Reduce  matrix to a vector by treating the columns as a set of 1D vector and summing vector elements until a single row is obtained
-	cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height/2), width, height-int(height/2))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
+	cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height/2), width, (int)(height/2-car_y_height))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
 	// Assume peak of the left and right halves of the histogram are starting points for lane lines
 	double minVal, maxVal;
 	cv::Point minLoc, maxLoc;
@@ -163,7 +172,7 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	int rightx_base = maxLoc.x + (int)(width/2);
 
 	// Set height of bounding box windows for tracking the line
-	int window_height = (height / n_windows);
+	int window_height = (height - car_y_height) / n_windows;
 
 	// Identify the x and y positions of all nonzero pixels from the input image
 	std::vector<cv::Point2i> nonzero;
@@ -188,8 +197,8 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	// Step through the windows one by one
 	for (int window = 0; window < n_windows; window++) {
 		// Identify window boundaries in x and y(and right and left)
-		int win_y_low = height - (window + 1) * window_height;
-		int win_y_high = height - window * window_height;
+		int win_y_low = height - car_y_height - ((window + 1) * window_height);
+		int win_y_high = height - car_y_height - (window * window_height);
 		int win_xleft_low = leftx_current - margin;
 		int win_xleft_high = leftx_current + margin;
 		int win_xright_low = rightx_current - margin;
@@ -234,6 +243,10 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		}
 	}
 
+    if (car_y_height > 0) {
+        //draw a line showing top of car
+        cv::line(outMat, cv::Point(0, height-car_y_height), cv::Point(width, height-car_y_height), cv::Scalar(0, 255, 0), 1); 
+    }
     std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
 
 	if (line_lt_.empty()) {
@@ -450,3 +463,20 @@ void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat) {
 	//road_dewarped.copyTo(outMat);
 	//img.copyTo(outMat);
 }
+
+int AdvImageProcessor::find_car_height(const cv::Mat& cannied)
+{
+        POINT center_bottom(cannied.size().width / 2, cannied.size().height - 5);
+        //!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 20
+        bool hit = true;
+        while (hit && (center_bottom.y >= 0))
+        {
+                hit = firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::RIGHT), 20).found
+                        || firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::LEFT), 20).found;
+                if (hit)
+                        center_bottom.y--;
+        }
+        center_bottom.y--;
+        return (cannied.size().height - center_bottom.y);
+}
+

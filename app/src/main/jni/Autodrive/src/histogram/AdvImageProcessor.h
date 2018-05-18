@@ -70,7 +70,9 @@ namespace Autodrive {
 		void get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat);
 		double compute_offset_from_center(cv::Mat& img);
 		void draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat);
+		int find_car_height(const cv::Mat& cannied);
 		std::unique_ptr<PID> pid_;
+		int car_y_height; //y coordinate for top of car bonnet.  Used to avoid including car pixels in histogram when finding line
 		bool verbose_;  //flag whether to be verbose in output, e.g. displaying debug images.
 	};
 }
