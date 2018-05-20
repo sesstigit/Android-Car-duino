@@ -47,7 +47,9 @@ class LaneLine {
   double poly_eval(double y, bool average);
   double poly_eval_slope(double y, bool average);
   //! Draw the curved Lane Line of best fit on a color image.  If average, then draw the line of best fit from the past "buffer_len" times.
-  void draw_polyfit(cv::Mat& img, double margin, cv::Vec3b color, bool average=false);
+  void draw_polynomial(cv::Mat& img);
+  void draw_pixels(cv::Mat& img, cv::Vec3b color);
+  void draw_search_area(cv::Mat& img, double margin);
 
   //TODO: make these private
   // store all pixels coords (x, y) of line detected

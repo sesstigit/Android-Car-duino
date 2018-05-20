@@ -124,7 +124,7 @@ void LaneLine::draw_pixels(cv::Mat& img, cv::Vec3b color) {
     for (int i = 0; i < all_x_.size(); i++) {
         if ((all_y_[i] >= 0) && (all_y_[i] < img_height)) {
             if ((all_x_[i] >= 0) && (all_x_[i] < img_width)) {
-                pixel_mat.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
+                img.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
             }
         }
     }
@@ -137,9 +137,9 @@ void LaneLine::draw_search_area(cv::Mat& img, double margin) {
 
     for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
         if (img.type() == CV_8UC4) {
-            cv::line(search_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 2*margin, CV_AA);  //android image is RGBA
+            cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2*margin, CV_AA);  //android image is RGBA
         } else {
-            cv::line(search_mat, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
+            cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
         }
     }
 }

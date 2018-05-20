@@ -75,6 +75,9 @@ namespace Autodrive {
 		//if (img_conf.intrinsic_matrix_.is_empty() || img_conf.distortion_coeffs_.is_empty()){
 		if (intrinsic_matrix == nullptr || distortion_coeffs == nullptr) {
 			//std::cerr << "INFO: camera calibration info unavailable.  No undistortion applied" << std::endl;
+			if (&inframe != &outframe) {
+				inframe.copyTo(outframe);  //unnecessary if inframe and outframe are identical objects
+			}
 		}
 		else {
 			//std::cerr << "INFO: undistorting frame" << std::endl;
@@ -83,11 +86,15 @@ namespace Autodrive {
 	}
 
 
-	void normalize_lighting(cv::Mat& bgr_image, cv::Mat& out_image)
+	void normalize_lighting(cv::Mat& img, cv::Mat& out_image)
 	{
-		// convert bgr_image to Lab
+		// convert img to Lab
 		cv::Mat lab_image;
-		cv::cvtColor(bgr_image, lab_image, CV_BGR2Lab);
+		if (img.type() == CV_8UC4) {
+			cv::cvtColor(img, lab_image, CV_RGB2Lab);
+		} else {
+			cv::cvtColor(img, lab_image, CV_BGR2Lab);
+		}
 
 		// Extract the L channel
 		std::vector<cv::Mat> lab_planes(3);
@@ -104,10 +111,10 @@ namespace Autodrive {
 		cv::merge(lab_planes, lab_image);
 
 		// convert back to original number of color channels
-		if (bgr_image.type() == CV_8UC4) {
-			cv::Mat temp_bgr_image;
-			cv::cvtColor(lab_image, temp_bgr_image, CV_Lab2RGB);
-			cv::cvtColor(temp_bgr_image, out_image, CV_RGB2RGBA);  //android images appear to be RGBA
+		if (img.type() == CV_8UC4) {
+			cv::Mat temp_img;
+			cv::cvtColor(lab_image, temp_img, CV_Lab2RGB);
+			cv::cvtColor(temp_img, out_image, CV_RGB2RGBA);  //android images appear to be RGBA
 		}
 		else {
 			cv::cvtColor(lab_image, out_image, CV_Lab2BGR);
