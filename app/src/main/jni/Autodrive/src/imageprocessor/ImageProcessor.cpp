@@ -46,7 +46,7 @@ bool ImageProcessor::init_processing(cv::Mat& mat) {
 		birdseye_->birds_eye_transform(mat, perspective_);
 		if (img_conf_.normalize_lighting_) {
 			//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
-			normalize_lighting(mat);
+			normalize_lighting(mat, mat);
 		}
 		cv::Mat cannied_mat;
 		cv::Canny(mat, cannied_mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3, 3);  //hi threshold = 3 * low_threshold
@@ -83,7 +83,7 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	birdseye_->birds_eye_transform(mat, perspective_);
 	if (img_conf_.normalize_lighting_) {
 		//normalize_lighting(mat, blur_i_, intensity_ / 100.f);
-		normalize_lighting(mat);
+		normalize_lighting(mat, mat);
 	}
 
 	cv::Mat cannied_mat;

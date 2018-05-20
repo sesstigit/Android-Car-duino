@@ -83,7 +83,7 @@ namespace Autodrive {
 	}
 
 
-	void normalize_lighting(cv::Mat& bgr_image)
+	void normalize_lighting(cv::Mat& bgr_image, cv::Mat& out_image)
 	{
 		// convert bgr_image to Lab
 		cv::Mat lab_image;
@@ -107,10 +107,10 @@ namespace Autodrive {
 		if (bgr_image.type() == CV_8UC4) {
 			cv::Mat temp_bgr_image;
 			cv::cvtColor(lab_image, temp_bgr_image, CV_Lab2RGB);
-			cv::cvtColor(temp_bgr_image, bgr_image, CV_RGB2RGBA);  //android images appear to be RGBA
+			cv::cvtColor(temp_bgr_image, out_image, CV_RGB2RGBA);  //android images appear to be RGBA
 		}
 		else {
-			cv::cvtColor(lab_image, bgr_image, CV_Lab2BGR);
+			cv::cvtColor(lab_image, out_image, CV_Lab2BGR);
 		}
 
 	}

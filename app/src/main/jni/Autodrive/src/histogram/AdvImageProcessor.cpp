@@ -56,49 +56,56 @@ bool AdvImageProcessor::init_processing(cv::Mat& mat) {
 CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 {
 	CarCmd cmd;
+	int img_type = mat.channels();
 	
-    cv::Mat normMat = mat.clone();
+	imshow("InputImage", mat);
+
+    cv::Mat undist_mat(mat.size(), img_type, cv::Scalar(0,0,0));
     // undistort the image using coefficients found in external calibration
-    camera_undistort(mat, normMat, img_conf_.intrinsic_matrix_, img_conf_.distortion_coeffs_);
+    camera_undistort(mat, undist_mat, img_conf_.intrinsic_matrix_, img_conf_.distortion_coeffs_);
+	imshow("UndistortedImage", undist_mat);
 	
 	// Normalize the lighting in the image
-	normalize_lighting(normMat);
-	imshow("NormLight", normMat);
+	cv::Mat norm_mat(mat.size(), img_type, cv::Scalar(0,0,0));
+	normalize_lighting(undist_mat, norm_mat);
+	imshow("NormLight", norm_mat);
 
-	cv::Mat binMat(mat.size(), CV_8UC1, cv::Scalar(0));
-    // binarize frame to highlight the lane lines
-    binarize(normMat, binMat);
-
+    // binarize frame to highlight the lane lines = grayscale image output
+    cv::Mat bin_mat(mat.size(), CV_8UC1, cv::Scalar(0));
+    binarize(norm_mat, bin_mat);
+    imshow("Binarized", bin_mat);
+    
 	// Perform birdseye transform using saved perspective
-	birdseye_->birds_eye_transform(binMat, perspective_);
-	imshow("Birdseye", binMat);
+	cv::Mat bird_mat = bin_mat.clone();
+	birdseye_->birds_eye_transform(bird_mat, perspective_);
+	imshow("Birdseye", bird_mat);
 	
 	if (car_y_height == 0) {
-	    car_y_height = find_car_height(binMat);  //find top of car bonnet in this binarized, birdseye view
+	    car_y_height = find_car_height(bird_mat);  //find top of car bonnet in this binarized, birdseye view
 	    cerr << "car_y_height=" << car_y_height << endl;
 	}
-
+    // Lane detection is done on the birdseye view, with a colour output
+	cv::Mat lane_mat(mat.size(), img_type, cv::Scalar(0,0,0));
 	// keep_state_: if True, lane line state is conserved (in turn allowing averaging of results)
 	if (keep_state_ && line_lt_.detected() && line_rt_.detected()) {
-		get_fits_by_previous_fits(binMat, mat);
-		imshow("BirdseyePrevious", mat);
+		get_fits_by_previous_fits(bird_mat, lane_mat);
+		imshow("LanePrevious", lane_mat);
 	} else {
 		// fit 2-degree polynomial curve onto lane lines found
-		get_fits_by_sliding_windows(binMat, mat, 15);
-		imshow("BirdseyeSliding", mat);
+		get_fits_by_sliding_windows(bird_mat, lane_mat, 15);
+		imshow("LaneNew", lane_mat);
 	}
 
     // compute offset in pixels from center of the lane (cross track error "cte") for PID Controller
-	double cte = compute_offset_from_center(mat);
+	double cte = compute_offset_from_center(lane_mat);
 	cout << "cross track error = " << cte << endl;
 	
 	
     // draw the surface enclosed by lane lines back onto the original frame
-	draw_back_onto_the_road(normMat, mat);
+	cv::Mat blend_on_road(mat.size(), img_type, cv::Scalar(0,0,0));
+	draw_back_onto_the_road(undist_mat, blend_on_road);
 
-    // stitch on the top of final output images from different steps of the pipeline
-    //blend_output = prepare_out_blend_frame(blend_on_road, img_binary, img_birdeye, img_fit, line_lt, line_rt, offset_meter)
-
+    
 	pid_->UpdateError(cte);
 	// pid parameters chosen to give output in range [-1.0, 1,0]
 	// Hence to ensure output in range [0, PI] need to make following conversion (more precisely gives output in range (PI/2 - 1.0, PI/2 + 1.0))
@@ -115,6 +122,9 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
 //#endif
 	cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 	
+	// stitch on the top of final output images from different steps of the pipeline
+    prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, offset_meter, mat)
+
 	if (img_conf_.display_debug_ == true) {
 		//! Draw a short green line from center bottom in direction of the road_follower_ angle
 		//! BGR or RGBA does not matter here
@@ -433,7 +443,7 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
 //! @param keep_state : if true, line state is maintained
 //! @return : color blend
 //! Also uses class members perspective_inv_ for the perspective transform, and line_lt_ and line_rt for the lane lines, and keep_state_
-void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat) {
+void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& out_mat) {
 	int width = img.size().width;
 	int height = img.size().height;
 
@@ -453,16 +463,75 @@ void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat) {
 	//Create a black image same size as input
 	// - draw birdseye lines on the image
 	// - then dewarp the birdseye before combining with input image
-	line_lt_.draw_polyfit(blankMat1, img_conf_.histogram_lane_margin_, blue, false);  //do not average the curvature
-	line_rt_.draw_polyfit(blankMat2, img_conf_.histogram_lane_margin_, red, false);
-	cv::addWeighted(blankMat1, 1.0, blankMat2, 1.0, 0, blankMat1);
+	line_lt_.draw_polynomial(blankMat1);  //do not average the curvature
+	line_rt_.draw_polynomial(blankMat1);
+	line_lt_.draw_pixels(blankMat1, red);  //do not average the curvature
+    line_rt_.draw_pixels(blankMat1, blue);
+    line_lt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);  //do not average the curvature
+    line_rt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);
+    cv::addWeighted(blankMat1, 1.0, blankMat2, 0.3, 0, blankMat1);
 	cv::Mat road_dewarped; 
 	cv::warpPerspective(blankMat1, road_dewarped, perspective_inv_, cv::Size(width, height));  // Warp back to original image space
-
-	cv::addWeighted(img, 1., road_dewarped, 0.3, 0, outMat);
-	//road_dewarped.copyTo(outMat);
-	//img.copyTo(outMat);
+	cv::addWeighted(img, 1., road_dewarped, 0.3, 0, out_mat);
 }
+
+//! Prepare the final pretty pretty output blend, given intermediate pipeline images to draw as thumbnails
+//! @param blend_on_road: color image of lane blend onto the road
+//! @param bin_mat: thresholded binary image
+//! @param bird_mat: bird's eye view of the thresholded binary image
+//! @param lane_mat: bird's eye view with detected lane-lines highlighted
+//! @param offset_meter: offset from the center of the lane
+//! @param out_mat: output blend with all images stitched
+void prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat& bin_mat, cv::Mat& bird_mat, cv::Mat& lane_mat, int offset_meter, cv::Mat& out_mat) {
+    int w = blend_on_road.size().width;
+    int h = blend_on_road.size().height;
+
+    float thumb_ratio = 0.2;
+    int thumb_h = int(thumb_ratio * (float)h);
+    int thumb_w = int(thumb_ratio * (float)w);
+
+    int off_x = 10;
+    int off_y = 5;
+
+    // add a gray rectangle to highlight the upper area
+    mask = blend_on_road.copy()
+    cv::rectangle(mask, cv::Point(0, 0), cv::Point(w, thumb_h+2*off_y), color=(0, 0, 0), thickness=cv2.FILLED);
+    cv::addWeighted(mask, 0.2, blend_on_road, 0.8, 0, blend_on_road);
+
+    // create thumbnails of intermediate images
+    cv::Mat thumb_bin_mat, thumb_bird_mat, thumb_lane_mat;
+    cv::Mat thumb_bin_mat_col, thumb_bird_mat_col, thumb_lane_mat_col;
+    cv::resize(bin_mat, thumb_bin_mat(thumb_w, thumb_h));
+    cv::resize(bird_mat, thumb_bird_mat(thumb_w, thumb_h));
+    cv::resize(lane_mat, thumb_lane_mat(thumb_w, thumb_h));
+    
+    if (out_mat.type() == CV_8UC4) {
+        cv::cvtColor(thumb_bin_mat, thumb_bin_mat_col, CV_GRAY2RGBA);  //android input image appears to be RGBA
+        cv::cvtColor(thumb_bird_mat, thumb_bird_mat_col, CV_GRAY2RGBA);
+        cv::cvtColor(thumb_lane_mat, thumb_lane_mat_col, CV_GRAY2RGBA);
+    } else {
+        cv::cvtColor(thumb_bin_mat, thumb_bin_mat_col, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
+        cv::cvtColor(thumb_bird_mat, thumb_bird_mat_col, CV_GRAY2BGR);
+        cv::cvtColor(thumb_lane_mat, thumb_lane_mat_col, CV_GRAY2BGR);
+    }
+    
+    blend_on_road[off_y:thumb_h+off_y, off_x:off_x+thumb_w, :] = thumb_binary
+    cv::Mat insetImage(blend_on_road, Rect(off_x, off_y, thumb_w, thumb_h));
+    thumb_bin_mat_col.copyTo(insetImage);
+    cv::Mat insetImage(blend_on_road, Rect(off_x+thumb_w, off_y, thumb_w, thumb_h));
+    thumb_bird_mat_col.copyTo(insetImage);
+    cv::Mat insetImage(blend_on_road, Rect(off_x+(2*thumb_w), off_y, thumb_w, thumb_h));
+    thumb_lane_mat_col.copyTo(insetImage);
+
+//blend_on_road[off_y:thumb_h+off_y, 3*off_x+2*thumb_w:3*(off_x+thumb_w), :] = thumb_img_fit
+
+    // add text (curvature and offset info) on the upper right of the blend
+    //mean_curvature_meter = np.mean([line_lt.curvature_meter, line_rt.curvature_meter])
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    //cv2.putText(blend_on_road, 'Curvature radius: {:.02f}m'.format(mean_curvature_meter), (860, 60), font, 0.9, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(blend_on_road, "Lane Offset: %d px", offset_pixels), cv::Point(off_x+(3*thumb_w), off_y), cv::FONT_HERSHEY_PLAIN, 0.9, cv::Scalar(255, 255, 255), 1, cv2.LINE_AA);
+}
+
 
 int AdvImageProcessor::find_car_height(const cv::Mat& cannied)
 {

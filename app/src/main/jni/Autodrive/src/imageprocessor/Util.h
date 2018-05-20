@@ -112,7 +112,7 @@ namespace Autodrive {
 
 	void camera_undistort(cv::Mat& inframe, cv::Mat& outframe, cv::Mat* intrinsic_matrix, cv::Mat* distortion_coeffs);
 	//! Normalize lighting in the input frame with the CLAHE algorithm
-	void normalize_lighting(cv::Mat& bgr_image);
+	void normalize_lighting(cv::Mat& bgr_image, cv::Mat& out_image);
 	
 #ifdef _DEBUG
 	//! Convert a Mat type to a human readable string
