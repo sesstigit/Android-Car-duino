@@ -8,7 +8,11 @@
 //#define _DEBUG
 #undef _DEBUG
 #include "Autodrive.h"
+#ifdef USE_IMAGEPROCESSOR
 #include "imageprocessor/ImageProcessor.h"
+#else
+#include "histogram/AdvImageProcessor.h"
+#endif
 #include "Car.h"
 #include "CarCmd.h"
 #include "CarSensor.h"
