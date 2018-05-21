@@ -30,14 +30,17 @@ RoadLine::RoadLine(const ImageConfig& img_conf) : img_conf_(img_conf) {
 }
 
 void RoadLine::draw(cv::Mat& draw_mat) {
-    for (unsigned int i = 0; i < points_.size() - 1; i++)
-    {
-        if (draw_mat.type() == CV_8UC4) {
-            linef(points_[i], points_[i + 1]).draw(draw_mat, cv::Scalar(0, 0, 255), 4); //RGBA
-        } else {
-            linef(points_[i], points_[i + 1]).draw(draw_mat, cv::Scalar(255, 0, 0), 4); //BGR
-        }
-    }
+	if (points_.size() > 0) {
+		for (unsigned int i = 0; i < points_.size() - 1; i++)
+		{
+			if (draw_mat.type() == CV_8UC4) {
+				linef(points_[i], points_[i + 1]).draw(draw_mat, cv::Scalar(0, 0, 255), 4); //RGBA
+			}
+			else {
+				linef(points_[i], points_[i + 1]).draw(draw_mat, cv::Scalar(255, 0, 0), 4); //BGR
+			}
+		}
+	}
 }
 
 bool RoadLine::add_point(POINT p) {

@@ -67,15 +67,20 @@ void binarize(cv::Mat& matIn, cv::Mat& matGray) {  //should use this version so 
 	cv::convertScaleAbs(grad_y, abs_grad_y);
 	/// Total Gradient (approximate)
 	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, matGray);
+#ifdef DEBUG_ADV_
 	cv::imshow("SobelEdges", matGray);
+#endif
 	thresh_value = 100;  //TODO: lane detection performance is sensitive to this value
 	max_binary_value = 255;  //FIX - was 1
 	cv::threshold(matGray, matGray, thresh_value, max_binary_value, cv::THRESH_BINARY);
+#ifdef DEBUG_ADV_
 	cv::imshow("SobelThresh", matGray);
-
+#endif
 	// apply a light morphology to "fill the gaps" in the binary image
 	cv::Mat mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
 	cv::morphologyEx(matGray, matGray, cv::MORPH_CLOSE, mkernel);
+#ifdef DEBUG_ADV_
 	cv::imshow("LightMorphology", matGray);
-	cv::waitKey();
+#endif
+	//cv::waitKey();
 }

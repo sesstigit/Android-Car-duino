@@ -39,7 +39,7 @@
 namespace Autodrive {
 
 	class LaneLine; //forward declaraion.
-
+	
 	class AdvImageProcessor {
 	public:
 		AdvImageProcessor(const ImageConfig& img_conf, bool verbose=false);
@@ -51,7 +51,11 @@ namespace Autodrive {
         //! It tracks the lane lines in the input frame, and calculates driving commands
         //! to steer the car along the lane.
 		CarCmd continue_processing(cv::Mat& mat);
-		
+
+		void set_perspective(cv::Mat* p);
+		//! Remove the perspective so we know to calculate a new one
+		void delete_perspective();
+		cv::Mat* get_perspective();
 	private:
         //! Keep a reference to the image processing configuration parameters
 		const ImageConfig& img_conf_;

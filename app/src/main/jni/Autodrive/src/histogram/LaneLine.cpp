@@ -134,28 +134,31 @@ void LaneLine::draw_pixels(cv::Mat& img, cv::Vec3b color) {
 // Easiest to display the search area by drawing the polynomial with width=2*margin
 // Draw green line (width=2*margin) between with each pair of consecutives points in the fitted lane line
 void LaneLine::draw_search_area(cv::Mat& img, double margin) {
-
-    for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
-        if (img.type() == CV_8UC4) {
-            cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2*margin, CV_AA);  //android image is RGBA
-        } else {
-            cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2*margin, CV_AA);  //open an image with OpenCV makes it BGR
-        }
-    }
+	if (last_fit_points_.size() > 0) {
+		for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
+			if (img.type() == CV_8UC4) {
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2 * margin, CV_AA);  //android image is RGBA
+			}
+			else {
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2 * margin, CV_AA);  //open an image with OpenCV makes it BGR
+			}
+		}
+	}
 }
 
 //! Draw the polynomial fitted Lane Line in yellow on the provided image.
 void LaneLine::draw_polynomial(cv::Mat& img) {
-
-    // Draw an opencv yellow "line" between with each pair of consecutives points in the fitted lane line
-    for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
-		if (img.type() == CV_8UC4) {
-			cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
-		} else {
-			cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+	if (last_fit_points_.size() > 0) {
+		// Draw an opencv yellow "line" between with each pair of consecutives points in the fitted lane line
+		for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
+			if (img.type() == CV_8UC4) {
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 1, CV_AA);  //android image is RGBA
+			}
+			else {
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 1, CV_AA);  //open an image with OpenCV makes it BGR
+			}
 		}
-    }
-    
+	}
 /*	// Instead show the LaneLine search area as two more polynomial lines plus or minus the margin.
 	// Draw the lines between each pair of consecutives points
 	float b = 10;  //bias = margin either side of polynomial
