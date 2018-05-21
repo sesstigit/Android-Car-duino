@@ -59,15 +59,25 @@ android {
                     "OPENCV_LIB_TYPE:=SHARED\n" +
                     "OPENCV_CAMERA_MODULES:=on\n" +
                     "include $openCvDir\\sdk\\native\\jni\\OpenCV.mk\n" +
-                    "LOCAL_MODULE := autodrive\n" +
-                    "FILE_LIST1 := \$(wildcard \$(LOCAL_PATH)\\Autodrive\\src\\*.cpp)\n" +
-                    "FILE_LIST2 := \$(wildcard \$(LOCAL_PATH)\\Autodrive\\src\\imageprocessor\\*.cpp)\n" +
-                    "LOCAL_SRC_FILES := $sources\n" +
-                    "LOCAL_SRC_FILES += \$(FILE_LIST1:\$(LOCAL_PATH)\\%=%)\n" +
-                    "LOCAL_SRC_FILES += \$(FILE_LIST2:\$(LOCAL_PATH)\\%=%)\n" +
+                    "LOCAL_MODULE := autodrive\n\n" +
+                    "#traverse all the directory and subdirectory\n" +
+                    "define walk\n" +
+                    "\$(wildcard \$(1)) \$(foreach e, \$(wildcard \$(1)/*), \$(call walk, \$(e)))\n" +
+                    "endef\n\n" +
+                    "#find all the file recursively under jni\n" +
+                    "ALLFILES = \$(call walk, \$(LOCAL_PATH)/Autodrive/src)\n" +
+                    "FILE_LIST := \$(filter %.cpp, \$(ALLFILES))\n\n" +
+                    "FILE_LIST2 := \$(wildcard \$(LOCAL_PATH)\\Autodrive\\src\\histogram\\*.cpp)\n" +
+                    "LOCAL_SRC_FILES := \$(FILE_LIST:\$(LOCAL_PATH)/%=%)\n" +
+                    "LOCAL_SRC_FILES += \$(FILE_LIST2)\n" +
+                    "LOCAL_SRC_FILES += AutodriveJavaFacade.cpp\n\n" +
+                    "LOCAL_SHARED_LIBRARIES += gnustl_shared\n\n" +
+                    "# -v shows clang compiler debug information, hence useful for debugging compilation\n" +
+                    "LOCAL_CFLAGS += -v\n" +
                     "LOCAL_LDLIBS += -llog -ldl -lstdc++\n" +
                     "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src\n" +
                     "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\src\\imageprocessor\n" +
+                    "LOCAL_C_INCLUDES += \$(LOCAL_PATH)\\Autodrive\\external\n" +
                     "include \$(BUILD_SHARED_LIBRARY)"
             makefile.write(ANDROIDMK)
         }
