@@ -53,9 +53,13 @@ bool AdvImageProcessor::init_processing(cv::Mat& mat) {
 //! Apply whole lane detection pipeline to an input color frame.
 //! param mat: input color frame
 //!    :return: output blend with detected lane overlaid
-CarCmd AdvImageProcessor::continue_processing(cv::Mat& mat)
+CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 {
 	CarCmd cmd;
+	cv::Mat mat;
+	// Reduce size of image for quicker processing
+	cv::resize(full_mat, mat, 240,135);
+	
 	int img_type = mat.type();
 #ifdef DEBUG_ADV_
 	imshow("InputImage", mat);

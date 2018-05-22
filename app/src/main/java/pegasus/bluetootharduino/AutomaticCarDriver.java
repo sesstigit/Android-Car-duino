@@ -41,9 +41,6 @@ public class AutomaticCarDriver{
         frameCount = 0;
     }
 
-
-
-
     public Mat processImage(Mat image) {
         long elapsedTime;
         float frameRate;
@@ -56,17 +53,20 @@ public class AutomaticCarDriver{
             Log.i("Framerate=", "value=" + frameRate);
             start = System.nanoTime();
         }
+        /* Commented code which reduced image size before processing, and
+           restored size to display.  Instead give control to the image
+           processsing library.
         Mat resized = new Mat();
         Size prevSize = image.size();
         Size size = new Size(240,135);
         Imgproc.resize(image, resized, size,0,0,Imgproc.INTER_NEAREST);
         Autodrive.setImage(resized.getNativeObjAddr());
+        */
+        Autodrive.setImage(image.getNativeObjAddr());
         Autodrive.drive();
         BluetoothConnection.send();
-        if(Settings.DisplayDebug)
-            Imgproc.resize(resized, image, prevSize,0,0,Imgproc.INTER_NEAREST);
-
-
+        //if(Settings.DisplayDebug)
+        //    Imgproc.resize(resized, image, prevSize,0,0,Imgproc.INTER_NEAREST);
         return image;
     }
 }
