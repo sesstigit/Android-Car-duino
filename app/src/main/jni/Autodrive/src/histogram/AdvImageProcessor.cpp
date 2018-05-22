@@ -30,20 +30,22 @@ AdvImageProcessor::AdvImageProcessor(const ImageConfig& img_conf, bool verbose) 
 	pid_ = make_unique<PID>(img_conf);
 }
 
-bool AdvImageProcessor::init_processing(cv::Mat& mat) {
-	cv::Mat mat_copy;
+bool AdvImageProcessor::init_processing(cv::Mat& full_mat) {
+	cv::Mat mat;
+	
+	// Reduce size of image for quicker processing
+	cv::resize(full_mat, mat, cv::Size(240, 135), 0, 0, cv::INTER_NEAREST);
 
 	// Note: in contrast to imageProcessor, this function does not test the perspective before using it.  May need to add some tests.
 	if (perspective_.empty()) {
-		mat_copy = mat.clone();
 		//only recalculate the warp matrix if it does not exist (the warp matrix can be saved permanently by the app)
-		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 
     //TODO: check we have found a good perspective transform
 	if (perspective_.empty()) {
-		mat_copy.copyTo(mat);  //display the image prior to finding birdseye perspective
-		cv::putText(mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
+		cv::resize(mat, full_mat, full_mat.size(), 0, 0, cv::INTER_NEAREST);  //display the image prior to finding birdseye perspective
+		cv::putText(full_mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, full_mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		return false;
 	} else {
 		return true;
@@ -58,7 +60,7 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 	CarCmd cmd;
 	cv::Mat mat;
 	// Reduce size of image for quicker processing
-	cv::resize(full_mat, mat, 240,135);
+	cv::resize(full_mat, mat, cv::Size(240, 135), 0, 0, cv::INTER_NEAREST);
 	
 	int img_type = mat.type();
 #ifdef DEBUG_ADV_
@@ -129,14 +131,14 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 	cmd.set_speed(0.23);  //TODO: Fix hardcoded number
 	
 	// stitch on the top of final output images from different steps of the pipeline
-	prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, cte, mat);
+	prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, cte, full_mat);
 
 	if (img_conf_.display_debug_ == true) {
 		//! Draw a short green line from center bottom in direction of the road_follower_ angle
 		//! BGR or RGBA does not matter here
-		int drawlen = 100;
-		POINT center(mat.size().width / 2.f, (float)mat.size().height);
-		linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
+		int drawlen = full_mat.size().height / 4;
+		POINT center(full_mat.size().width / 2.f, (float)full_mat.size().height);
+		linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(full_mat, CV_RGB(0, 255, 0));
 	}
 	return cmd;
 }
@@ -511,21 +513,24 @@ void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& out_mat) 
 //! @param offset_meter: offset from the center of the lane
 //! @param out_mat: output blend with all images stitched
 void AdvImageProcessor::prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat& bin_mat, cv::Mat& bird_mat, cv::Mat& lane_mat, double offset_pixels, cv::Mat& out_mat) {
-    int w = blend_on_road.size().width;
-    int h = blend_on_road.size().height;
+	// Convert blend_on_road to the full image size for final display
+	cv::resize(blend_on_road, out_mat, out_mat.size(), 0, 0, cv::INTER_NEAREST);
+	
+	int w = out_mat.size().width;
+    int h = out_mat.size().height;
 
     float thumb_ratio = 0.2;
     int thumb_h = int(thumb_ratio * (float)h);
     int thumb_w = int(thumb_ratio * (float)w);
 
-    int off_x = 5;
-    int off_y = 3;
+    int off_x = 25;
+    int off_y = 15;
 
     // add a gray rectangle to highlight the upper area
 	cv::Mat mask;
-	mask = blend_on_road.clone();
+	mask = out_mat.clone();
     cv::rectangle(mask, cv::Point(0, 0), cv::Point(w, thumb_h+2*off_y), cv::Scalar(0, 0, 0), cv::FILLED);
-    cv::addWeighted(mask, 0.2, blend_on_road, 0.8, 0, blend_on_road);
+    cv::addWeighted(mask, 0.2, out_mat, 0.8, 0, out_mat);
 
     // create thumbnails of intermediate images
     cv::Mat thumb_bin_mat, thumb_bird_mat, thumb_lane_mat;
@@ -545,20 +550,20 @@ void AdvImageProcessor::prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat&
     }
     
     //blend_on_road[off_y:thumb_h+off_y, off_x:off_x+thumb_w, :] = thumb_binary
-    cv::Mat insetImage(blend_on_road, cv::Rect(off_x, off_y, thumb_w, thumb_h));
+    cv::Mat insetImage(out_mat, cv::Rect(off_x, off_y, thumb_w, thumb_h));
     thumb_bin_mat_col.copyTo(insetImage);
-    cv::Mat insetImage2(blend_on_road, cv::Rect((2*off_x)+thumb_w, off_y, thumb_w, thumb_h));
+    cv::Mat insetImage2(out_mat, cv::Rect((2*off_x)+thumb_w, off_y, thumb_w, thumb_h));
     thumb_bird_mat_col.copyTo(insetImage2);
-    cv::Mat insetImage3(blend_on_road, cv::Rect((3*off_x)+(2*thumb_w), off_y, thumb_w, thumb_h));
+    cv::Mat insetImage3(out_mat, cv::Rect((3*off_x)+(2*thumb_w), off_y, thumb_w, thumb_h));
     thumb_lane_mat.copyTo(insetImage3);
 
     // add text (curvature and offset info) on the upper right of the blend
     //mean_curvature_meter = np.mean([line_lt.curvature_meter, line_rt.curvature_meter])
-    cv::putText(blend_on_road, "Lane Offset", cv::Point((4*off_x)+(3*thumb_w), (3*off_y)), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 255, 255), 0.3, cv::LINE_AA);
+    cv::putText(out_mat, "Lane Offset", cv::Point((4*off_x)+(3*thumb_w), (3*off_y)), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1.0, cv::LINE_AA);
 	std::ostringstream oss;
 	oss << std::setprecision(2) << offset_pixels << " px";
-	cv::putText(blend_on_road, oss.str(), cv::Point((4 * off_x) + (3 * thumb_w), (3*off_y) + thumb_h*3/4), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 0.5, cv::LINE_AA);
-	blend_on_road.copyTo(out_mat);
+	cv::putText(out_mat, oss.str(), cv::Point((4 * off_x) + (3 * thumb_w), (3*off_y) + thumb_h*3/4), cv::FONT_HERSHEY_SIMPLEX, 2.0, cv::Scalar(255, 255, 255), 2.0, cv::LINE_AA);
+	//blend_on_road.copyTo(out_mat);
 }
 
 

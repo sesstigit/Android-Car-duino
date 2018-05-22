@@ -31,14 +31,16 @@ ImageProcessor::ImageProcessor(const ImageConfig& img_conf) :
     //start_center_(POINT(0.f, 0.f))
 }
 
-bool ImageProcessor::init_processing(cv::Mat& mat) {
+bool ImageProcessor::init_processing(cv::Mat& full_mat) {
+	cv::Mat mat;
+	// Reduce size of image for quicker processing
+	cv::resize(full_mat, mat, cv::Size(240, 135), 0, 0, cv::INTER_NEAREST);
+	
 	birdseye_ = make_unique<BirdseyeTransformer>();
-	cv::Mat mat_copy;
 
 	if (perspective_.empty()) {
-		mat_copy = mat.clone();
 		//only recalculate the warp matrix if it does not exist
-		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat_copy, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
+		std::tie(perspective_, perspective_inv_) = birdseye_->find_perspective(mat, img_conf_.canny_thresh_, img_conf_.canny_thresh_ * 3);
 	}
 	
 	if (!(perspective_.empty())) {
@@ -65,16 +67,20 @@ bool ImageProcessor::init_processing(cv::Mat& mat) {
 		perspective_ = cv::Mat();  //clear the contents of persepective_, so a new perspective can be tested
 		return false;
 	} else{
-		mat_copy.copyTo(mat);  //display the image prior to finding birdseye perspective
-		cv::putText(mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
+		cv::resize(mat, full_mat, full_mat.size(), 0, 0, cv::INTER_NEAREST);  //display the image prior to finding birdseye perspective
+		cv::putText(full_mat, "v0.1 SEARCHING FOR STRAIGHT LANES...", POINT(50.f, full_mat.size().height / 3.f), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 2);
 		return false;
 	}
 }
 
 
-CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
+CarCmd ImageProcessor::continue_processing(cv::Mat& full_mat)
 {
 	CarCmd cmnd;
+
+	cv::Mat mat;
+	// Reduce size of image for quicker processing
+	cv::resize(full_mat, mat, cv::Size(240, 135), 0, 0, cv::INTER_NEAREST);
 	
 	if (perspective_.empty()) {
 		cerr << "ERROR: continue_processing() is missing perspective for birdseye_transform" << endl;
@@ -114,10 +120,12 @@ CarCmd ImageProcessor::continue_processing(cv::Mat& mat)
 	if (img_conf_.display_debug_ == true) {
 		//! Draw a short green line from center bottom in direction of the road_follower_ angle
 		//! BGR or RGBA does not matter here
-		int drawlen = 100;
+		int drawlen = mat.size().height/4;
 		POINT center(mat.size().width / 2.f, (float)mat.size().height);
 		linef(center, center + POINT(std::cos(angle) * drawlen, -sin(angle) * drawlen)).draw(mat, CV_RGB(0, 255, 0));
 	}
+	// Convert output to the full image size for final display
+	cv::resize(mat, full_mat, full_mat.size(), 0, 0, cv::INTER_NEAREST);
 	return cmnd;
 }
 

@@ -28,9 +28,9 @@ namespace Autodrive {
 
 
 #ifndef __ANDROID__
-	void show_image(cv::Mat mat, int resize, std::string wName)
+	void show_image(cv::Mat mat, cv::Size out_size, std::string wName)
 	{
-		cv::resize(mat, mat, mat.size() * resize);//resize image
+		cv::resize(mat, mat, out_size);//resize image
 		cv::imshow(wName, mat);
 	}
 #endif

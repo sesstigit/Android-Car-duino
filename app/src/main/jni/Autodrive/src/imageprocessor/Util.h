@@ -53,7 +53,7 @@ namespace Autodrive {
 	};
 
 #ifndef __ANDROID__
-	void show_image(cv::Mat mat, int resize, std::string wName);
+	void show_image(cv::Mat mat, cv::Size out_size, std::string wName);
 #endif
 
 	template<typename T, typename... Args>
