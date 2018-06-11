@@ -100,13 +100,15 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 		get_fits_by_previous_fits(bird_mat, lane_mat);
 		//imshow("LanePrevious", lane_mat); //now shown as thumbnail
 	} else {
+		pid_->reset();
 		// fit 2-degree polynomial curve onto lane lines found
-		get_fits_by_sliding_windows(bird_mat, lane_mat, 15);
+		get_fits_by_sliding_windows(bird_mat, lane_mat, 25);  //last param is n_windows.  Higher number can track steeper curves.
 		//imshow("LaneNew", lane_mat); //now shown as thumbnail
 	}
 
     // compute offset in pixels from center of the lane (cross track error "cte") for PID Controller
 	double cte = compute_offset_from_center(lane_mat);
+	//cte = cte / 10.0;  //fudge since PID controller exponents are limited in this implementation
 #ifdef DEBUG_ADV_
 	cout << "cross track error = " << cte << endl;
 #endif
@@ -137,7 +139,7 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 		//! Draw a short green line from center bottom in direction of the road_follower_ angle
 		//! BGR or RGBA does not matter here
 		int drawlen = full_mat.size().height / 4;
-		POINT center(full_mat.size().width / 2.f, (float)full_mat.size().height);
+		POINT center(full_mat.size().width / 2.f, (float)(full_mat.size().height)*0.75);
 		linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(full_mat, CV_RGB(0, 255, 0));
 	}
 	return cmd;
@@ -178,7 +180,11 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	cerr << "Rect params are 0," << (int)(height/2) << "," << width << "," << (int)(height/2-car_y_height_) << endl;
 #endif
     //Reduce  matrix to a vector by treating the columns as a set of 1D vector and summing vector elements until a single row is obtained
-	cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height/2), width, (int)(height/2-car_y_height_))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
+	if ((car_y_height_ < (height / 2)) && (car_y_height_ > 0)) {  //only use car_y_height_ if sensible value
+		cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height / 2), width, (int)(height / 2 - car_y_height_))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
+	} else {
+		cv::reduce(birdseye_binary_mat(cv::Rect(0, (int)(height / 2), width, (int)(height / 2))), col_sum, 0, CV_REDUCE_SUM, CV_32F);
+	}
 	// Assume peak of the left and right halves of the histogram are starting points for lane lines
 	double minVal, maxVal;
 	cv::Point minLoc, maxLoc;
@@ -364,9 +370,11 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         }
     	// Split the nonzero vector into separate x and y std::vectors (since polynomial fitting requires this)
         for (cv::Point a_point : nonzero) {
-            nonzero_x.push_back(a_point.x);
-            nonzero_y.push_back(a_point.y);
-        }
+			if (a_point.y <= (height - car_y_height_)) { // omit the car bonnet
+				nonzero_x.push_back(a_point.x);
+				nonzero_y.push_back(a_point.y);
+			}
+		}
         // Append these indices to the current lane lines
         if (linenum==0) { //left line
             line_lt_.append_line_coords(nonzero_x, nonzero_y);
@@ -401,6 +409,9 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
 		line_rt_.draw_search_area(temp_mat_t, margin);  //transparent image
 		line_rt_.draw_pixels(temp_mat_s, "blue"); 
 		line_rt_.draw_polynomial(temp_mat_s);
+		//draw a line showing top of car
+		cv::line(temp_mat_s, cv::Point(0, height - car_y_height_), cv::Point(width, height - car_y_height_), cv::Scalar(0, 255, 0), 1);
+
 	}
 	cv::addWeighted(temp_mat_s, 1.0, temp_mat_t, 0.3, 0, outMat);
 
@@ -438,9 +449,10 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
     
     if (line_lt_.detected() && line_rt_.detected()) {
         // Previous implementation chose the average of non-zero points which make up the bottom of line_lt_ and line_rt
-        // Instead, here we compute the value of x for each line using the moving average of the fitted polynomial
-		double line_lt_bottom = line_lt_.poly_eval(img_height - 10, true);  
-		double line_rt_bottom = line_rt_.poly_eval(img_height - 10, true);
+        // Instead, here we compute the value of x for each line using the the fitted polynomial.
+		// Look ahead half way up the field of view rather than looking at the offset at bottom of image.
+		double line_lt_bottom = line_lt_.poly_eval(img_height/2, true);  //was at location img_height - car_y_height_ - 10
+		double line_rt_bottom = line_rt_.poly_eval(img_height/2, true);
 		// Check values - it is possible the polynomial never reaches the bottom of the image
 		if ((line_lt_bottom != line_lt_bottom) || (line_rt_bottom != line_rt_bottom)) {  //basic isnan test
 			return 0.0;
@@ -574,18 +586,36 @@ void AdvImageProcessor::prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat&
 
 int AdvImageProcessor::find_car_height(const cv::Mat& cannied)
 {
-        POINT center_bottom(cannied.size().width / 2, cannied.size().height - 5);
-        //!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 20
-        bool hit = true;
-        while (hit && (center_bottom.y >= 0))
-        {
-                hit = firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::RIGHT), 20).found
-                        || firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::LEFT), 20).found;
-                if (hit)
-                        center_bottom.y--;
-        }
-        center_bottom.y--;
-        return (cannied.size().height - center_bottom.y);
+	POINT center_bottom;
+	bool found = false;
+	//iteratively reduce the width to search for all non-zero pixels until success or width=0
+	int swidth = 20;
+
+	while (found == false && swidth > 0) {
+		center_bottom.x = cannied.size().width / 2;
+		center_bottom.y = cannied.size().height - 5;
+		//!SEARCH UPWARDS UNTIL _NOT_ HIT ON THE CENTER +/- 20
+		bool hit = true;
+		while (hit && (center_bottom.y >= 0))
+		{
+			hit = firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::RIGHT), swidth).found
+				|| firstnonzero_direction(cannied, center_bottom, static_cast<float>(Direction::LEFT), swidth).found;
+			if (hit)
+				center_bottom.y--;
+		}
+		center_bottom.y--;
+		//sanity check value.  If OK, then found=true.
+		if ((center_bottom.y <= cannied.size().height) && (center_bottom.y >= cannied.size().height / 2)) {
+			found = true;
+		}
+		swidth = swidth - 2;
+	}
+
+	if (found) {
+		return (cannied.size().height - center_bottom.y);
+	} else {
+		return 5;  //simple default
+	}
 }
 
 void AdvImageProcessor::set_perspective(cv::Mat* p) {
