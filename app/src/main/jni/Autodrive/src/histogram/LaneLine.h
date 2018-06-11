@@ -45,7 +45,7 @@ class LaneLine {
   double curvature();
   double curvature_meter();
   std::vector<double> get_poly_coeffs(bool average);
-  double poly_eval(double y, bool average);
+  double poly_eval(double y, bool average=false);
   double poly_eval_slope(double y, bool average);
   //! Draw the curved Lane Line of best fit on a color image.  If average, then draw the line of best fit from the past "buffer_len" times.
   void draw_polynomial(cv::Mat& img);
