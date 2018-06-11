@@ -70,15 +70,15 @@ void binarize(cv::Mat& matIn, cv::Mat& matGray) {  //should use this version so 
 #ifdef DEBUG_ADV_
 	cv::imshow("SobelEdges", matGray);
 #endif
-	thresh_value = 100;  //TODO: lane detection performance is sensitive to this value
-	max_binary_value = 255;  //FIX - was 1
+	thresh_value = 150;  //TODO: lane detection performance is sensitive to this value
+	max_binary_value = 255;
 	cv::threshold(matGray, matGray, thresh_value, max_binary_value, cv::THRESH_TOZERO);  //was cv::THRESH_BINARY
 	//cv::adaptiveThreshold(matGray, matGray, max_binary_value, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 11, 2);
 #ifdef DEBUG_ADV_
 	cv::imshow("SobelThresh", matGray);
 #endif
-	// apply a light morphology to "fill the gaps" in the binary image
-	cv::Mat mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	// apply a light morphology to "fill the gaps" in the binary image.  Larger kernel size fills bigger gaps
+	cv::Mat mkernel = getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
 	cv::morphologyEx(matGray, matGray, cv::MORPH_CLOSE, mkernel);
 #ifdef DEBUG_ADV_
 	cv::imshow("LightMorphology", matGray);
