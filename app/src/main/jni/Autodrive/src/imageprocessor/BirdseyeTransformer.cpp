@@ -88,13 +88,15 @@ std::tuple<cv::Mat, cv::Mat> BirdseyeTransformer::find_perspective(cv::Mat& matI
     //cout << "new right lane end" << b_lines.right.end << endl;
     
     //Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.left.end.x, im_height), Autodrive::POINT(b_lines.right.end.x, im_height) };
-    Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.right.end, b_lines.left.end };
-    //Autodrive::POINT pts1[] = { Autodrive::POINT(b_lines.left.begin.x -10, b_lines.left.begin.y), Autodrive::POINT(b_lines.right.begin.x +10, b_lines.right.begin.y), Autodrive::POINT(b_lines.left.end.x -10, b_lines.left.end.y), Autodrive::POINT(b_lines.right.end.x +10, b_lines.right.end.y) };
+    // Next line works quite well.  Just get the coordinates of the start/end of left/right lines
+	Autodrive::POINT pts1[] = { b_lines.left.begin, b_lines.right.begin, b_lines.right.end, b_lines.left.end };
+	//Autodrive::POINT pts1[] = { Autodrive::POINT(b_lines.left.begin.x -20, b_lines.left.begin.y), Autodrive::POINT(b_lines.right.begin.x +20, b_lines.right.begin.y), Autodrive::POINT(b_lines.right.end.x +20, b_lines.right.end.y), Autodrive::POINT(b_lines.left.end.x -20, b_lines.left.end.y) };
     // Next two lines tried to stretch the single lane out to the whole screen, however it distorted the image too much, and made the lane lines too fuzzy
     //Autodrive::POINT pts2[] = { Autodrive::POINT(b_lines.left.end.x, 0), Autodrive::POINT(b_lines.right.end.x, 0), b_lines.left.end, b_lines.right.end };
-    //Autodrive::POINT pts2[] = { Autodrive::POINT(20,0), Autodrive::POINT(im_width-50,0), Autodrive::POINT(20,im_height), Autodrive::POINT(im_width-50,im_height) };
-    // pts2 just ensures the lanes are now made straight, by going from the start of the detected lines (near top of image), then straight down to bottom of image.
-    Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.right.begin.x, im_height), Autodrive::POINT(b_lines.left.begin.x, im_height) };
+	int xtra = 60;
+	Autodrive::POINT pts2[] = { Autodrive::POINT(0+xtra,0), Autodrive::POINT(im_width-xtra,0), Autodrive::POINT(im_width-xtra,im_height), Autodrive::POINT(0+xtra,im_height) };
+    // Nextline works well: pts2 just ensures the lanes are now made straight, by going from the start of the detected lines (near top of image), then straight down to bottom of image.
+    //Autodrive::POINT pts2[] = { b_lines.left.begin, b_lines.right.begin, Autodrive::POINT(b_lines.right.begin.x, im_height), Autodrive::POINT(b_lines.left.begin.x, im_height) };
 	// this version takes the average x value of each line for pts2.  Idea is to spread the lanes more (but not as much as using the widest point of the lane).  
 	//int av_left_x = (b_lines.left.begin.x + b_lines.left.end.x) / 2;
 	//int av_right_x = (b_lines.right.begin.x + b_lines.right.end.x) / 2;
