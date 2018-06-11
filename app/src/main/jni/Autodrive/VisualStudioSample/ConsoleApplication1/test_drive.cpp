@@ -63,7 +63,7 @@ int main()
 	cv::Mat frame;
 	cout << "Entering test_drive main()" << endl;
 	//string filename = "testreal_small.mp4";
-	string filename = "homedrive.mp4";
+	string filename = "homedrive4.mp4";
 	//string filename = "testdrive.mp4";
 
 	cv::VideoCapture capture(filename);
@@ -76,12 +76,13 @@ int main()
 
 	capture >> frame;
 	cv::Size out_size;
-	if (frame.size().width > 600) {
+	if ((frame.size().width >= 600) && (frame.size().width <= 1920)) {
 		out_size = frame.size();
 	} else {
-		int multiplier = round(1024/frame.size().width);
-		out_size = frame.size() * multiplier;
+		out_size = cv::Size(1920, 1080);
 	}
+	cout << "input image size = " << frame.size << endl;
+	cout << "output image size = " << out_size << endl;
 	
 	cout << "calling init_processing()" << endl;
 	while (!Autodrive::car.img_proc_->init_processing(frame)) {
