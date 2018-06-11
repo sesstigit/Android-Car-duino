@@ -62,7 +62,7 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 	// Reduce size of image for quicker processing
 	cv::resize(full_mat, mat, cv::Size(240, 135), 0, 0, cv::INTER_NEAREST);
 	
-	int img_type = mat.type();
+	int img_type = full_mat.type();
 #ifdef DEBUG_ADV_
 	imshow("InputImage", mat);
 #endif
@@ -110,11 +110,6 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 #ifdef DEBUG_ADV_
 	cout << "cross track error = " << cte << endl;
 #endif
-    // draw the surface enclosed by lane lines back onto the original frame
-	cv::Mat blend_on_road(mat.size(), img_type, cv::Scalar(0,0,0));
-	draw_back_onto_the_road(undist_mat, blend_on_road);
-	//imshow("blend_on_road", blend_on_road);  //now shown as thumbnail
-    
 	pid_->UpdateError(cte);
 	// pid parameters chosen to give output in range [-1.0, 1,0]
 	// Hence to ensure output in range [0, PI] need to make following conversion (more precisely gives output in range (PI/2 - 1.0, PI/2 + 1.0))
@@ -129,7 +124,12 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 		cout << "cte=" << cte << "; pid_error=" << pid_->TotalError() << endl;
 #endif
 	cmd.set_speed(0.23);  //TODO: Fix hardcoded number
-	
+
+	// draw the surface enclosed by lane lines back onto the original frame
+	cv::Mat blend_on_road(mat.size(), img_type, cv::Scalar(0, 0, 0));
+	draw_back_onto_the_road(undist_mat, blend_on_road, cte);
+	//imshow("blend_on_road", blend_on_road);  //now shown as thumbnail
+
 	// stitch on the top of final output images from different steps of the pipeline
 	prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, cte, full_mat);
 
@@ -156,7 +156,6 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	int width = birdseye_binary_mat.size().width;
 
     // Create a temp colour image to draw on and visualize the result
-	cv::Vec3b red, blue;
     cv::Mat temp_mat_l;
 	cv::Mat temp_mat_r;
 	
@@ -165,16 +164,12 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 		//cv::cvtColor(birdseye_binary_mat, temp_mat_r, CV_GRAY2RGBA);
 		temp_mat_l = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0));
 		temp_mat_r = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0));
-		red = cv::Vec3b(255, 0, 0);
-		blue = cv::Vec3b(0, 0, 255);
     } else {
         //cv::cvtColor(birdseye_binary_mat, temp_mat_l, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
 		//cv::cvtColor(birdseye_binary_mat, temp_mat_r, CV_GRAY2BGR);
 		temp_mat_l = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 		temp_mat_r = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-		red = cv::Vec3b(0, 0, 255);
-		blue = cv::Vec3b(255, 0, 0);
-    }
+	}
 	// Take a histogram of the bottom half of the image (where the lane lines start)
 	// Histogram calculated with "reduce" function to get column sums.
 	cv::Mat col_sum;
@@ -294,16 +289,15 @@ void AdvImageProcessor::get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat
 	}
 	if (verbose_ == true) {
 		//line_lt_.draw_search_area(temp_mat_l, margin);
-		line_lt_.draw_pixels(temp_mat_l, red);
+		line_lt_.draw_pixels(temp_mat_l, "red");
 		line_lt_.draw_polynomial(temp_mat_l);
 		//line_rt_.draw_search_area(temp_mat_r, margin);
-		line_rt_.draw_pixels(temp_mat_r, blue); 
+		line_rt_.draw_pixels(temp_mat_r, "blue"); 
 		line_rt_.draw_polynomial(temp_mat_r);
 	}
     //temp_mat.copyTo(outMat);
 	cv::addWeighted(outMat, 1.0, temp_mat_l, 1.0, 0, outMat);
 	cv::addWeighted(outMat, 1.0, temp_mat_r, 1.0, 0, outMat);
-
 }
 
 //! Get polynomial coefficients for lane - lines detected in a binary image.
@@ -318,24 +312,13 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
     int width = birdseye_binary_mat.size().width;
     
     // Create a temp colour image to draw on and visualize the result
-	cv::Vec3b red;
-	cv::Vec3b blue;
-    cv::Mat temp_mat_l, temp_mat_r;
+    cv::Mat temp_mat_s, temp_mat_t;  //solid and transparent images
 	if (outMat.type() == CV_8UC4) {
-		//cv::cvtColor(birdseye_binary_mat, temp_mat_l, CV_GRAY2RGBA);  //android input image appears to be RGBA
-		//cv::cvtColor(birdseye_binary_mat, temp_mat_r, CV_GRAY2RGBA);
-		temp_mat_l = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0));
-		temp_mat_r = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0));
-		red = cv::Vec3b(255, 0, 0);
-		blue = cv::Vec3b(0, 0, 255);
-	}
-	else {
-		//cv::cvtColor(birdseye_binary_mat, temp_mat_l, CV_GRAY2BGR);  //open an image with OpenCV makes it BGR
-		//cv::cvtColor(birdseye_binary_mat, temp_mat_r, CV_GRAY2BGR);
-		temp_mat_l = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-		temp_mat_r = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-		red = cv::Vec3b(0, 0, 255);
-		blue = cv::Vec3b(255, 0, 0);
+		temp_mat_s = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0)); //RGB
+		temp_mat_t = cv::Mat(birdseye_binary_mat.size(), CV_8UC4, cv::Scalar(0, 0, 0));
+	} else {
+		temp_mat_s = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));  //open an image with OpenCV makes it BGR
+		temp_mat_t = cv::Mat(birdseye_binary_mat.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 	}
     std::vector<double> left_fit_pixel, right_fit_pixel, left_fit_meter, right_fit_meter;
 	left_fit_pixel = line_lt_.last_fit_pixel();  //shortcut to avoid doing histograms to find starting point of each line
@@ -412,15 +395,14 @@ void AdvImageProcessor::get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, 
         //right_fit_meter = np.polyfit(line_rt.all_y * ym_per_pix, line_rt.all_x * xm_per_pix, 2);
     }
 	if (verbose_ == true) {
-		//line_lt_.draw_search_area(temp_mat_l, margin);
-		line_lt_.draw_pixels(temp_mat_l, red); 
-		line_lt_.draw_polynomial(temp_mat_l);
-		//line_rt_.draw_search_area(temp_mat_r, margin);
-		line_rt_.draw_pixels(temp_mat_r, blue); 
-		line_rt_.draw_polynomial(temp_mat_r);
+		line_lt_.draw_search_area(temp_mat_t, margin);  //transparent image
+		line_lt_.draw_pixels(temp_mat_s, "red"); 
+		line_lt_.draw_polynomial(temp_mat_s);
+		line_rt_.draw_search_area(temp_mat_t, margin);  //transparent image
+		line_rt_.draw_pixels(temp_mat_s, "blue"); 
+		line_rt_.draw_polynomial(temp_mat_s);
 	}
-    //temp_mat_l.copyTo(outMat);
-	cv::addWeighted(temp_mat_l, 1.0, temp_mat_r, 1.0, 0, outMat);
+	cv::addWeighted(temp_mat_s, 1.0, temp_mat_t, 0.3, 0, outMat);
 
 	//Need to sanity check the lane lines.  If they do not make sense, then set "detected=false", to trigger re-detection from scratch.
 	// Basic check - if the left and right poly line points intersect?  If so, bad!
@@ -459,6 +441,10 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
         // Instead, here we compute the value of x for each line using the moving average of the fitted polynomial
 		double line_lt_bottom = line_lt_.poly_eval(img_height - 10, true);  
 		double line_rt_bottom = line_rt_.poly_eval(img_height - 10, true);
+		// Check values - it is possible the polynomial never reaches the bottom of the image
+		if ((line_lt_bottom != line_lt_bottom) || (line_rt_bottom != line_rt_bottom)) {  //basic isnan test
+			return 0.0;
+		}
         double lane_width = line_rt_bottom - line_lt_bottom;
         double midpoint = img.size().width / 2;
 		offset_pix = (line_lt_bottom + lane_width / 2) - midpoint;  //TODO: check.  Used to have abs() value, but removed abs for PID controller to know if offset is pos or neg
@@ -473,33 +459,53 @@ double AdvImageProcessor::compute_offset_from_center(cv::Mat& img) {
 //! @param keep_state : if true, line state is maintained
 //! @return : color blend
 //! Also uses class members perspective_inv_ for the perspective transform, and line_lt_ and line_rt for the lane lines, and keep_state_
-void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& out_mat) {
+void AdvImageProcessor::draw_back_onto_the_road(cv::Mat& img, cv::Mat& out_mat, double cte) {
 	int width = img.size().width;
 	int height = img.size().height;
 
-	cv::Vec3b red, blue;
 	cv::Mat blankMat1, blankMat2;
 	if (out_mat.type() == CV_8UC4) {
-		red = cv::Vec3b(255, 0, 0);
-		blue = cv::Vec3b(0, 0, 255);
 		blankMat1 = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0, 0, 0));
 		blankMat2 = cv::Mat(img.size(), CV_8UC4, cv::Scalar(0, 0, 0));
 	} else {
-		red = cv::Vec3b(0, 0, 255);
-		blue = cv::Vec3b(255, 0, 0);
 		blankMat1 = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 		blankMat2 = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 	}
 	//Create a black image same size as input
-	// - draw birdseye lines on the image
+	// - draw birdseye lines, pixels, search area, polygon lane area on the image
 	// - then dewarp the birdseye before combining with input image
 	line_lt_.draw_polynomial(blankMat1);  //do not average the curvature
 	line_rt_.draw_polynomial(blankMat1);
-	line_lt_.draw_pixels(blankMat1, red);  //do not average the curvature
-    line_rt_.draw_pixels(blankMat1, blue);
-    line_lt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);  //do not average the curvature
-    line_rt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);
-    cv::addWeighted(blankMat1, 1.0, blankMat2, 0.3, 0, blankMat1);
+	line_lt_.draw_pixels(blankMat1, "red");
+    line_rt_.draw_pixels(blankMat1, "blue");
+    //line_lt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);  //do not draw on output image, but instead on lane line image
+    //line_rt_.draw_search_area(blankMat2, img_conf_.histogram_lane_margin_);
+	
+	// *** draw the road as a green polygon ***
+	if (cte != 0.0) {  //cte==0.0 usually means there is a problem with the lane lines.  Hence do not try to draw this polygon.
+		std::vector<std::vector<cv::Point> > fillContAll;
+		std::vector<cv::Point> left_pts;
+		std::vector<cv::Point> right_pts;
+		std::vector<cv::Point> all_pts;
+		// use copyTo to convert Point2f to Point for fillPoly
+		cv::Mat(line_lt_.last_fit_points_).copyTo(left_pts);
+		cv::Mat(line_rt_.last_fit_points_).copyTo(right_pts);
+		// Append left and right lane line points, reversing order of one to make continuous contour
+		all_pts.insert(all_pts.end(), left_pts.begin(), left_pts.end());
+		std::reverse(right_pts.begin(), right_pts.end());
+		all_pts.insert(all_pts.end(), right_pts.begin(), right_pts.end());
+		//add contours
+		fillContAll.push_back(all_pts);
+		if (out_mat.type() == CV_8UC4) {    //android input is RGBA
+			cv::fillPoly(blankMat2, fillContAll, cv::Scalar(0, 255, 0));
+		}
+		else {  //PC is BGR
+			cv::fillPoly(blankMat2, fillContAll, cv::Scalar(0, 255, 0));
+		}
+		//imshow("fillPoly", blankMat2);
+		cv::addWeighted(blankMat1, 1.0, blankMat2, 0.6, 0, blankMat1);
+	}
+	
 	cv::Mat road_dewarped; 
 	cv::warpPerspective(blankMat1, road_dewarped, perspective_inv_, cv::Size(width, height));  // Warp back to original image space
 	cv::addWeighted(img, 1., road_dewarped, 0.3, 0, out_mat);
@@ -563,7 +569,6 @@ void AdvImageProcessor::prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat&
 	std::ostringstream oss;
 	oss << std::setprecision(2) << offset_pixels << " px";
 	cv::putText(out_mat, oss.str(), cv::Point((4 * off_x) + (3 * thumb_w), (3*off_y) + thumb_h*3/4), cv::FONT_HERSHEY_SIMPLEX, 2.0, cv::Scalar(255, 255, 255), 2.0, cv::LINE_AA);
-	//blend_on_road.copyTo(out_mat);
 }
 
 

@@ -73,7 +73,7 @@ namespace Autodrive {
 		void get_fits_by_sliding_windows(cv::Mat& birdseye_binary_mat, cv::Mat& outMat, int n_windows = 9);
 		void get_fits_by_previous_fits(cv::Mat& birdseye_binary_mat, cv::Mat& outMat);
 		double compute_offset_from_center(cv::Mat& img);
-		void draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat);
+		void draw_back_onto_the_road(cv::Mat& img, cv::Mat& outMat, double cte);
 		void prepare_out_blend_frame(cv::Mat& blend_on_road, cv::Mat& bin_mat, cv::Mat& bird_mat, cv::Mat& lane_mat, double offset_pixels, cv::Mat& out_mat);
 		int find_car_height(const cv::Mat& cannied);
 		std::unique_ptr<PID> pid_;

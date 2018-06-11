@@ -117,30 +117,42 @@ void LaneLine::draw(mask, color=(255, 0, 0), line_width=50, average=False) {
 
 
 // Color in left (red) and right (blue) line pixels found in the search region
-void LaneLine::draw_pixels(cv::Mat& img, cv::Vec3b color) {
+void LaneLine::draw_pixels(cv::Mat& img, std::string color) {
     int img_width = img.size().width;
     int img_height = img.size().height;
     
     for (int i = 0; i < all_x_.size(); i++) {
         if ((all_y_[i] >= 0) && (all_y_[i] < img_height)) {
             if ((all_x_[i] >= 0) && (all_x_[i] < img_width)) {
-                img.at<cv::Vec3b>(all_y_[i], all_x_[i]) = color;
+				if (img.type() == CV_8UC4) {    //android input is RGBA
+					if (color == "red") {
+						img.at<std::array<uint8_t, 4> >(all_y_[i], all_x_[i]) = { 255, 0, 0, 0 };  //mat.at is very particular
+					} else {
+						img.at<std::array<uint8_t, 4> >(all_y_[i], all_x_[i]) = {0, 0, 255, 0};
+					}
+				} else { //PC input is BGR
+					if (color == "red") {
+						img.at<std::array<uint8_t, 3> >(all_y_[i], all_x_[i]) = { 0, 0, 255 };
+					} else {
+						img.at<std::array<uint8_t, 3> >(all_y_[i], all_x_[i]) = { 255, 0, 0 };
+					}
+				}
             }
         }
     }
 }
 
-// Highlight the lane search area
+// Highlight the lane search area in yellow
 // Easiest to display the search area by drawing the polynomial with width=2*margin
 // Draw green line (width=2*margin) between with each pair of consecutives points in the fitted lane line
 void LaneLine::draw_search_area(cv::Mat& img, double margin) {
 	if (last_fit_points_.size() > 0) {
 		for (int i = 0; i < (last_fit_points_.size() - 1); i++) {
 			if (img.type() == CV_8UC4) {
-				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2 * margin, CV_AA);  //android image is RGBA
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(255, 255, 0), 2 * margin, CV_AA);  //android image is RGBA
 			}
 			else {
-				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 0), 2 * margin, CV_AA);  //open an image with OpenCV makes it BGR
+				cv::line(img, last_fit_points_[i], last_fit_points_[i + 1], cv::Scalar(0, 255, 255), 2 * margin, CV_AA);  //open an image with OpenCV makes it BGR
 			}
 		}
 	}

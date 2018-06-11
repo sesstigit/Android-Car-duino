@@ -72,7 +72,8 @@ void binarize(cv::Mat& matIn, cv::Mat& matGray) {  //should use this version so 
 #endif
 	thresh_value = 100;  //TODO: lane detection performance is sensitive to this value
 	max_binary_value = 255;  //FIX - was 1
-	cv::threshold(matGray, matGray, thresh_value, max_binary_value, cv::THRESH_BINARY);
+	cv::threshold(matGray, matGray, thresh_value, max_binary_value, cv::THRESH_TOZERO);  //was cv::THRESH_BINARY
+	//cv::adaptiveThreshold(matGray, matGray, max_binary_value, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 11, 2);
 #ifdef DEBUG_ADV_
 	cv::imshow("SobelThresh", matGray);
 #endif

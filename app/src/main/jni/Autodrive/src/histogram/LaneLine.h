@@ -22,6 +22,7 @@
 #include <vector>
 #include <numeric>
 #include <math.h>
+#include <string>
 #include "imageprocessor/Util.h"
 
 namespace Autodrive {
@@ -48,7 +49,7 @@ class LaneLine {
   double poly_eval_slope(double y, bool average);
   //! Draw the curved Lane Line of best fit on a color image.  If average, then draw the line of best fit from the past "buffer_len" times.
   void draw_polynomial(cv::Mat& img);
-  void draw_pixels(cv::Mat& img, cv::Vec3b color);
+  void draw_pixels(cv::Mat& img, std::string color);
   void draw_search_area(cv::Mat& img, double margin);
 
   //TODO: make these private
