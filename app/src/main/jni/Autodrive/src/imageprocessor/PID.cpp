@@ -13,6 +13,12 @@ PID::PID(const ImageConfig& img_conf) : img_conf_(img_conf) {
 
 PID::~PID() {}
 
+void::PID::reset() {
+	error_proportional_ = 0.0;
+	error_integral_ = 0.0;
+	error_derivative_ = 0.0;
+}
+
 
 void PID::UpdateError(double cte) {
     error_integral_     += cte;

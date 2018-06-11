@@ -25,7 +25,11 @@ public:
     */
     virtual ~PID();
 
-    
+	/*
+	* Reset the PID error variables to zero.
+	*/
+	void reset();
+
     /*
     * Update the PID error variables given cross track error.
     */
