@@ -32,9 +32,9 @@ ImageConfig::ImageConfig() :
   smoothening_(5),
   canny_thresh_(80),
   car_scale_drift_fix_(1.0),
-  pid_kp_(0.1),
+  pid_kp_(0.1),  //was 0.1
   pid_ki_(0.0001),  //was 0.0001
-  pid_kd_(1.0),  //was 1.0
+  pid_kd_(0.0001),  //was 1.0
   intrinsic_matrix_(nullptr),
   distortion_coeffs_(nullptr),
   histogram_lane_margin_(10.0),
