@@ -126,21 +126,21 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 		cout << "cte=" << cte << "; pid_error=" << pid_->TotalError() << endl;
 #endif
 	cmd.set_speed(0.23);  //TODO: Fix hardcoded number
-
-	// draw the surface enclosed by lane lines back onto the original frame
-	cv::Mat blend_on_road(mat.size(), img_type, cv::Scalar(0, 0, 0));
-	draw_back_onto_the_road(undist_mat, blend_on_road, cte);
-	//imshow("blend_on_road", blend_on_road);  //now shown as thumbnail
-
-	// stitch on the top of final output images from different steps of the pipeline
-	prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, cte, full_mat);
-
+	
 	if (img_conf_.display_debug_ == true) {
-		//! Draw a short green line from center bottom in direction of the road_follower_ angle
-		//! BGR or RGBA does not matter here
-		int drawlen = full_mat.size().height / 4;
-		POINT center(full_mat.size().width / 2.f, (float)(full_mat.size().height)*0.75);
-		linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(full_mat, CV_RGB(0, 255, 0));
+	  // draw the surface enclosed by lane lines back onto the original frame
+	  cv::Mat blend_on_road(mat.size(), img_type, cv::Scalar(0, 0, 0));
+	  draw_back_onto_the_road(undist_mat, blend_on_road, cte);
+	  //imshow("blend_on_road", blend_on_road);  //now shown as thumbnail
+
+	  // stitch on the top of final output images from different steps of the pipeline
+	  prepare_out_blend_frame(blend_on_road, bin_mat, bird_mat, lane_mat, cte, full_mat);
+
+	  //! Draw a short green line from center bottom in direction of the road_follower_ angle
+	  //! BGR or RGBA does not matter here
+	  int drawlen = full_mat.size().height / 4;
+	  POINT center(full_mat.size().width / 2.f, (float)(full_mat.size().height)*0.75);
+	  linef(center, center + POINT(std::cos(target_angle) * drawlen, -sin(target_angle) * drawlen)).draw(full_mat, CV_RGB(0, 255, 0));
 	}
 	return cmd;
 }
