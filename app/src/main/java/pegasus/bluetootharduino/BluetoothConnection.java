@@ -199,7 +199,22 @@ public class BluetoothConnection {
             e.printStackTrace();
 
         }
+    }
 
+    public static void sendToJoystickMode(String command) {
+        try {
+            String text = "";
+            text = nt.encodedNetstring(command);
+
+            if(!text.isEmpty()) {
+                if (socket.isConnected()) {
+                    Log.d("runBT JS send", text);
+                    out.write(text.getBytes());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void disconnect() {
