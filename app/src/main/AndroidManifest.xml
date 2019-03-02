@@ -33,6 +33,7 @@
         <activity android:screenOrientation="landscape" android:name="pegasus.bluetootharduino.AdvSettingsActivity"></activity>
         <activity android:screenOrientation="landscape" android:name="pegasus.bluetootharduino.PairDeviceActivity"></activity>
         <activity android:screenOrientation="landscape" android:name="pegasus.bluetootharduino.ManualActivity"></activity>
+        <activity android:screenOrientation="landscape" android:name="pegasus.bluetootharduino.ManualJoystickActivity"></activity>
     </application>
 
 </manifest>
