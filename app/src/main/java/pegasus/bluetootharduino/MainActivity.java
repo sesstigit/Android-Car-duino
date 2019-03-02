@@ -58,6 +58,7 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
 
         /* BUTTONS */
         findViewById(R.id.auto).setOnClickListener(this);
+        findViewById(R.id.joystick).setOnClickListener(this);
         findViewById(R.id.parking).setOnClickListener(this);
         findViewById(R.id.manual).setOnClickListener(this);
         findViewById(R.id.advanced).setOnClickListener(this);
@@ -88,6 +89,11 @@ public class MainActivity extends Activity implements OnClickListener, CompoundB
                 Intent changeToManual = new Intent(getApplicationContext(),
                 ManualActivity.class);
                 startActivity(changeToManual);
+                break;
+            case R.id.joystick:
+                Intent changeToJoystick = new Intent(getApplicationContext(),
+                        ManualJoystickActivity.class);
+                startActivity(changeToJoystick);
                 break;
             case R.id.parking:
                 Autodrive.resetParking(); // reset values used for parking
