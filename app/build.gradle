@@ -1,6 +1,7 @@
 import com.android.build.gradle.tasks.PackageApplication
 import org.apache.tools.ant.taskdefs.condition.Os
 apply plugin: 'com.android.application'
+//apply plugin: 'com.github.dcendents.android-maven'  //for virtualjoystick
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def sdkDir = properties.getProperty('sdk.dir')
@@ -110,6 +111,7 @@ android {
 }
 dependencies {
     compile project(':openCVLibrary340')
+    compile 'io.github.controlwear:virtualjoystick:1.10.1'
 }
 android.packagingOptions {
     exclude 'META-INF/notice.txt'
