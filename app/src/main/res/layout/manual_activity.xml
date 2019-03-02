@@ -105,4 +105,18 @@
         android:background="@drawable/rounded_buttons"
         android:text="++"
         android:textColor="@color/white" />
+
+    <EditText
+        android:id="@+id/manual_errmsg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@+id/frontmore"
+        android:layout_alignParentTop="true"
+        android:ems="10"
+        android:inputType="none"
+        android:text="ERROR: bluetooth not enabled"
+        android:textAlignment="viewStart"
+        android:textColor="@android:color/holo_red_dark"
+        android:textStyle="bold"
+        android:visibility="invisible" />
 </RelativeLayout>

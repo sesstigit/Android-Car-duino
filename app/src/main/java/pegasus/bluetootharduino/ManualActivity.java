@@ -59,6 +59,9 @@ public class ManualActivity extends Activity implements OnClickListener, OnGestu
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            // inform user to enable bluetooth
+            findViewById(R.id.manual_errmsg).setVisibility(1);
         }
     }
 
@@ -123,9 +126,11 @@ public class ManualActivity extends Activity implements OnClickListener, OnGestu
 
         if(e1.getX()<e2.getX()) {
             // disconnect safely
-            if(btc.socket.isConnected()) {
-                btc.sendToManualMode("stop");
-                btc.disconnect();
+            if(bluepair.btEnabled) {
+                if(btc.socket.isConnected()) {
+                    btc.sendToManualMode("stop");
+                    btc.disconnect();
+                }
             }
             /** Changes to Main screen */
             Intent changeToMain= new Intent(getApplicationContext(), MainActivity.class);
@@ -142,11 +147,12 @@ public class ManualActivity extends Activity implements OnClickListener, OnGestu
 
     /** Changes the behaviour of the back button */
     public void onBackPressed() {
-
         // disconnect safely
-        if(btc.socket.isConnected()) {
-            btc.sendToManualMode("stop");
-            btc.disconnect();
+        if(bluepair.btEnabled) {
+            if (btc.socket.isConnected()) {
+                btc.sendToManualMode("stop");
+                btc.disconnect();
+            }
         }
         Intent changeToMain= new Intent(getApplicationContext(), MainActivity.class);
         startActivity(changeToMain);

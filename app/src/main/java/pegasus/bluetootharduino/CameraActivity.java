@@ -81,6 +81,8 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            //todo: message user to enable bluetooth
         }
     }
 
@@ -184,9 +186,11 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
 
         if(e1.getX()<e2.getX()) {
             // disconnect safely
-            if(bt.socket.isConnected()) {
-                bt.sendToManualMode("stop");
-                bt.disconnect();
+            if(blue.btEnabled) {
+                if (bt.socket.isConnected()) {
+                    bt.sendToManualMode("stop");
+                    bt.disconnect();
+                }
             }
             /** Changes to Main screen */
             Intent changeToMain= new Intent(getApplicationContext(), MainActivity.class);
@@ -213,9 +217,11 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
             Imgcodecs.imwrite(filename, m);
         }
         // disconnect safely
-        if(bt.socket.isConnected()) {
-            bt.sendToManualMode("stop");
-            bt.disconnect();
+        if(blue.btEnabled) {
+            if (bt.socket.isConnected()) {
+                bt.sendToManualMode("stop");
+                bt.disconnect();
+            }
         }
         Intent changeToMain= new Intent(getApplicationContext(), MainActivity.class);
         startActivity(changeToMain);

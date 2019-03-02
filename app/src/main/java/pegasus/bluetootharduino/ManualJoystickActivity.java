@@ -33,6 +33,9 @@ public class ManualJoystickActivity extends Activity  { //was AppCompatActivity
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            // inform user to enable bluetooth
+            findViewById(R.id.manual_joystick_errmsg).setVisibility(1);
         }
 
         mTextViewAngle = (TextView) findViewById(R.id.textView_angle);
@@ -66,9 +69,11 @@ public class ManualJoystickActivity extends Activity  { //was AppCompatActivity
     public void onBackPressed() {
 
         // disconnect safely
-        if(btc.socket.isConnected()) {
-            btc.sendToManualMode("stop");
-            btc.disconnect();
+        if(bluepair.btEnabled) {
+            if (btc.socket.isConnected()) {
+                btc.sendToManualMode("stop");
+                btc.disconnect();
+            }
         }
         Intent changeToMain= new Intent(getApplicationContext(), MainActivity.class);
         startActivity(changeToMain);
