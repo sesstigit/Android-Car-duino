@@ -90,7 +90,7 @@ CarCmd AdvImageProcessor::continue_processing(cv::Mat& full_mat)
 	//imshow("Birdseye", bird_mat);  //now shown as thumbnail
 	
 	if (car_y_height_ == 0) {
-	    car_y_height_ = find_car_height(bird_mat);  //find top of car bonnet in this binarized, birdseye view
+		car_y_height_ = find_car_height(bird_mat);  //find top of car bonnet in this binarized, birdseye view
 	    cerr << "car_y_height_=" << car_y_height_ << endl;
 	}
     // Lane detection is done on the birdseye view, with a colour output
